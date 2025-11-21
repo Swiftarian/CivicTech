@@ -1,0 +1,26 @@
+# Python
+__pycache__/
+*.py[cod]
+*$py.class
+.env
+.venv
+env/
+venv/
+
+# Data & Sensitive Files (IMPORTANT)
+downloads/
+*.xls
+*.xlsx
+*.csv
+*.pdf
+*.png
+*.jpg
+*.jpeg
+*.tiff
+
+# Streamlit
+.streamlit/secrets.toml
+
+# OS
+.DS_Store
+Thumbs.db

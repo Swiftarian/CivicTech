@@ -1,0 +1,9 @@
+selenium
+webdriver-manager
+pandas
+openpyxl
+streamlit
+xlrd
+pymupdf
+pytesseract
+Pillow
