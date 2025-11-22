@@ -617,6 +617,134 @@ with col2:
     
     if target_row is not None:
         # 顯示目前使用的場所資料來源
+        if auto_matched_place:
+            st.success(f"🤖 已自動對應系統場所：{auto_matched_place}")
+        elif selected_place:
+            st.info(f"👤 目前手動選擇場所：{selected_place}")
+            if ocr_place_name:
+                st.warning(f"⚠️ 系統無法自動對應 OCR 場所「{ocr_place_name}」，請確認手動選擇是否正確。")
+        
+        if uploaded_file:
+            # 顯示鎖定資訊
+            if page_one_text:
+                st.caption("ℹ️ 已鎖定使用第 1 頁內容進行自動填入 (基本資料)")
+            if page_two_text:
+                st.caption("ℹ️ 已鎖定使用第 2 頁內容進行自動填入 (消防設備種類)")
+        else:
+            st.caption("ℹ️ 等待上傳申報檔案以進行自動填入...")
+        
+        # 定義欄位對應
+        field_mapping = {
+            '場所名稱': '場所名稱',
+            '場所地址': '場所地址',
+            '管理權人': '管理權人姓名',
+            '電話': '場所電話',
+            '消防設備種類': '消防安全設備'
+        }
+
+        # 檢查場所名稱是否一致 (如果是手動選擇才需要警告，自動對應通常就是一致的)
+        # 預設不顯示系統資料，直到有上傳檔案且比對狀態允許
+        show_system_data = False
+        
+        if uploaded_file:
+            show_system_data = True
+            
+            if not auto_matched_place and ocr_place_name and selected_place:
+                clean_ocr = ocr_place_name.replace("台", "臺").replace(" ", "")
+                clean_sys = selected_place.replace("台", "臺").replace(" ", "")
+                
+                if clean_sys not in clean_ocr and clean_ocr not in clean_sys:
+                     st.error(f"⚠️ 警告：OCR 辨識到的場所名稱「{ocr_place_name}」與您選擇的系統場所「{selected_place}」不符！")
+                     # 如果比對不成功，且是手動選擇的不一致，則不顯示系統資料，避免誤導
+                     show_system_data = False
+
+        # 建立比對表格資料
+        comparison_data = []
+        for display_name, excel_col in field_mapping.items():
+            # 系統資料
+            sys_val = ""
+            if show_system_data:
+                sys_val = target_row.get(excel_col, "無資料")
+                if pd.isna(sys_val): sys_val = ""
+            
+            # 特殊處理：消防設備種類 (系統資料) - 換行顯示
+            if display_name == '消防設備種類' and isinstance(sys_val, str) and show_system_data:
+                # 使用標準化函式處理系統資料
+                # 這會過濾掉不相關的文字，只保留標準設備名稱，並以頓號分隔
+                normalized_sys_val = normalize_equipment_str(sys_val)
+                
+                # 直接使用頓號分隔
+                sys_val = normalized_sys_val
+            
+            # 申報資料
+            ocr_key = display_name
+            if display_name == '電話':
+                ocr_key = '場所電話'
+            
+            ocr_val = extracted_data.get(ocr_key, "")
+            
+            comparison_data.append({
+                "欄位": display_name,
+                "系統資料": sys_val,
+                "申報資料 (OCR/人工)": ocr_val
+            })
+            
+        # 轉為 DataFrame
+        df_comparison = pd.DataFrame(comparison_data)
+        
+        # 顯示可編輯的表格 (讓使用者修正 OCR 結果)
+        edited_df = st.data_editor(
+            df_comparison,
+            column_config={
+                "欄位": st.column_config.TextColumn("欄位", disabled=True),
+                "系統資料": st.column_config.TextColumn("系統資料 (唯讀)", disabled=True),
+                "申報資料 (OCR/人工)": st.column_config.TextColumn(
+                    "申報資料 (可編輯修正)",
+                    help="若 OCR 辨識錯誤，請直接點擊修改",
+                    required=True
+                )
+            },
+            hide_index=True,
+            use_container_width=True
+        )
+        
+        st.warning("💡 申報資料欄位若為空白，請參考左側影像手動輸入。")
+        
+        # 檢核清單
+        st.write("### ✅ 差異檢核")
+        
+        # 自動判斷差異 (簡單比對)
+        for index, row in edited_df.iterrows():
+            field = row['欄位']
+            sys_val = str(row['系統資料']).strip()
+            ocr_val = str(row['申報資料 (OCR/人工)']).strip()
+            
+            # 地址模糊比對邏輯
+            if field == '場所地址':
+                # 定義正規化函式
+                def normalize_addr(addr):
+                    # 1. 統一 台/臺
+                    addr = addr.replace("台", "臺")
+                    # 2. 去除開頭的 "臺東縣" (或 "台東縣")
+                    addr = addr.replace("臺東縣", "")
+                    # 3. 去除空白
+                    addr = addr.replace(" ", "")
+                    return addr
+                
+                norm_sys = normalize_addr(sys_val)
+                norm_ocr = normalize_addr(ocr_val)
+                
+                if ocr_val and norm_sys != norm_ocr:
+                     # 嘗試更寬鬆的比對 (例如包含關係)
+                     if norm_ocr in norm_sys or norm_sys in norm_ocr:
+                          st.success(f"✅ 【{field}】一致 (模糊比對成功)")
+                     else:
+                          st.error(f"⚠️ 【{field}】不一致！\n系統：{sys_val} (正規化後: {norm_sys})\n申報：{ocr_val} (正規化後: {norm_ocr})")
+                elif ocr_val and norm_sys == norm_ocr:
+                    st.success(f"✅ 【{field}】一致")
+                else:
+                    st.info(f"⚪ 【{field}】待確認")
+            
             elif field == '消防設備種類':
                 if ocr_val and sys_val != ocr_val:
                     # 轉為集合進行比對
