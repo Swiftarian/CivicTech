@@ -449,17 +449,6 @@ if page == "案件審核":
                                     deleted_count += 1
                                 st.success(f"✅ 已刪除 {deleted_count} 筆案件")
                                 st.rerun()
-                            else:
-                                st.warning("請先勾選要刪除的案件")
-                else:
-                    # 一般同仁無法執行批量操作
-                    st.caption("🔒 您沒有權限執行派案或刪除操作。如需協助請聯繫管理員。")
-
-    # --- Tab 2: 單筆審核與比對 ---
-    with tab2:
-        st.subheader("單筆審核")
-        
-        # Re-fetch cases for dropdown to ensure freshness
         cases_for_dropdown = db_manager.get_all_cases(filter_status) 
         if not cases_for_dropdown:
              st.info("目前無案件可審核。")
