@@ -1,9 +1,10 @@
 import streamlit as st
 import db_manager
+import config_loader as cfg
 
 # 設定頁面配置 (必須是第一個 Streamlit 指令)
 st.set_page_config(
-    page_title="臺東縣消防安全設備檢修申報平台",
+    page_title=f"{cfg.AGENCY_NAME}{cfg.SYSTEM_TITLE}",
     page_icon="🚒",
     layout="wide"
 )
@@ -15,7 +16,7 @@ db_manager.init_db()
 import utils
 utils.load_custom_css()
 
-st.title("🚒 臺東縣消防安全設備檢修申報平台")
+st.title(f"🚒 {cfg.AGENCY_NAME}{cfg.SYSTEM_TITLE}")
 
 st.markdown("""
 ### 歡迎使用線上申報系統
@@ -31,7 +32,7 @@ st.markdown("""
 ---
 #### 系統公告
 - 請確認上傳之 PDF 檔案清晰可辨識。
-- 如有任何問題，請聯繫預防調查科 (預調科)。
+- 如有任何問題，請聯繫{cfg.DEPARTMENT_NAME}。
 """)
 
 # 顯示一些統計數據 (範例)

@@ -1,0 +1,51 @@
+# ==========================================
+# 系統設定檔 (Configuration File)
+# ==========================================
+# 本檔案包含所有機構相關的設定，方便其他縣市移植使用
+# 修改此檔案即可將系統套用到不同的消防局
+
+[agency]
+# 機構資訊
+name = "臺東縣消防局"
+department = "預防調查科"
+full_name = "臺東縣消防局預防調查科"
+
+# 聯絡資訊
+phone = "089-322112"
+address = "臺東縣臺東市..."
+email = "fire@taitung.gov.tw"
+
+[system]
+# 系統名稱
+title = "消防安全設備檢修申報平台"
+page_title = "消防安全設備檢修申報"
+subtitle = "Fire Safety Equipment Inspection Automation System"
+
+# 註冊通行碼（內部同仁註冊用）
+registration_key = "Fire2025"
+
+[ui]
+# Logo 與圖示
+logo_path = "assets/logo.png"
+favicon = "🚒"
+
+# 主題顏色
+primary_color = "#e53e3e"  # 消防紅
+secondary_color = "#1a365d"  # 深藍
+
+[email]
+# Email 簽名檔
+signature_org = "臺東縣消防局 預防調查科 敬啟"
+auto_reply_notice = "【系統自動發信，請勿直接回覆】"
+
+[ocr]
+# OCR 預設路徑
+default_excel_path = "d:\\下載\\downloads\\00. 列管場所資料.xls"
+default_tesseract_path = "C:\\Program Files\\Tesseract-OCR\\tesseract.exe"
+
+[features]
+# 功能開關
+enable_2fa = true  # 管理員二階段驗證
+enable_line_notify = false  # LINE 通知（開發中）
+enable_ocr = true  # OCR 比對功能
+enable_self_registration = true  # 內部同仁自助註冊

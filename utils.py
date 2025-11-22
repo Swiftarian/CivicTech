@@ -9,6 +9,7 @@ import fitz  # pymupdf
 from PIL import Image
 import subprocess
 import re
+import config_loader as cfg
 
 # ==========================================
 # UI 樣式函式
@@ -199,10 +200,10 @@ def generate_email_html(title, recipient_name, content_html, highlight_info=None
                     <tr>
                         <td style="background-color: #edf2f7; padding: 20px; text-align: center; 
                                    font-size: 12px; color: #718096; line-height: 1.5;">
-                            <p style="margin: 5px 0; font-weight: bold;">臺東縣消防局 預防調查科 敬啟</p>
-                            <p style="margin: 5px 0;">電話：089-322112</p>
+                            <p style="margin: 5px 0; font-weight: bold;">{cfg.CONFIG["email"]["signature_org"]}</p>
+                            <p style="margin: 5px 0;">電話：{cfg.CONTACT_PHONE}</p>
                             <p style="margin: 10px 0 0 0; color: #e53e3e; font-weight: bold;">
-                                【系統自動發信，請勿直接回覆】
+                                {cfg.CONFIG["email"]["auto_reply_notice"]}
                             </p>
                         </td>
                     </tr>
