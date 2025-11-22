@@ -449,20 +449,33 @@ if page == "案件審核":
                 place = "(未填場所)"
             return f"{place} - {row['applicant_name']} ({row['status']})"
 
+        # 嘗試從 Tab 1 (st.session_state.case_editor_df) 取得選取的案件
+        preselected_index = None
+        if 'case_editor_df' in st.session_state:
+            editor_df = st.session_state.case_editor_df
+            if '選取' in editor_df.columns:
+                selected_rows = editor_df[editor_df['選取']]
+                if not selected_rows.empty:
+                    # 取第一個選取的案件 ID
+                    first_selected_id = selected_rows.iloc[0]['id']
+                    # 檢查該 ID 是否在目前的下拉選單選項中
+                    if first_selected_id in df_cases['id'].tolist():
+                        preselected_index = df_cases['id'].tolist().index(first_selected_id)
+
         selected_case_id = st.selectbox(
             "請選擇要審核的案件", 
             df_cases['id'].tolist(),
             format_func=format_case_label,
             key="tab2_selectbox",
-            index=None,
+            index=preselected_index, # 使用預選的索引
             placeholder="請選擇案件..."
         )
             
         if not selected_case_id:
-            if user['role'] == 'admin':
-                st.info("請先至【案件總覽】分頁選擇要審核的案件。")
-            else:
-                st.info("👈 請從上方選單選擇一個案件以開始審核。")
+            st.warning("⚠️ 請先選擇案件！")
+            st.info("請點擊左側的 **【案件總覽與管理】** 分頁，從案件列表中選擇一個案件後，再切換回來。")
+            st.markdown("---")
+            st.markdown("### 👈 步驟： 1. 總覽分頁點選案件 ➔ 2. 切換回此分頁")
             
         if selected_case_id:
             case = db_manager.get_case_by_id(selected_case_id)
