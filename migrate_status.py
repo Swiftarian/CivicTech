@@ -4,11 +4,13 @@
 """
 import sqlite3
 import sys
+import os
 
 def migrate_status():
     try:
-        # 連接資料庫
-        conn = sqlite3.connect('fire_dept.db')
+        # 連接資料庫（使用與 db_manager.py 相同的路徑）
+        db_path = os.path.join(os.path.dirname(__file__), 'cases.db')
+        conn = sqlite3.connect(db_path)
         c = conn.cursor()
         
         # 查詢現有「待處理」案件數量
