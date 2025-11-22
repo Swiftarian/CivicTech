@@ -5,9 +5,10 @@ import fitz  # pymupdf
 from PIL import Image
 import pytesseract
 import re
+import config_loader as cfg
 
 # 設定頁面配置
-st.set_page_config(layout="wide", page_title="臺東縣消防局檢修申報書檢核比對系統")
+st.set_page_config(layout="wide", page_title=f"{cfg.AGENCY_NAME}檢修申報書檢核比對系統")
 
 # ==========================================
 # 🔐 登入門禁檢查 (CRITICAL: 必須在所有其他操作之前)
@@ -330,7 +331,7 @@ def extract_info_from_ocr(text, pages_text_list=None):
 # 主程式區
 # ==========================================
 
-st.title("🚒 臺東縣消防局檢修申報書檢核比對系統")
+st.title(f"🚒 {cfg.AGENCY_NAME}檢修申報書檢核比對系統")
 
 # CSS 樣式：左右分欄獨立捲動 (Split View)
 st.markdown("""

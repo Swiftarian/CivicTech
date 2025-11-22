@@ -2,6 +2,7 @@ import streamlit as st
 import os
 import db_manager
 import shutil
+import config_loader as cfg
 
 st.set_page_config(page_title="民眾申辦 - 消防安全設備檢修申報", page_icon="📝")
 
@@ -83,11 +84,11 @@ with st.form("application_form"):
                             sender_password = st.secrets["email"].get("sender_password", "")
                             
                             if sender_email and sender_password:
-                                subject = f"【臺東縣消防局】案件受理通知 (單號：{case_id})"
+                                subject = f"【{cfg.AGENCY_NAME}】案件受理通知 (單號：{case_id})"
                                 
                                 # 使用統一模板生成 HTML 郵件
                                 content = f"""
-<p>臺東縣消防局已收到您的「消防安全設備檢修申報」，目前系統正在進行自動化初審。</p>
+<p>{cfg.AGENCY_NAME}已收到您的「消防安全設備檢修申報」，目前系統正在進行自動化初審。</p>
 
 <div style="background-color: #f8f9fa; border-left: 5px solid #e53e3e; padding: 15px; margin: 20px 0; border-radius: 4px;">
     <p style="margin: 5px 0; color: #666;">您的案件單號（請妥善保存）：</p>

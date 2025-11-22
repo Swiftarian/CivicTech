@@ -6,6 +6,7 @@ import pandas as pd
 import os
 import datetime
 from PIL import Image
+import config_loader as cfg
 
 st.set_page_config(page_title="案件審核 - 消防安全設備檢修申報", page_icon="👮", layout="wide")
 
@@ -556,7 +557,7 @@ if page == "案件審核":
 </table>
 
 <p style="margin-top: 30px; font-size: 14px; color: #666;">
-    若狀態為「可領件」，請攜帶身分證件至本局預防調查科領取核定書表。<br>
+    若狀態為「可領件」，請攜帶身分證件至本局{cfg.DEPARTMENT_NAME}領取核定書表。<br>
     若狀態為「已退件」，請依備註說明修正後重新送件。
 </p>
 """
