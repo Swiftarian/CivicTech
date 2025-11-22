@@ -18,6 +18,18 @@ downloads/
 *.jpeg
 *.tiff
 
+# Database Files (Don't track user data)
+*.db
+*.sqlite
+*.sqlite3
+
+# Upload Files
+uploads/
+
+# Backup Files
+*.backup
+*.bak
+
 # Streamlit
 .streamlit/secrets.toml
 
