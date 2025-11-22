@@ -21,7 +21,7 @@ if "logged_in" not in st.session_state or not st.session_state.logged_in:
 
 # 顯示登入使用者資訊
 if 'user' in st.session_state and st.session_state.user:
-    current_user = st.session_state.user
+    current_user = dict(st.session_state.user) # 確保轉換為字典，避免 sqlite3.Row 沒有 get 方法的問題
     st.sidebar.success(f"👤 已登入：{current_user.get('username')} ({current_user.get('role')})")
 st.sidebar.divider()
 

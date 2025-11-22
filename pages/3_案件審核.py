@@ -112,7 +112,7 @@ def login():
                             else:
                                 # Staff Login (No 2FA)
                                 st.session_state.logged_in = True
-                                st.session_state.user = user
+                                st.session_state.user = dict(user) # 轉換為字典
                                 db_manager.update_last_login(user['username'])
                                 db_manager.add_log(user['username'], "登入成功", "一般登入")
                                 st.success("登入成功！")
