@@ -647,17 +647,10 @@ with col2:
     with review_col2:
         st.write("審核結果通知：")
         
-        # 狀態選擇 UI
-        current_status = target_case['status'] if target_case else "待分案"
-        status_options = ["待分案", "審核中", "可領件", "已退件", "待補件"]
-        # 處理 emoji
-        current_status_clean = current_status.split(" ")[-1] if " " in current_status else current_status
-        
-        default_idx = 0
-        if current_status_clean in status_options:
-            default_idx = status_options.index(current_status_clean)
-            
-        new_status = st.selectbox("更新狀態", status_options, index=default_idx, label_visibility="collapsed")
+        # 狀態選擇 UI (已移除，改由下方按鈕直接觸發)
+        # current_status = target_case['status'] if target_case else "待分案"
+        # status_options = ["待分案", "審核中", "可領件", "已退件", "待補件"]
+        # ...
         
         b1, b2, b3 = st.columns(3)
         
@@ -674,18 +667,49 @@ with col2:
             # 顯示 UI 訊息 (模擬)
             if status == "success":
                 st.success(f"已產生【{subject_prefix}】通知")
+                color_theme = "#38a169" # Green
             elif status == "warning":
                 st.warning(f"已產生【{subject_prefix}】通知")
+                color_theme = "#d97706" # Yellow/Orange
             else:
                 st.error(f"已產生【{subject_prefix}】通知")
+                color_theme = "#e53e3e" # Red
                 
             # 嘗試發送真實郵件
             if sender_email and sender_password:
                 with st.spinner("📧 正在發送郵件..."):
                     subject = f"【消防局通知】案件審核結果：{subject_prefix}"
-                    body = f"您好，\n\n您的消防安全設備檢修申報案件審核結果為：{subject_prefix}。\n\n{msg_template}\n\n臺東縣消防局 敬啟"
                     
-                    success, msg = send_email(sender_email, sender_password, applicant_email, subject, body)
+                    # 使用 HTML 模板生成內容
+                    content_html = f"""
+                    <p>您的消防安全設備檢修申報案件審核結果為：<strong>{subject_prefix}</strong>。</p>
+                    <p>{msg_template}</p>
+                    <p>若有任何疑問，請聯繫本局預防調查科。</p>
+                    """
+                    
+                    # 呼叫 utils.generate_email_html 生成完整 HTML
+                    # 假設申請人姓名為 "申請人" (若有真實姓名可替換)
+                    # sqlite3.Row 物件沒有 .get() 方法，需轉換為 dict 或使用 key 存取
+                    case_dict = dict(target_case) if target_case else {}
+                    recipient_name = case_dict.get('applicant_name', '申請人')
+                    
+                    full_html_body = utils.generate_email_html(
+                        title=subject,
+                        recipient_name=recipient_name,
+                        content_html=content_html,
+                        color_theme=color_theme
+                    )
+                    
+                    # 發送郵件 (注意：send_email 需支援 HTML)
+                    # 這裡假設 utils.send_email 或本檔案的 send_email 已更新支援 HTML
+                    # 由於本檔案上方有定義 send_email，我們需要確認它是否支援 HTML
+                    # 根據之前的觀察，本檔案的 send_email 使用 MIMEText(body, 'plain')，需要修改為 'html'
+                    
+                    # 為了確保使用 HTML，我們直接呼叫 utils.send_email (如果有的話) 或是修改本檔案的 send_email
+                    # 這裡我們選擇呼叫 utils.send_email，因為 utils.py 中已經有支援 HTML 的版本
+                    
+                    success, msg = utils.send_email(sender_email, sender_password, applicant_email, subject, full_html_body)
+                    
                     if success:
                         st.toast(f"✅ 郵件已成功發送至 {applicant_email}")
                     else:
