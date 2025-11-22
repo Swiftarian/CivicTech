@@ -2,14 +2,24 @@
 設定檔讀取模組
 提供統一的介面讀取 config.toml 設定
 """
-import tomli
 import os
+
+# 嘗試導入 tomli，如果沒安裝則使用預設值
+try:
+    import tomli
+    TOMLI_AVAILABLE = True
+except ImportError:
+    TOMLI_AVAILABLE = False
+    print("⚠️ tomli 未安裝，使用預設設定。執行 'pip install tomli' 以啟用設定檔功能。")
 
 # 讀取配置檔
 CONFIG_PATH = os.path.join(os.path.dirname(__file__), "config.toml")
 
 def load_config():
     """讀取 config.toml 設定檔"""
+    if not TOMLI_AVAILABLE:
+        return get_default_config()
+    
     try:
         with open(CONFIG_PATH, "rb") as f:
             return tomli.load(f)
