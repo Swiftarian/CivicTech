@@ -1,0 +1,30 @@
+version: '3.8'
+
+services:
+  fire-dept-app:
+    build: .
+    container_name: fire-dept-automation
+    ports:
+      - "8501:8501"
+    volumes:
+      # 持久化資料庫
+      - ./cases.db:/app/cases.db
+      # 持久化上傳檔案
+      - ./uploads:/app/uploads
+      # 掛載列管場所資料（可選）
+      - ./downloads:/app/downloads
+    environment:
+      - TZ=Asia/Taipei
+    restart: unless-stopped
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:8501/_stcore/health"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 40s
+
+# 使用說明：
+# 1. 啟動: docker-compose up -d
+# 2. 查看 logs: docker-compose logs -f
+# 3. 停止: docker-compose down
+# 4. 重建: docker-compose up -d --build
