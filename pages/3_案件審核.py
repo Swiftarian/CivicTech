@@ -312,7 +312,7 @@ if page == "案件審核":
         # Filter
         col_filter1, col_filter2 = st.columns([1, 2])
         with col_filter1:
-            filter_status = st.selectbox("篩選狀態", ["全部", "待處理", "審核中", "可領件", "已退件", "待補件"])
+            filter_status = st.selectbox("篩選狀態", ["全部", "待分案", "審核中", "可領件", "已退件", "待補件"])
         with col_filter2:
             search_term = st.text_input("🔍 搜尋 (單號/場所/申請人)", placeholder="輸入關鍵字...")
         
@@ -420,7 +420,7 @@ if page == "案件審核":
                                     for case_id in case_ids:
                                         # 取得最新案件資訊
                                         case = db_manager.get_case_by_id(case_id)
-                                        if case and case['status'] == "待處理":
+                                        if case and case['status'] == "待分案":
                                             db_manager.update_case_status(case_id, "審核中")
                                     
                                     # 記錄操作
@@ -504,7 +504,7 @@ if page == "案件審核":
                 
                 with col2:
                     st.subheader("審核操作")
-                    new_status = st.selectbox("變更狀態", ["待處理", "審核中", "可領件", "已退件", "待補件"], index=["待處理", "審核中", "可領件", "已退件", "待補件"].index(case['status']) if case['status'] in ["待處理", "審核中", "可領件", "已退件", "待補件"] else 0)
+                    new_status = st.selectbox("變更狀態", ["待分案", "審核中", "可領件", "已退件", "待補件"], index=["待分案", "審核中", "可領件", "已退件", "待補件"].index(case['status']) if case['status'] in ["待分案", "審核中", "可領件", "已退件", "待補件"] else 0)
                     review_notes = st.text_area("審核備註", value=case['review_notes'] if case['review_notes'] else "")
                     
                     if st.button("💾 更新狀態"):

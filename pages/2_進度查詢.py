@@ -30,6 +30,8 @@ with tab1:
                     status_color = ":orange"
                 elif case['status'] == "可領件":
                     status_color = ":green"
+                elif case['status'] == "待分案":
+                    status_color = ":red"
                 
                 st.markdown(f"""
                 **案件單號**: `{case['id']}`
@@ -80,8 +82,20 @@ with tab2:
                 # 排序（最新的在最上面）
                 df_filtered = df_filtered.sort_values('submission_date', ascending=False)
                 
+                # 添加 Emoji 狀態標示（視覺優化）
+                def add_status_emoji(status):
+                    emoji_map = {
+                        "待分案": "🔴 待分案",
+                        "審核中": "🟡 審核中",
+                        "可領件": "🟢 可領件",
+                        "已退件": "⚫ 已退件",
+                        "待補件": "🟠 待補件"
+                    }
+                    return emoji_map.get(status, status)
+                
                 # 選擇要顯示的欄位
                 df_display = df_filtered[['id', 'place_name', 'submission_date', 'status', 'applicant_name']].copy()
+                df_display['status'] = df_display['status'].apply(add_status_emoji)
                 df_display.columns = ['案件單號', '場所名稱', '申請日期', '目前狀態', '申請人']
                 
                 # 顯示互動式表格
@@ -92,7 +106,7 @@ with tab2:
                         "案件單號": st.column_config.TextColumn("案件單號", width="medium"),
                         "場所名稱": st.column_config.TextColumn("場所名稱", width="large"),
                         "申請日期": st.column_config.TextColumn("申請日期", width="medium"),
-                        "目前狀態": st.column_config.TextColumn("目前狀態", width="medium"),
+                        "目前狀態": st.column_config.TextColumn("目前狀態", width="medium", help="案件審核進度"),
                         "申請人": st.column_config.TextColumn("申請人", width="medium"),
                     },
                     hide_index=True,

@@ -62,7 +62,7 @@ def init_db():
             place_name TEXT,
             place_address TEXT,
             file_path TEXT,
-            status TEXT DEFAULT '待處理',
+            status TEXT DEFAULT '待分案',
             submission_date TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
             review_notes TEXT,
             assigned_to TEXT,
@@ -215,7 +215,7 @@ def create_case(name, email, phone, place_name, place_address, file_path, line_i
             INSERT INTO cases (id, applicant_name, applicant_email, applicant_phone, 
                              place_name, place_address, file_path, line_id, status)
             VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)
-        ''', (case_id, name, email, phone, place_name, place_address, file_path, line_id, '待處理'))
+        ''', (case_id, name, email, phone, place_name, place_address, file_path, line_id, '待分案'))
         conn.commit()
         return case_id
     except Exception as e:
@@ -252,6 +252,22 @@ def get_all_cases(status_filter=None):
     else:
         c.execute('SELECT * FROM cases ORDER BY submission_date DESC')
         
+    cases = c.fetchall()
+    conn.close()
+    return cases
+
+def get_cases_by_assignee(username, status_filter=None):
+    """取得指派給特定同仁的案件 (用於權限控管)"""
+    conn = get_connection()
+    c = conn.cursor()
+    
+    if status_filter and status_filter != "全部":
+        c.execute('SELECT * FROM cases WHERE assigned_to = ? AND status = ? ORDER BY submission_date DESC', 
+                  (username, status_filter))
+    else:
+        c.execute('SELECT * FROM cases WHERE assigned_to = ? ORDER BY submission_date DESC', 
+                  (username,))
+    
     cases = c.fetchall()
     conn.close()
     return cases
@@ -295,11 +311,11 @@ def update_case_assignment(case_id_list, username):
     try:
         for case_id in case_id_list:
             # 1. 更新承辦人
-            # 2. 如果狀態是 '待處理'，自動改為 '審核中'
+            # 2. 如果狀態是 '待分案'，自動改為 '審核中'
             c.execute('''
                 UPDATE cases 
                 SET assigned_to = ?,
-                    status = CASE WHEN status = '待處理' THEN '審核中' ELSE status END
+                    status = CASE WHEN status = '待分案' THEN '審核中' ELSE status END
                 WHERE id = ?
             ''', (username, case_id))
             
