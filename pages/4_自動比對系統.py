@@ -788,5 +788,7 @@ with col2:
     else:
         if df_system is None:
              st.warning("請先在左側載入系統 Excel 資料。")
+        elif not selected_place:
+             st.info("👈 請先從左側選單選擇一個場所，以開始進行比對。")
         else:
              st.info("👈 請在左側選擇比對場所，或上傳檔案進行自動對應。")
