@@ -19,6 +19,9 @@ bcrypt==4.1.2
 # Email
 secure-smtplib==0.1.1
 
+# LINE Messaging API (取代已終止的 LINE Notify)
+line-bot-sdk==3.9.0
+
 # Excel/Spreadsheet Support
 openpyxl==3.1.2
 xlrd==2.0.1

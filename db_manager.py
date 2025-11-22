@@ -30,12 +30,19 @@ def migrate_database():
             conn.commit()
             print("✅ 已新增 assigned_to 欄位")
         
-        # 檢查 cases 表是否有 line_id 欄位
+        # 檢查 cases 表是否有 line_id 欄位（使用者自訂 ID）
         if 'line_id' not in columns:
             print("⚠️ 正在新增 line_id 欄位...")
             c.execute("ALTER TABLE cases ADD COLUMN line_id TEXT")
             conn.commit()
             print("✅ 已新增 line_id 欄位")
+        
+        # 檢查 cases 表是否有 line_user_id 欄位（LINE Messaging API 用）
+        if 'line_user_id' not in columns:
+            print("⚠️ 正在新增 line_user_id 欄位（LINE Messaging API）...")
+            c.execute("ALTER TABLE cases ADD COLUMN line_user_id TEXT")
+            conn.commit()
+            print("✅ 已新增 line_user_id 欄位")
     
     except Exception as e:
         print(f"❌ 資料庫遷移失敗: {e}")
@@ -59,7 +66,8 @@ def init_db():
             submission_date TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
             review_notes TEXT,
             assigned_to TEXT,
-            line_id TEXT
+            line_id TEXT,
+            line_user_id TEXT
         )
     ''')
 
