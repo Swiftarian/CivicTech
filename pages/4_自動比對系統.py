@@ -426,7 +426,12 @@ with st.sidebar:
             st.warning("找不到符合的場所")
         else:
             # 下拉選單 (只顯示過濾後的結果)
-            selected_place = st.selectbox("請選擇場所", filtered_places)
+            selected_place = st.selectbox(
+                "請選擇場所", 
+                filtered_places,
+                index=None,  # 預設不選取任何項目
+                placeholder="請選擇場所..."
+            )
         
     else:
         st.warning("尚未載入系統資料，請確認路徑。")
@@ -637,75 +642,6 @@ with col2:
             '消防設備種類': '消防安全設備'
         }
         
-        # 檢查場所名稱是否一致 (如果是手動選擇才需要警告，自動對應通常就是一致的)
-        # 預設不顯示系統資料，直到有上傳檔案且比對狀態允許
-        show_system_data = False
-        
-        if uploaded_file:
-            show_system_data = True
-            
-            if not auto_matched_place and ocr_place_name and selected_place:
-                clean_ocr = ocr_place_name.replace("台", "臺").replace(" ", "")
-                clean_sys = selected_place.replace("台", "臺").replace(" ", "")
-                
-                if clean_sys not in clean_ocr and clean_ocr not in clean_sys:
-                     st.error(f"⚠️ 警告：OCR 辨識到的場所名稱「{ocr_place_name}」與您選擇的系統場所「{selected_place}」不符！")
-                     # 如果比對不成功，且是手動選擇的不一致，則不顯示系統資料，避免誤導
-                     show_system_data = False
-
-        # 建立比對表格資料
-        comparison_data = []
-        for display_name, excel_col in field_mapping.items():
-            # 系統資料
-            sys_val = ""
-            if show_system_data:
-                sys_val = target_row.get(excel_col, "無資料")
-                if pd.isna(sys_val): sys_val = ""
-            
-            # 特殊處理：消防設備種類 (系統資料) - 換行顯示
-            if display_name == '消防設備種類' and isinstance(sys_val, str) and show_system_data:
-                # 使用標準化函式處理系統資料
-                # 這會過濾掉不相關的文字，只保留標準設備名稱，並以頓號分隔
-                normalized_sys_val = normalize_equipment_str(sys_val)
-                
-                # 直接使用頓號分隔
-                sys_val = normalized_sys_val
-            
-            # 申報資料
-            ocr_key = display_name
-            if display_name == '電話':
-                ocr_key = '場所電話'
-            
-            ocr_val = extracted_data.get(ocr_key, "")
-            
-            # 特殊處理：消防設備種類 (申報資料) - 換行顯示
-            # 保持頓號分隔
-            pass
-            
-            comparison_data.append({
-                "欄位": display_name,
-                "系統資料": str(sys_val),
-                "申報資料 (OCR/人工)": ocr_val
-            })
-            
-        # 轉為 DataFrame
-        df_comparison = pd.DataFrame(comparison_data)
-
-        # 使用 data_editor 讓使用者可以編輯右邊的欄位
-        edited_df = st.data_editor(
-            df_comparison,
-            column_config={
-                "欄位": st.column_config.TextColumn(disabled=True),
-                "系統資料": st.column_config.TextColumn(
-                    "系統資料",
-                    disabled=True,
-                    width="medium" # 增加寬度以利閱讀
-                ),
-                "申報資料 (OCR/人工)": st.column_config.TextColumn(
-                    "申報資料 (可編輯)",
-                    help="如果是空的，請參考左側圖片手動輸入",
-                    required=False,
-                    width="medium"
                 )
             },
             hide_index=True,
