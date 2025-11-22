@@ -1,4 +1,3 @@
-```python
 import streamlit as st
 import db_manager
 import pandas as pd
@@ -155,4 +154,3 @@ with tab2:
                 
             else:
                 st.warning("查無此 Email 的相關案件。")
-```

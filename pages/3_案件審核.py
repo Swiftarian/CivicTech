@@ -314,8 +314,20 @@ if page == "案件審核":
             filter_status = st.selectbox("篩選狀態", ["全部", "待處理", "審核中", "可領件", "已退件", "待補件"])
         with col_filter2:
             search_term = st.text_input("🔍 搜尋 (單號/場所/申請人)", placeholder="輸入關鍵字...")
-            
-        cases = db_manager.get_all_cases(filter_status)
+        
+        # 取得當前登入者資訊
+        current_user = st.session_state.get("username")
+        current_role = st.session_state.get("role")
+        
+        # 根據角色篩選案件
+        if current_role == "admin":
+            # 管理員：看全部案件
+            cases = db_manager.get_all_cases(filter_status)
+            st.info("👤 管理員模式：顯示所有案件")
+        else:
+            # 一般同仁：只看指派給自己的案件
+            cases = db_manager.get_cases_by_assignee(current_user, filter_status)
+            st.info(f"👤 同仁模式：僅顯示指派給 {current_user} 的案件")
         
         if not cases:
             st.info("目前沒有符合條件的案件。")
@@ -377,77 +389,71 @@ if page == "案件審核":
                 # Update session state with edited data
                 st.session_state.case_editor_df = edited_df
                 
-                # Bulk Actions
-                st.subheader("批量操作")
-                col_assign1, col_assign2, col_assign3 = st.columns([2, 2, 1])
-                
-                with col_assign1:
-                    st.write("**👤 派案給同仁**")
-                    available_users = db_manager.get_all_usernames()
-                    selected_assignee = st.selectbox(
-                        "選擇承辦人",
-                        options=["（請選擇）"] + available_users,
-                        key="assignee_select"
-                    )
-                
-                with col_assign2:
-                    st.write(" ")  # 對齊
-                    st.write(" ")
-                    if st.button("✅ 執行派案", type="secondary", use_container_width=True):
-                        if selected_assignee == "（請選擇）":
-                            st.warning("請先選擇承辦人")
-                        else:
+                # 批量操作（僅管理員可見）
+                if current_role == "admin":
+                    st.subheader("批量操作")
+                    col_assign1, col_assign2, col_assign3 = st.columns([2, 2, 1])
+                    
+                    with col_assign1:
+                        st.write("**👤 派案給同仁**")
+                        available_users = db_manager.get_all_usernames()
+                        selected_assignee = st.selectbox(
+                            "選擇承辦人",
+                            options=["（請選擇）"] + available_users,
+                            key="assignee_select"
+                        )
+                    
+                    with col_assign2:
+                        st.write(" ")  # 對齊
+                        st.write(" ")
+                        if st.button("✅ 執行派案", type="secondary", use_container_width=True):
+                            if selected_assignee == "（請選擇）":
+                                st.warning("請先選擇承辦人")
+                            else:
+                                selected_rows = edited_df[edited_df["選取"]]
+                                if not selected_rows.empty:
+                                    case_ids = selected_rows['id'].tolist()
+                                    updated = db_manager.update_case_assignment(case_ids, selected_assignee)
+                                    
+                                    # 2. 連動更新狀態 (派案即審核)
+                                    for case_id in case_ids:
+                                        # 取得最新案件資訊
+                                        case = db_manager.get_case_by_id(case_id)
+                                        if case and case['status'] == "待處理":
+                                            db_manager.update_case_status(case_id, "審核中")
+                                    
+                                    # 記錄操作
+                                    db_manager.add_log(
+                                        user['username'], 
+                                        "批量派案", 
+                                        f"指派 {updated} 件給 {selected_assignee}"
+                                    )
+                                    
+                                    st.toast(f"✅ 派案成功！已將 {updated} 件指派給 {selected_assignee}，狀態更新為審核中", icon="🚀")
+                                    import time
+                                    time.sleep(1)
+                                    st.rerun()  # 刷新表格
+                                else:
+                                    st.warning("請先勾選要派案的案件")
+                    
+                    with col_assign3:
+                        st.write(" ")  # 對齊
+                        st.write(" ")
+                        if st.button("🗑️ 批量刪除", type="primary", use_container_width=True):
                             selected_rows = edited_df[edited_df["選取"]]
                             if not selected_rows.empty:
-                                case_ids = selected_rows['id'].tolist()
-                                updated = db_manager.update_case_assignment(case_ids, selected_assignee)
-                                
-                                # 記錄操作
-                                db_manager.add_log(
-                                    user['username'], 
-                                    "批量派案", 
-                                    f"指派 {updated} 件給 {selected_assignee}"
-                                )
-                                
-                                st.success(f"✅ 已將 {updated} 件案件指派給 {selected_assignee}")
-                                import time
-                                time.sleep(1)
-                                st.rerun()  # 刷新表格
+                                deleted_count = 0
+                                for index, row in selected_rows.iterrows():
+                                    db_manager.delete_case(row['id'])
+                                    db_manager.add_log(user['username'], "刪除案件", f"單號: {row['id']}")
+                                    deleted_count += 1
+                                st.success(f"✅ 已刪除 {deleted_count} 筆案件")
+                                st.rerun()
                             else:
-                                st.warning("請先勾選要派案的案件")
-                
-                with col_assign3:
-                    st.write(" ")  # 對齊
-                    st.write(" ")
-                    if st.button("🗑️ 批量刪除", type="primary", use_container_width=True):
-                        selected_rows = edited_df[edited_df["選取"]]
-                        if not selected_rows.empty:
-                            count = len(selected_rows)
-                            for index, row in selected_rows.iterrows():
-                                db_manager.delete_case(row['id'])
-                                db_manager.add_log(user['username'], "刪除案件", f"單號: {row['id']}")
-                            st.success(f"已刪除 {count} 筆案件。")
-                            st.rerun()
-                        else:
-                            st.warning("請先勾選要刪除的案件。")
-                
-                st.divider()
-                
-                # 表格編輯儲存
-                if st.button("💾 儲存表格變更", use_container_width=True):
-                    changes_count = 0
-                    for index, row in edited_df.iterrows():
-                        # Find original row
-                        original_row = df[df['id'] == row['id']].iloc[0]
-                        if row['place_name'] != original_row['place_name'] or row['applicant_name'] != original_row['applicant_name']:
-                            db_manager.update_case_info(row['id'], row['place_name'], row['applicant_name'])
-                            db_manager.add_log(user['username'], "修改案件資料", f"單號: {row['id']}")
-                            changes_count += 1
-                    if changes_count > 0:
-                        st.success(f"已更新 {changes_count} 筆資料。")
-                        st.rerun()
-                    else:
-                        st.info("沒有偵測到資料變更。")
+                                st.warning("請先勾選要刪除的案件")
+                else:
+                    # 一般同仁無法執行批量操作
+                    st.caption("🔒 您沒有權限執行派案或刪除操作。如需協助請聯繫管理員。")
 
     # --- Tab 2: 單筆審核與比對 ---
     with tab2:
