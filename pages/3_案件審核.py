@@ -300,6 +300,16 @@ if page == "案件審核":
             else:
                 df['assigned_to'] = '未指派'
             
+            # 美化狀態欄位 (加入 Emoji)
+            status_emoji_map = {
+                "待分案": "🔴 待分案",
+                "審核中": "🟡 審核中",
+                "可領件": "🟢 可領件",
+                "已退件": "⚫ 已退件",
+                "待補件": "🟠 待補件"
+            }
+            df['status'] = df['status'].map(lambda x: status_emoji_map.get(x, x))
+            
             # Filter by search term
             if search_term:
                 mask = df.apply(lambda x: search_term.lower() in str(x.values).lower(), axis=1)
@@ -335,7 +345,11 @@ if page == "案件審核":
                         "assigned_to": st.column_config.TextColumn("👤 承辦人", help="目前負責審核的同仁", disabled=True),
                         "place_name": st.column_config.TextColumn("場所名稱", help="可直接編輯"),
                         "applicant_name": st.column_config.TextColumn("申請人", help="可直接編輯"),
-                        "status": st.column_config.TextColumn("狀態", disabled=True),
+                        "status": st.column_config.TextColumn(
+                            "狀態",
+                            help="案件當前審核進度",
+                            width="small"
+                        ),
                         "submission_date": st.column_config.TextColumn("申請日期", disabled=True),
                         "file_path": st.column_config.TextColumn("檔案路徑", disabled=True),
                     },
