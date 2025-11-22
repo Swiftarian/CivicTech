@@ -46,7 +46,7 @@ def get_default_config():
             "title": "消防安全設備檢修申報平台",
             "page_title": "消防安全設備檢修申報",
             "subtitle": "Fire Safety Equipment Inspection Automation System",
-            "registration_key": "Fire2025"
+            "registration_key": "322112"
         },
         "ui": {
             "logo_path": "assets/logo.png",
