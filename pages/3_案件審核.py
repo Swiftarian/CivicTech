@@ -445,7 +445,10 @@ if page == "案件審核":
         )
             
         if not selected_case_id:
-            st.info("👈 請從上方選單選擇一個案件以開始審核。")
+            if user['role'] == 'admin':
+                st.info("請先至【案件總覽】分頁選擇要審核的案件。")
+            else:
+                st.info("👈 請從上方選單選擇一個案件以開始審核。")
             
         if selected_case_id:
             case = db_manager.get_case_by_id(selected_case_id)
