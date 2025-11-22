@@ -617,6 +617,10 @@ with col2:
     
     if target_row is not None:
         # 顯示目前使用的場所資料來源
+            elif field == '消防設備種類':
+                if ocr_val and sys_val != ocr_val:
+                    # 轉為集合進行比對
+                    sys_set = set(sys_val.split("、")) if sys_val else set()
                     ocr_set = set(ocr_val.split("、")) if ocr_val else set()
                     
                     # 去除空字串
