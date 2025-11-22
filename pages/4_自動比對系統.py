@@ -20,7 +20,9 @@ if "logged_in" not in st.session_state or not st.session_state.logged_in:
     st.stop()  # 阻止下方程式碼執行
 
 # 顯示登入使用者資訊
-st.sidebar.success(f"👤 已登入：{st.session_state.get('username', 'Unknown')} ({st.session_state.get('role', 'user')})")
+if 'user' in st.session_state and st.session_state.user:
+    current_user = st.session_state.user
+    st.sidebar.success(f"👤 已登入：{current_user.get('username')} ({current_user.get('role')})")
 st.sidebar.divider()
 
 # 載入自定義 CSS

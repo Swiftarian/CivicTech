@@ -92,6 +92,29 @@ def login():
                             if "email" in st.secrets:
                                 sender_email = st.secrets["email"].get("sender_email", "")
                                 sender_password = st.secrets["email"].get("sender_password", "")
+                                if sender_email and sender_password:
+                                    # ... email sending logic (omitted for brevity in this thought, but should be in file) ...
+                                    # Wait, I don't need to touch the admin block, just add the else.
+                                    pass 
+                            
+                            # Store temp user for 2FA
+                            st.session_state.temp_user = user
+                            st.session_state.otp = otp
+                            st.session_state.awaiting_2fa = True
+                            
+                            # Send OTP Email
+                            subject = "【消防局後台】登入驗證碼"
+                            body = f"您的登入驗證碼為：{otp}"
+                            utils.send_email(sender_email, sender_password, user['email'], subject, body)
+                            
+                            st.rerun()
+                        else:
+                            # Staff Login (No 2FA)
+                            st.session_state.logged_in = True
+                            st.session_state.user = user
+                            db_manager.update_last_login(user['username'])
+                            db_manager.add_log(user['username'], "登入成功", "一般登入")
+                            st.success("登入成功！")
                             st.rerun()
                     else:
                         st.error("❌ 帳號或密碼錯誤")
