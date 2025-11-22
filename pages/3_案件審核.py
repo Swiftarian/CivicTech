@@ -77,51 +77,56 @@ def login():
             login_btn = st.form_submit_button("登入", type="primary", use_container_width=True)
             
             if login_btn:
-                user = db_manager.get_user(username)
-                if user:
-                    # Verify password
-                    if auth.verify_password(user['password_salt'], user['password_hash'], password):
-                        
-                        # Check Role for 2FA
-                        if user['role'] == 'admin':
-                            # Generate OTP
-                            import random
-                            otp = f"{random.randint(0, 999999):06d}"
+                try:
+                    user = db_manager.get_user(username)
+                    if user:
+                        # Verify password
+                        if auth.verify_password(user['password_salt'], user['password_hash'], password):
                             
-                            # Send Email
-                            if "email" in st.secrets:
-                                sender_email = st.secrets["email"].get("sender_email", "")
-                                sender_password = st.secrets["email"].get("sender_password", "")
-                                if sender_email and sender_password:
-                                    # ... email sending logic (omitted for brevity in this thought, but should be in file) ...
-                                    # Wait, I don't need to touch the admin block, just add the else.
-                                    pass 
-                            
-                            # Store temp user for 2FA
-                            st.session_state.temp_user = user
-                            st.session_state.otp = otp
-                            st.session_state.awaiting_2fa = True
-                            
-                            # Send OTP Email
-                            subject = "【消防局後台】登入驗證碼"
-                            body = f"您的登入驗證碼為：{otp}"
-                            utils.send_email(sender_email, sender_password, user['email'], subject, body)
-                            
-                            st.rerun()
+                            # Check Role for 2FA
+                            if user['role'] == 'admin':
+                                # Generate OTP
+                                import random
+                                otp = f"{random.randint(0, 999999):06d}"
+                                
+                                # Send Email
+                                if "email" in st.secrets:
+                                    sender_email = st.secrets["email"].get("sender_email", "")
+                                    sender_password = st.secrets["email"].get("sender_password", "")
+                                    if sender_email and sender_password:
+                                        # ... email sending logic (omitted for brevity in this thought, but should be in file) ...
+                                        # Wait, I don't need to touch the admin block, just add the else.
+                                        pass 
+                                
+                                # Store temp user for 2FA
+                                st.session_state.temp_user = user
+                                st.session_state.otp = otp
+                                st.session_state.awaiting_2fa = True
+                                
+                                # Send OTP Email
+                                subject = "【消防局後台】登入驗證碼"
+                                body = f"您的登入驗證碼為：{otp}"
+                                utils.send_email(sender_email, sender_password, user['email'], subject, body)
+                                
+                                st.rerun()
+                            else:
+                                # Staff Login (No 2FA)
+                                st.session_state.logged_in = True
+                                st.session_state.user = user
+                                db_manager.update_last_login(user['username'])
+                                db_manager.add_log(user['username'], "登入成功", "一般登入")
+                                st.success("登入成功！")
+                                st.rerun()
                         else:
-                            # Staff Login (No 2FA)
-                            st.session_state.logged_in = True
-                            st.session_state.user = user
-                            db_manager.update_last_login(user['username'])
-                            db_manager.add_log(user['username'], "登入成功", "一般登入")
-                            st.success("登入成功！")
-                            st.rerun()
+                            st.error("❌ 帳號或密碼錯誤")
+                            db_manager.add_log(username, "登入失敗", "密碼錯誤")
                     else:
                         st.error("❌ 帳號或密碼錯誤")
-                        db_manager.add_log(username, "登入失敗", "密碼錯誤")
-                else:
-                    st.error("❌ 帳號或密碼錯誤")
-                    db_manager.add_log("unknown", "登入失敗", f"嘗試帳號: {username}")
+                        db_manager.add_log("unknown", "登入失敗", f"嘗試帳號: {username}")
+                except Exception as e:
+                    st.error(f"❌ 登入失敗！請聯繫管理員。系統錯誤碼: {type(e).__name__}")
+                    st.code(str(e))
+                    # db_manager.add_log(username, "LOGIN_ERROR", str(e))
         
         st.divider()
         
