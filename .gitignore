@@ -1,38 +1,20 @@
 # Python
 __pycache__/
 *.py[cod]
-*$py.class
-.env
-.venv
-env/
+*.pyo
+*.pyd
+# Virtual environment
 venv/
-
-# Data & Sensitive Files (IMPORTANT)
-downloads/
-*.xls
-*.xlsx
-*.csv
-*.pdf
-*.png
-*.jpg
-*.jpeg
-*.tiff
-
-# Database Files (Don't track user data)
-*.db
-*.sqlite
-*.sqlite3
-
-# Upload Files
-uploads/
-
-# Backup Files
-*.backup
-*.bak
-
-# Streamlit
-.streamlit/secrets.toml
-
-# OS
+.env
+# IDE
+.idea/
+.vscode/
+# OS files
 .DS_Store
 Thumbs.db
+# Streamlit cache
+.st_cache/
+# Logs
+*.log
+# Other
+*.sqlite3

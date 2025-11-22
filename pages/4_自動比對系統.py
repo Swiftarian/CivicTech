@@ -1,4 +1,5 @@
 import streamlit as st
+import db_manager
 import pandas as pd
 import os
 import fitz  # pymupdf
@@ -6,6 +7,11 @@ from PIL import Image
 import pytesseract
 import re
 import config_loader as cfg
+import smtplib
+from email.mime.text import MIMEText
+from email.mime.multipart import MIMEMultipart
+import urllib.request
+import subprocess
 
 # 設定頁面配置
 st.set_page_config(layout="wide", page_title=f"{cfg.AGENCY_NAME}檢修申報書檢核比對系統")
@@ -120,8 +126,6 @@ def pdf_to_images(pdf_file):
         img = Image.frombytes("RGB", [pix.width, pix.height], pix.samples)
         images.append(img)
     return images
-
-import subprocess
 
 def perform_ocr(image, tesseract_cmd):
     """對圖片進行 OCR 辨識 (改用 subprocess 以解決編碼問題)"""
@@ -357,12 +361,10 @@ st.markdown("""
     </style>
     """, unsafe_allow_html=True)
 
-# --- 側邊欄：資料載入 ---
-with st.sidebar:
-    st.header("1. 設定與資料來源")
-    
-    # Tesseract 路徑設定
-    # 自動偵測常見路徑
+# --- CRITICAL: 路徑變數 Session 記憶與初始化 ---
+# Tesseract 路徑初始化
+# 如果 Session 中沒有 key，或是值為空 (例如被清空)，則重新偵測並設定預設值
+if "tesseract_exe_path" not in st.session_state or not st.session_state["tesseract_exe_path"]:
     possible_paths = [
         r"C:\Program Files\Tesseract-OCR\tesseract.exe",
         r"D:\Program Files\Tesseract-OCR\tesseract.exe",
@@ -375,18 +377,49 @@ with st.sidebar:
         if os.path.exists(p):
             detected_path = p
             break
-            
-    with st.expander("⚙️ OCR 設定 (若無法辨識請點此)", expanded=True):
-        user_input_path = st.text_input("Tesseract 執行檔路徑", value=detected_path)
+    st.session_state["tesseract_exe_path"] = detected_path
+
+# Excel 路徑初始化
+if "system_excel_path" not in st.session_state or not st.session_state["system_excel_path"]:
+    st.session_state["system_excel_path"] = r"d:\下載\downloads\00. 列管場所資料.xls"
+
+# 檢查狀態以決定 Expander 是否展開
+# 使用 Session State 的值進行檢查，確保穩定性
+
+# --- DEBUG: 輸出路徑檢查資訊 ---
+print("-" * 50, flush=True)
+print(f"DEBUG: Check Tesseract Path: [{st.session_state.get('tesseract_exe_path')}]", flush=True)
+print(f"DEBUG: Check Excel Path: [{st.session_state.get('system_excel_path')}]", flush=True)
+print("-" * 50, flush=True)
+# -----------------------------
+
+tesseract_is_ok = os.path.exists(st.session_state["tesseract_exe_path"])
+excel_is_loaded = False
+
+if os.path.exists(st.session_state["system_excel_path"]):
+    # 嘗試預載入檢查 (利用 cache)
+    df_check = load_system_data(st.session_state["system_excel_path"])
+    if df_check is not None and not df_check.empty:
+        excel_is_loaded = True
+
+expand_config = not (tesseract_is_ok and excel_is_loaded)
+
+# --- 側邊欄：資料載入 ---
+with st.sidebar:
+    # 使用 Expander 包覆設定
+    with st.expander("1. 設定與資料來源", expanded=expand_config):
+        # Tesseract 設定
+        st.markdown("#### OCR 辨識引擎設定")
+        user_input_path = st.text_input("Tesseract 執行檔路徑", key="tesseract_exe_path")
         
-        # 智慧修正路徑：如果使用者只貼了資料夾路徑，自動補上 .exe
+        # 智慧修正路徑
         tesseract_path = user_input_path
         if os.path.isdir(user_input_path):
             tesseract_path = os.path.join(user_input_path, "tesseract.exe")
             st.info(f"💡 已自動修正路徑為：{tesseract_path}")
             
         if not os.path.exists(tesseract_path):
-            st.error(f"❌ 找不到檔案：{tesseract_path}\n請確認路徑是否正確，並包含 'tesseract.exe'")
+            st.error(f"❌ 找不到檔案：{tesseract_path}")
         else:
             st.success("✅ Tesseract 路徑正確")
             
@@ -395,14 +428,23 @@ with st.sidebar:
             st.warning("⚠️ 缺少繁體中文語言包")
             if st.button("📥 下載中文語言包 (必要)"):
                 download_lang_data()
-    # 1. 系統資料
-    system_file_path = st.text_input("系統 Excel 路徑", value=r"d:\下載\downloads\00. 列管場所資料.xls")
-    df_system = load_system_data(system_file_path)
+        
+        st.divider()
+        
+        # 系統資料設定
+        st.markdown("#### 列管場所資料來源")
+        system_file_path = st.text_input("系統 Excel 路徑", key="system_excel_path")
+        
+        if not os.path.exists(system_file_path):
+             st.error("❌ 找不到 Excel 檔案")
+
+    # 載入資料 (使用 Session State 的值)
+    df_system = load_system_data(st.session_state["system_excel_path"])
     
     selected_place = None
     
     if df_system is not None:
-        st.success(f"已載入系統資料: {len(df_system)} 筆")
+        # st.success(f"已載入系統資料: {len(df_system)} 筆") # 為了版面簡潔，隱藏此訊息，或移至 Expander 內
         
         # 除錯用：顯示欄位名稱
         with st.expander("🔍 查看 Excel 欄位名稱 (除錯用)"):
@@ -442,6 +484,29 @@ with st.sidebar:
 uploaded_file = None
 target_row = None
 
+# 1. 取得指派給當前使用者的案件
+if 'user' in st.session_state and st.session_state.user:
+    current_username = st.session_state.user['username']
+    my_cases = db_manager.get_cases_by_assignee(current_username)
+else:
+    my_cases = []
+
+# 2. 建立案件選擇選單
+case_options = {f"{c['id']} - {c['place_name']} - {c['status']}": c for c in my_cases}
+selected_case_label = st.selectbox(
+    "請選擇要審核的案件",
+    options=list(case_options.keys()),
+    index=None,
+    placeholder="請選擇要審核的案件..."
+)
+
+target_case = None
+uploaded_file_path = None
+
+if selected_case_label:
+    target_case = case_options[selected_case_label]
+    uploaded_file_path = target_case['file_path']
+
 # 1. 先建立版面 (左右分欄)
 col1, col2 = st.columns([1, 1])
 
@@ -456,82 +521,88 @@ ocr_place_name = ""
 with col1:
     st.subheader("📄 民眾申報資料 (OCR 辨識)")
     
-    # 將上傳元件移至此處
-    uploaded_file = st.file_uploader("請拖拉或選擇申報檔案 (PDF/圖片)", type=["pdf", "png", "jpg", "jpeg"])
-    
-    if uploaded_file:
-        # 產生檔案唯一識別碼 (使用檔名+大小)
-        file_key = f"{uploaded_file.name}_{uploaded_file.size}"
-        
-        # 檢查 Session State 是否已有此檔案的 OCR 結果
-        if 'ocr_cache' not in st.session_state:
-            st.session_state.ocr_cache = {}
-        
-        # 如果是新檔案或尚未辨識過
-        if st.session_state.ocr_cache.get('file_key') != file_key:
-            # 1. 先轉換並顯示圖片 (讓使用者先看到預覽)
-            images = []
-            if uploaded_file.type == "application/pdf":
-                # 顯示轉換訊息
-                with st.spinner("📄 正在將 PDF 轉換為圖片..."):
-                    images = pdf_to_images(uploaded_file)
-            else:
-                images = [Image.open(uploaded_file)]
+    if target_case and uploaded_file_path:
+        if not os.path.exists(uploaded_file_path):
+             st.error(f"❌ 找不到檔案：{uploaded_file_path}")
+        else:
+            # 產生檔案唯一識別碼 (使用檔名+大小)
+            file_key = f"{os.path.basename(uploaded_file_path)}_{os.path.getsize(uploaded_file_path)}"
             
-            # 先顯示圖片預覽
-            for i, img in enumerate(images):
-                st.image(img, caption=f"第 {i+1} 頁 (預覽)", use_container_width=True)
+            # 檢查 Session State 是否已有此檔案的 OCR 結果
+            if 'ocr_cache' not in st.session_state:
+                st.session_state.ocr_cache = {}
             
-            # 2. 執行 OCR
-            with st.spinner("🔍 正在進行 OCR 辨識中 (請稍候)..."):
-                temp_all_text = ""
-                temp_p1_text = ""
-                temp_p2_text = ""
+            # 如果是新檔案或尚未辨識過
+            if st.session_state.ocr_cache.get('file_key') != file_key:
+                # 1. 先轉換並顯示圖片 (讓使用者先看到預覽)
+                images = []
+                try:
+                    if uploaded_file_path.lower().endswith(".pdf"):
+                        # 顯示轉換訊息
+                        with st.spinner("📄 正在將 PDF 轉換為圖片..."):
+                            with open(uploaded_file_path, "rb") as f:
+                                images = pdf_to_images(f)
+                    else:
+                        images = [Image.open(uploaded_file_path)]
+                except Exception as e:
+                    st.error(f"無法讀取檔案: {e}")
+                    images = []
                 
-                # 執行 OCR
-                pages_text = []
-                for i, img in enumerate(images):
-                    ocr_text = perform_ocr(img, tesseract_path)
-                    temp_all_text += ocr_text + "\n"
-                    pages_text.append(ocr_text)
+                if images:
+                    # 先顯示圖片預覽
+                    for i, img in enumerate(images):
+                        st.image(img, caption=f"第 {i+1} 頁 (預覽)", use_container_width=True)
                     
-                    if i == 0: temp_p1_text = ocr_text
-                    if i == 1: temp_p2_text = ocr_text
-                
-                # 存入 Session State
-                st.session_state.ocr_cache['file_key'] = file_key
-                st.session_state.ocr_cache['all_ocr_text'] = temp_all_text
-                st.session_state.ocr_cache['page_one_text'] = temp_p1_text
-                st.session_state.ocr_cache['page_two_text'] = temp_p2_text
-                st.session_state.ocr_cache['pages_text'] = pages_text # 儲存所有頁面文字
-                st.session_state.ocr_cache['images'] = images 
-                
-                # 重新整理頁面以顯示 OCR 結果
-                st.rerun()
-        
-        # 從 Session State 取出資料 (Cache Hit)
-        all_ocr_text = st.session_state.ocr_cache.get('all_ocr_text', "")
-        page_one_text = st.session_state.ocr_cache.get('page_one_text', "")
-        page_two_text = st.session_state.ocr_cache.get('page_two_text', "")
-        pages_text = st.session_state.ocr_cache.get('pages_text', [])
-        cached_images = st.session_state.ocr_cache.get('images', [])
-        
-        # 提取資料
-        extracted_data = extract_info_from_ocr(page_one_text, pages_text)
-        ocr_place_name = extracted_data.get('場所名稱', '')
+                    # 2. 執行 OCR
+                    with st.spinner("🔍 正在進行 OCR 辨識中 (請稍候)..."):
+                        temp_all_text = ""
+                        temp_p1_text = ""
+                        temp_p2_text = ""
+                        
+                        # 執行 OCR
+                        pages_text = []
+                        for i, img in enumerate(images):
+                            ocr_text = perform_ocr(img, tesseract_path)
+                            temp_all_text += ocr_text + "\n"
+                            pages_text.append(ocr_text)
+                            
+                            if i == 0: temp_p1_text = ocr_text
+                            if i == 1: temp_p2_text = ocr_text
+                        
+                        # 存入 Session State
+                        st.session_state.ocr_cache['file_key'] = file_key
+                        st.session_state.ocr_cache['all_ocr_text'] = temp_all_text
+                        st.session_state.ocr_cache['page_one_text'] = temp_p1_text
+                        st.session_state.ocr_cache['page_two_text'] = temp_p2_text
+                        st.session_state.ocr_cache['pages_text'] = pages_text # 儲存所有頁面文字
+                        st.session_state.ocr_cache['images'] = images 
+                        
+                        # 重新整理頁面以顯示 OCR 結果
+                        st.rerun()
+            
+            # 從 Session State 取出資料 (Cache Hit)
+            all_ocr_text = st.session_state.ocr_cache.get('all_ocr_text', "")
+            page_one_text = st.session_state.ocr_cache.get('page_one_text', "")
+            page_two_text = st.session_state.ocr_cache.get('page_two_text', "")
+            pages_text = st.session_state.ocr_cache.get('pages_text', [])
+            cached_images = st.session_state.ocr_cache.get('images', [])
+            
+            # 提取資料
+            extracted_data = extract_info_from_ocr(page_one_text, pages_text)
+            ocr_place_name = extracted_data.get('場所名稱', '')
 
-        # 顯示圖片與 OCR 結果 (這是 Rerun 後或 Cache Hit 會看到的)
-        for i, img in enumerate(cached_images):
-            st.image(img, caption=f"第 {i+1} 頁", use_container_width=True)
-            with st.expander(f"第 {i+1} 頁 OCR 文字內容 (除錯用)", expanded=False):
-                if i == 0: st.text(page_one_text)
-                elif i == 1: st.text(page_two_text)
-                else: st.text("(其他頁面內容請見總覽)")
-                
-                if "Error" in all_ocr_text:
-                        st.error("OCR 執行失敗，請檢查側邊欄的 Tesseract 設定。")
+            # 顯示圖片與 OCR 結果 (這是 Rerun 後或 Cache Hit 會看到的)
+            for i, img in enumerate(cached_images):
+                st.image(img, caption=f"第 {i+1} 頁", use_container_width=True)
+                with st.expander(f"第 {i+1} 頁 OCR 文字內容 (除錯用)", expanded=False):
+                    if i == 0: st.text(page_one_text)
+                    elif i == 1: st.text(page_two_text)
+                    else: st.text("(其他頁面內容請見總覽)")
+                    
+                    if "Error" in all_ocr_text:
+                            st.error("OCR 執行失敗，請檢查側邊欄的 Tesseract 設定。")
     else:
-        st.info("👈 請在上方上傳民眾申報檔案 (PDF) 以開始比對。")
+        st.info("👈 請在上方選擇案件以開始比對。")
 
 # 邏輯：決定使用哪一筆系統資料 (target_row)
 # 優先順序：
@@ -571,10 +642,28 @@ with col2:
     st.markdown("### 👮 案件審核")
     review_col1, review_col2 = st.columns([2, 3])
     with review_col1:
-        applicant_email = st.text_input("申請人信箱", placeholder="example@email.com")
+        default_email = target_case['applicant_email'] if target_case else ""
+        applicant_email = st.text_input("申請人信箱", value=default_email, placeholder="example@email.com")
     with review_col2:
         st.write("審核結果通知：")
+        
+        # 狀態選擇 UI
+        current_status = target_case['status'] if target_case else "待分案"
+        status_options = ["待分案", "審核中", "可領件", "已退件", "待補件"]
+        # 處理 emoji
+        current_status_clean = current_status.split(" ")[-1] if " " in current_status else current_status
+        
+        default_idx = 0
+        if current_status_clean in status_options:
+            default_idx = status_options.index(current_status_clean)
+            
+        new_status = st.selectbox("更新狀態", status_options, index=default_idx, label_visibility="collapsed")
+        
         b1, b2, b3 = st.columns(3)
+        
+        # 取得 Email 設定
+        sender_email = st.secrets["email"].get("sender_email", "") if "email" in st.secrets else ""
+        sender_password = st.secrets["email"].get("sender_password", "") if "email" in st.secrets else ""
         
         # 定義發送邏輯
         def handle_review(status, subject_prefix, msg_template):
@@ -626,7 +715,7 @@ with col2:
             if ocr_place_name:
                 st.warning(f"⚠️ 系統無法自動對應 OCR 場所「{ocr_place_name}」，請確認手動選擇是否正確。")
         
-        if uploaded_file:
+        if target_case and uploaded_file_path:
             # 顯示鎖定資訊
             if page_one_text:
                 st.caption("ℹ️ 已鎖定使用第 1 頁內容進行自動填入 (基本資料)")
@@ -648,7 +737,7 @@ with col2:
         # 預設不顯示系統資料，直到有上傳檔案且比對狀態允許
         show_system_data = False
         
-        if uploaded_file:
+        if target_case and uploaded_file_path:
             show_system_data = True
             
             if not auto_matched_place and ocr_place_name and selected_place:
@@ -852,4 +941,4 @@ with col2:
         elif not selected_place:
              st.info("👈 請先從左側選單選擇一個場所，以開始進行比對。")
         else:
-             st.info("👈 請在左側選擇比對場所，或上傳檔案進行自動對應。")
+             st.info("👈 請在上方選擇案件以開始比對。")

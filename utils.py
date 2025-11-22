@@ -87,6 +87,14 @@ def load_custom_css():
             background-color: #c53030 !important; /* 懸停時變深紅 */
             transform: translateY(-2px);
         }
+
+        /* 7. 優化側邊欄 Expander 標題字體 */
+        [data-testid="stSidebar"] [data-testid="stExpanderHeader"] {
+            font-size: 1.1rem !important; /* 放大字體 */
+            font-weight: 700 !important;  /* 加粗 */
+            padding-top: 5px;             /* 增加間距 */
+            padding-bottom: 5px;
+        }
     </style>
     """, unsafe_allow_html=True)
 

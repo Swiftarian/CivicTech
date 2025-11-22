@@ -317,7 +317,11 @@ if page == "案件審核":
             st.info(f"👤 同仁模式：僅顯示指派給 {current_user} 的案件")
         
         if not cases:
-            st.info("目前沒有符合條件的案件。")
+            if user['role'] == 'admin':
+                st.info("目前無符合條件的案件可審核。")
+            else:
+                st.info("🎉 太棒了！目前沒有指派給您的待審案件。")
+                st.image("https://cdn-icons-png.flaticon.com/512/7486/7486744.png", width=200)
         else:
             # Convert to DataFrame
             df = pd.DataFrame([dict(row) for row in cases])
@@ -414,300 +418,131 @@ if page == "案件審核":
                                 selected_rows = edited_df[edited_df["選取"]]
                                 if not selected_rows.empty:
                                     case_ids = selected_rows['id'].tolist()
-                                    updated = db_manager.update_case_assignment(case_ids, selected_assignee)
-                                    
-                                    # 2. 連動更新狀態 (派案即審核)
-                                    for case_id in case_ids:
-                                        # 取得最新案件資訊
-                                        case = db_manager.get_case_by_id(case_id)
-                                        if case and case['status'] == "待分案":
-                                            db_manager.update_case_status(case_id, "審核中")
-                                    
-                                    # 記錄操作
-                                    db_manager.add_log(
-                                        user['username'], 
-                                        "批量派案", 
-                                        f"指派 {updated} 件給 {selected_assignee}"
-                                    )
-                                    
-                                    st.toast(f"✅ 派案成功！已將 {updated} 件指派給 {selected_assignee}，狀態更新為審核中", icon="🚀")
-                                    import time
-                                    time.sleep(1)
-                                    st.rerun()  # 刷新表格
+                                    db_manager.update_case_assignment(case_ids, selected_assignee)
+                                    st.success(f"已將 {len(case_ids)} 件案件指派給 {selected_assignee}")
+                                    st.rerun()
                                 else:
-                                    st.warning("請先勾選要派案的案件")
-                    
-                    with col_assign3:
-                        st.write(" ")  # 對齊
-                        st.write(" ")
-                        if st.button("🗑️ 批量刪除", type="primary", use_container_width=True):
-                            selected_rows = edited_df[edited_df["選取"]]
-                            if not selected_rows.empty:
-                                deleted_count = 0
-                                for index, row in selected_rows.iterrows():
-                                    db_manager.delete_case(row['id'])
-                                    db_manager.add_log(user['username'], "刪除案件", f"單號: {row['id']}")
-                                    deleted_count += 1
-                                st.success(f"✅ 已刪除 {deleted_count} 筆案件")
-                                st.rerun()
-        # 根據角色取得案件列表
-        if user['role'] == 'admin':
-            cases_for_dropdown = db_manager.get_all_cases(filter_status)
-        else:
-            cases_for_dropdown = db_manager.get_cases_by_assignee(user['username'], filter_status)
-            
-        # Empty State 處理
-        if not cases_for_dropdown:
-            if user['role'] == 'admin':
-                st.info("目前無符合條件的案件可審核。")
-            else:
-                st.info("🎉 太棒了！目前沒有指派給您的待審案件。")
-                st.image("https://cdn-icons-png.flaticon.com/512/7486/7486744.png", width=200)
-            # 停止執行後續代碼，避免顯示空白選單
-            st.stop()
-            
-        # 正常顯示案件選單
-        df_cases = pd.DataFrame([dict(row) for row in cases_for_dropdown])
-        
-        # 定義顯示格式函式
-        def format_case_label(case_id):
-            row = df_cases[df_cases['id'] == case_id].iloc[0]
-            place = row.get('place_name')
-            if place is None or (isinstance(place, float) and pd.isna(place)) or str(place).strip() == "":
-                place = "(未填場所)"
-            return f"{place} - {row['applicant_name']} ({row['status']})"
+                                    st.warning("請先勾選案件")
 
-        # 嘗試從 Tab 1 (st.session_state.case_editor_df) 取得選取的案件
-        preselected_index = None
+    # --- Tab 2: 單筆審核與比對 ---
+    with tab2:
+        st.subheader("📝 單筆審核與比對")
+        
+        # 嘗試從 Session State 取得 Tab 1 選取的案件
+        selected_case_id = None
         if 'case_editor_df' in st.session_state:
             editor_df = st.session_state.case_editor_df
             if '選取' in editor_df.columns:
                 selected_rows = editor_df[editor_df['選取']]
                 if not selected_rows.empty:
-                    # 取第一個選取的案件 ID
-                    first_selected_id = selected_rows.iloc[0]['id']
-                    # 檢查該 ID 是否在目前的下拉選單選項中
-                    if first_selected_id in df_cases['id'].tolist():
-                        preselected_index = df_cases['id'].tolist().index(first_selected_id)
-
-        selected_case_id = st.selectbox(
-            "請選擇要審核的案件", 
-            df_cases['id'].tolist(),
-            format_func=format_case_label,
-            key="tab2_selectbox",
-            index=preselected_index, # 使用預選的索引
-            placeholder="請選擇案件..."
-        )
-            
-        if not selected_case_id:
-            st.warning("⚠️ 請先選擇案件！")
-            st.info("請點擊左側的 **【案件總覽與管理】** 分頁，從案件列表中選擇一個案件後，再切換回來。")
-            st.markdown("---")
-            st.markdown("### 👈 步驟： 1. 總覽分頁點選案件 ➔ 2. 切換回此分頁")
-            
+                    selected_case_id = selected_rows.iloc[0]['id']
+        
         if selected_case_id:
-            case = db_manager.get_case_by_id(selected_case_id)
+            # 取得案件詳細資料 (直接從 dataframe 取，避免額外查詢)
+            # 注意：這裡假設 editor_df 包含所有必要欄位。如果需要更多細節，可能需要 db_manager.get_case(selected_case_id)
+            row = editor_df[editor_df['id'] == selected_case_id].iloc[0]
+            
+            st.info(f"正在審核案件：{row['id']} - {row['applicant_name']}")
+            
+            # 顯示案件詳情
+            col_d1, col_d2 = st.columns(2)
+            with col_d1:
+                st.write(f"**📍 場所名稱:** {row.get('place_name', '(未填)')}")
+                st.write(f"**🏢 地址:** {row.get('place_address', '(未填)')}")
+                st.write(f"**📅 申請日期:** {row.get('submission_date', '(未填)')}")
+            with col_d2:
+                st.write(f"**👤 申請人:** {row['applicant_name']}")
+                st.write(f"**📞 電話:** {row.get('applicant_phone', '(未填)')}")
+                st.write(f"**📧 Email:** {row.get('applicant_email', '(未填)')}")
+            
             st.divider()
             
-            # Case Details
-            col1, col2 = st.columns([1, 2])
-            with col1:
-                st.subheader("案件詳情")
-                
-                # 定義狀態樣式
-                status = case['status']
-                if status in ["可領件", "審核通過"]:
-                    status_display = f"✅ :green[{status}]"
-                elif status in ["已退件", "待補件"]:
-                    status_display = f"⚠️ :red[{status}]"
-                else:
-                    status_display = f"ℹ️ :blue[{status}]"
-
-                st.markdown(f"""
-                - **單號**: `{case['id']}`
-                - **申請人**: {case['applicant_name']}
-                - **電話**: {case['applicant_phone']}
-                - **Email**: {case['applicant_email']}
-                - **場所**: {case['place_name']} ({case['place_address']})
-                - **狀態**: {status_display}
-                """)
-                
-                if os.path.exists(case['file_path']):
-                    with open(case['file_path'], "rb") as f:
-                        st.download_button("📥 下載申報書", f, file_name=os.path.basename(case['file_path']))
+            col_review, col_ocr = st.columns([1, 1])
             
-            with col2:
+            with col_review:
                 st.subheader("審核操作")
-                new_status = st.selectbox("變更狀態", ["待分案", "審核中", "可領件", "已退件", "待補件"], index=["待分案", "審核中", "可領件", "已退件", "待補件"].index(case['status']) if case['status'] in ["待分案", "審核中", "可領件", "已退件", "待補件"] else 0)
-                review_notes = st.text_area("審核備註", value=case['review_notes'] if case['review_notes'] else "")
-                
-                if st.button("💾 更新狀態"):
-                    db_manager.update_case_status(case['id'], new_status, review_notes)
-                    db_manager.add_log(user['username'], "更新案件", f"單號: {case['id']}, 狀態: {new_status}")
+                with st.form("review_form"):
+                    # 狀態對應
+                    status_options = ["待分案", "審核中", "可領件", "已退件", "待補件"]
+                    # 移除 emoji 進行比對
+                    current_status_raw = row['status'].split(" ")[-1] if " " in row['status'] else row['status']
                     
-                    # Email Notification
-                    if "email" in st.secrets:
-                        sender_email = st.secrets["email"].get("sender_email", "")
-                        sender_password = st.secrets["email"].get("sender_password", "")
-                        if sender_email and sender_password:
-                            # 依據狀態決定顏色
-                            status_color = "#3182ce" # 預設藍
-                            status_icon = "ℹ️"
-                            if new_status in ["可領件", "審核通過"]:
-                                status_color = "#38a169" # 綠
-                                status_icon = "✅"
-                            elif new_status in ["已退件", "待補件"]:
-                                status_color = "#e53e3e" # 紅
-                                status_icon = "⚠️"
-                            
-                            subject = f"【消防局通知】案件狀態更新：{new_status}"
-                            
-                            content = f"""
-<p>您的消防安全設備檢修申報案件（單號：<strong>{case['id']}</strong>），狀態已有更新。</p>
-
-<div style="background-color: #f8f9fa; border-left: 5px solid {status_color}; padding: 20px; margin: 20px 0; border-radius: 4px;">
-<p style="margin: 0; font-size: 14px; color: #666;">最新狀態</p>
-<h3 style="margin: 5px 0; color: {status_color}; display: flex; align-items: center;">
-    {status_icon} {new_status}
-</h3>
-
-<div style="margin-top: 15px; padding-top: 15px; border-top: 1px dashed #ccc;">
-    <p style="margin: 0; font-weight: bold; color: #4a5568;">審核備註 / 應辦事項：</p>
-    <p style="margin: 5px 0; white-space: pre-wrap; color: #2d3748;">{review_notes if review_notes else "無特別備註。"}</p>
-</div>
-</div>
-
-<table style="width: 100%; border-collapse: collapse; margin-top: 20px; font-size: 14px;">
-<tr>
-    <td style="padding: 8px; border-bottom: 1px solid #eee; color: #666;">申報場所</td>
-    <td style="padding: 8px; border-bottom: 1px solid #eee;">{case['place_name'] if case['place_name'] else '(未填)'}</td>
-</tr>
-    <tr>
-        <td style="padding: 8px; border-bottom: 1px solid #eee; color: #666;">更新時間</td>
-        <td style="padding: 8px; border-bottom: 1px solid #eee;">{datetime.datetime.now().strftime('%Y-%m-%d %H:%M')}</td>
-    </tr>
-</table>
-
-<p style="margin-top: 30px; font-size: 14px; color: #666;">
-    若狀態為「可領件」，請攜帶身分證件至本局{cfg.DEPARTMENT_NAME}領取核定書表。<br>
-    若狀態為「已退件」，請依備註說明修正後重新送件。
-</p>
-"""
-                            body = utils.generate_email_html(
-                                title=f"案件狀態更新：{new_status}",
-                                recipient_name=case['applicant_name'],
-                                content_html=content,
-                                color_theme=status_color
-                            )
-                            
-                            utils.send_email(sender_email, sender_password, case['applicant_email'], subject, body)
-                            st.toast("✅ Email 通知已發送")
+                    default_index = 0
+                    if current_status_raw in status_options:
+                        default_index = status_options.index(current_status_raw)
                     
-                    st.success("更新成功！")
-                    st.rerun()
-
-            st.divider()
+                    new_status = st.selectbox("更新狀態", status_options, index=default_index)
+                    review_notes = st.text_area("審核備註", value=row.get('review_notes', '') if pd.notna(row.get('review_notes')) else "")
+                    
+                    if st.form_submit_button("💾 儲存審核結果", type="primary"):
+                        try:
+                            db_manager.update_case_status(selected_case_id, new_status, review_notes)
+                            st.success("✅ 案件狀態已更新！")
+                            st.rerun()
+                        except Exception as e:
+                            st.error(f"更新失敗: {e}")
             
-            # OCR Comparison Section
-            st.subheader("🔍 申報書比對")
-            
-            if os.path.exists(case['file_path']):
-                df_system = utils.load_system_data(system_file_path)
-                if df_system is not None:
-                    col_ocr1, col_ocr2 = st.columns(2)
-                    with col_ocr1:
-                        if case['file_path'].lower().endswith(".pdf"):
-                            images = utils.pdf_to_images(case['file_path'])
-                        else:
-                            images = [Image.open(case['file_path'])]
-                        st.image(images[0], caption="預覽", use_container_width=True)
-                            
-                        if st.button("執行 OCR"):
-                            with st.spinner("OCR 分析中..."):
-                                pages_text = [utils.perform_ocr(img, tesseract_path) for img in images]
-                                extracted = utils.extract_info_from_ocr(pages_text[0], pages_text)
-                                st.session_state['extracted'] = extracted
-                                st.rerun()
-                    
-                    with col_ocr2:
-                        # 初始化變數（避免 NameError）
-                        target_row = None
-                        extracted_data = {}
-                        
-                        if 'extracted' in st.session_state:
-                            extracted_data = st.session_state['extracted']
-                            ocr_place_name = extracted_data.get('場所名稱', '')
-                            st.write(f"OCR 辨識場所: **{ocr_place_name}**")
-                            
-                            # Auto-match logic
-                            if ocr_place_name:
-                                    match = df_system[df_system['場所名稱'] == ocr_place_name]
-                                    if not match.empty:
-                                        target_row = match.iloc[0]
-                                    else:
-                                        for idx, row in df_system.iterrows():
-                                            if ocr_place_name in str(row['場所名稱']):
-                                                target_row = row
-                                                break
-                        
-                        if target_row is not None:
-                            st.success(f"✅ 自動對應: {target_row['場所名稱']}")
-                            comparison_data = []
-                            field_mapping = {
-                                '場所名稱': '場所名稱',
-                                '場所地址': '場所地址',
-                                '管理權人': '管理權人姓名',
-                                '電話': '場所電話',
-                                '消防設備種類': '消防安全設備'
-                            }
-                            for display_name, excel_col in field_mapping.items():
-                                sys_val = target_row.get(excel_col, "")
-                                ocr_key = display_name if display_name != '電話' else '場所電話'
-                                ocr_val = extracted_data.get(ocr_key, "")
-                                if display_name == '消防設備種類':
-                                    sys_val = utils.normalize_equipment_str(str(sys_val))
-                                comparison_data.append({
-                                    "欄位": display_name,
-                                    "系統資料": str(sys_val),
-                                    "申報資料": ocr_val
-                                })
-                            st.table(pd.DataFrame(comparison_data))
-                        elif 'extracted' in st.session_state:
-                            # OCR 已執行但找不到對應場所
-                            st.warning("⚠️ 系統資料中找不到對應場所，僅顯示 OCR 辨識結果")
-                            st.json(extracted_data)
-                        else:
-                            # 尚未執行 OCR
-                            st.info("👈 請點擊左側「執行 OCR」按鈕開始辨識")
-                            
-# ---Page: 人員管理 (Admin Only) ---
-elif page == "人員管理":
-    st.title("👥 人員管理")
-    
-    with st.expander("新增人員", expanded=False):
-        with st.form("add_user_form"):
-            new_user = st.text_input("帳號")
-            new_pwd = st.text_input("預設密碼", type="password")
-            new_email = st.text_input("Email")
-            new_role = st.selectbox("角色", ["staff", "admin"])
-            if st.form_submit_button("建立"):
-                success, msg = db_manager.create_user(new_user, new_pwd, new_role, new_email)
-                if success:
-                    st.success(msg)
-                    db_manager.add_log(user['username'], "建立人員", f"帳號: {new_user}, 角色: {new_role}")
+            with col_ocr:
+                st.subheader("📄 檔案與 OCR 比對")
+                file_path = row.get('file_path')
+                if file_path and os.path.exists(file_path):
+                    st.success(f"已找到檔案: {os.path.basename(file_path)}")
+                    if st.button("🔍 執行 OCR 比對 (Tesseract)"):
+                        st.info("OCR 功能開發中...")
+                        # 這裡可以加入 OCR 邏輯
                 else:
-                    st.error(msg)
-    
-    st.subheader("人員列表")
-    users = db_manager.get_all_users()
-    st.dataframe(pd.DataFrame(users, columns=["帳號", "角色", "Email", "建立時間", "最後登入"]))
+                    st.warning(f"找不到檔案: {file_path}")
+
+        else:
+            # Empty State Guidance (強制引導)
+            st.warning("⚠️ 請先選擇案件！")
+            st.info("請點擊左側的 【案件總覽與管理】 分頁，從案件列表中點選任一案件後，再切換回來進行審核。")
+            st.markdown("### 👈 步驟： 1. 總覽分頁點選案件 ➔ 2. 切換回此分頁")
+
+# --- Page: 人員管理 (Admin Only) ---
+elif page == "人員管理":
+    if user['role'] != 'admin':
+        st.error("⛔ 您沒有權限存取此頁面")
+    else:
+        st.title("👤 人員帳號管理")
+        
+        col_add, col_list = st.columns([1, 2])
+        
+        with col_add:
+            st.subheader("新增人員")
+            with st.form("add_user_form"):
+                new_u = st.text_input("帳號")
+                new_p = st.text_input("預設密碼", type="password")
+                new_e = st.text_input("Email")
+                new_r = st.selectbox("角色", ["staff", "admin"])
+                if st.form_submit_button("建立帳號", type="primary"):
+                    if new_u and new_p:
+                        success, msg = db_manager.create_user(new_u, new_p, new_r, new_e)
+                        if success:
+                            st.success(msg)
+                            db_manager.add_log(user['username'], "建立人員", f"帳號: {new_u}")
+                            st.rerun()
+                        else:
+                            st.error(msg)
+                    else:
+                        st.error("請輸入帳號與密碼")
+        
+        with col_list:
+            st.subheader("人員列表")
+            users = db_manager.get_all_users()
+            if users:
+                st.dataframe(pd.DataFrame(users, columns=["ID", "帳號", "密碼Hash", "Salt", "角色", "Email", "建立時間", "最後登入"]), hide_index=True)
 
 # --- Page: 系統紀錄 (Admin Only) ---
 elif page == "系統紀錄":
-    st.title("📜 系統稽核紀錄")
-    logs = db_manager.get_audit_logs()
-    df_logs = pd.DataFrame(logs, columns=["ID", "帳號", "動作", "詳情", "時間"])
-    st.dataframe(df_logs)
+    if user['role'] != 'admin':
+        st.error("⛔ 您沒有權限存取此頁面")
+    else:
+        st.title("📜 系統稽核紀錄")
+        logs = db_manager.get_audit_logs()
+        if logs:
+            df_logs = pd.DataFrame(logs, columns=["ID", "帳號", "動作", "詳情", "時間"])
+            st.dataframe(df_logs, use_container_width=True, hide_index=True)
 
 # --- Page: 修改密碼 ---
 elif page == "修改密碼":
@@ -718,7 +553,7 @@ elif page == "修改密碼":
         new_pwd = st.text_input("新密碼", type="password")
         confirm_pwd = st.text_input("確認新密碼", type="password")
         
-        if st.form_submit_button("確認修改"):
+        if st.form_submit_button("確認修改", type="primary"):
             if new_pwd != confirm_pwd:
                 st.error("兩次新密碼輸入不一致")
             elif not new_pwd:
