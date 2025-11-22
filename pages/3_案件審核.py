@@ -308,6 +308,7 @@ if page == "案件審核":
     with tab1:
         st.subheader("案件總覽")
         
+        
         # Filter
         col_filter1, col_filter2 = st.columns([1, 2])
         with col_filter1:
@@ -315,9 +316,9 @@ if page == "案件審核":
         with col_filter2:
             search_term = st.text_input("🔍 搜尋 (單號/場所/申請人)", placeholder="輸入關鍵字...")
         
-        # 取得當前登入者資訊
-        current_user = st.session_state.get("username")
-        current_role = st.session_state.get("role")
+        # 取得當前登入者資訊（從 user 物件中讀取）
+        current_user = st.session_state.user['username']
+        current_role = st.session_state.user['role']
         
         # 根據角色篩選案件
         if current_role == "admin":
