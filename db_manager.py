@@ -294,7 +294,15 @@ def update_case_assignment(case_id_list, username):
     
     try:
         for case_id in case_id_list:
-            c.execute('UPDATE cases SET assigned_to = ? WHERE id = ?', (username, case_id))
+            # 1. 更新承辦人
+            # 2. 如果狀態是 '待處理'，自動改為 '審核中'
+            c.execute('''
+                UPDATE cases 
+                SET assigned_to = ?,
+                    status = CASE WHEN status = '待處理' THEN '審核中' ELSE status END
+                WHERE id = ?
+            ''', (username, case_id))
+            
             if c.rowcount > 0:
                 updated_count += 1
         conn.commit()

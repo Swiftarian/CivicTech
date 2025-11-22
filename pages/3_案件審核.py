@@ -63,7 +63,7 @@ def login():
     st.title("👮 消防局內部系統")
     
     # 部門通行碼設定
-    REGISTRATION_KEY = "Fire2025"
+    REGISTRATION_KEY = cfg.REGISTRATION_KEY
     
     # 建立登入/註冊分頁
     tab_login, tab_register = st.tabs(["🔑 登入", "📝 註冊新帳號"])
@@ -410,6 +410,8 @@ if page == "案件審核":
                                 )
                                 
                                 st.success(f"✅ 已將 {updated} 件案件指派給 {selected_assignee}")
+                                import time
+                                time.sleep(1)
                                 st.rerun()  # 刷新表格
                             else:
                                 st.warning("請先勾選要派案的案件")
