@@ -95,6 +95,115 @@ def load_custom_css():
             padding-top: 5px;             /* 增加間距 */
             padding-bottom: 5px;
         }
+        
+        /* ========================================== */
+        /* 8. 平台首頁樣式 (Hero Section & Service Cards) */
+        /* ========================================== */
+        
+        /* Hero Section - 主視覺區 */
+        .hero {
+            text-align: center;
+            padding: 3rem 2rem;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+            border-radius: 16px;
+            margin-bottom: 2rem;
+            box-shadow: 0 10px 40px rgba(102, 126, 234, 0.3);
+        }
+        
+        .hero h1 {
+            font-size: 2.8rem;
+            font-weight: 800;
+            margin-bottom: 1rem;
+            text-shadow: 0 2px 10px rgba(0, 0, 0, 0.2);
+        }
+        
+        .hero p {
+            font-size: 1.3rem;
+            opacity: 0.95;
+            font-weight: 300;
+            letter-spacing: 0.5px;
+        }
+        
+        /* Service Cards - 服務卡片 */
+        .service-card {
+            background: white;
+            border: 2px solid #e8e8e8;
+            border-radius: 16px;
+            padding: 2.5rem 2rem;
+            text-align: center;
+            transition: all 0.4s cubic-bezier(0.175, 0.885, 0.32, 1.275);
+            height: 320px;
+            display: flex;
+            flex-direction: column;
+            justify-content: center;
+            align-items: center;
+            position: relative;
+            overflow: hidden;
+        }
+        
+        .service-card::before {
+            content: '';
+            position: absolute;
+            top: 0;
+            left: 0;
+            right: 0;
+            height: 4px;
+            background: linear-gradient(90deg, #667eea 0%, #764ba2 100%);
+            transform: scaleX(0);
+            transition: transform 0.4s ease;
+        }
+        
+        .service-card:hover {
+            transform: translateY(-10px);
+            box-shadow: 0 20px 50px rgba(0, 0, 0, 0.15);
+            border-color: #667eea;
+        }
+        
+        .service-card:hover::before {
+            transform: scaleX(1);
+        }
+        
+        .card-icon {
+            font-size: 5rem;
+            margin-bottom: 1.5rem;
+            animation: float 3s ease-in-out infinite;
+        }
+        
+        @keyframes float {
+            0%, 100% { transform: translateY(0px); }
+            50% { transform: translateY(-10px); }
+        }
+        
+        .service-card h3 {
+            font-size: 1.5rem;
+            font-weight: 700;
+            margin-bottom: 1rem;
+            color: #2d3748;
+            line-height: 1.4;
+        }
+        
+        .service-card p {
+            font-size: 1rem;
+            color: #718096;
+            line-height: 1.7;
+            margin: 0;
+        }
+        
+        /* 調整按鈕樣式以配合新設計 */
+        .stButton > button[kind="primary"] {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%) !important;
+            border: none !important;
+            font-weight: 600 !important;
+            padding: 0.75rem 2rem !important;
+            font-size: 1.1rem !important;
+            transition: all 0.3s ease !important;
+        }
+        
+        .stButton > button[kind="primary"]:hover {
+            transform: translateY(-2px) !important;
+            box-shadow: 0 10px 25px rgba(102, 126, 234, 0.4) !important;
+        }
     </style>
     """, unsafe_allow_html=True)
 
@@ -273,6 +382,41 @@ def get_default_tesseract_path():
 def get_default_excel_path():
     """回傳預設的系統列管 Excel 路徑"""
     return r"d:\下載\downloads\00. 列管場所資料.xls"
+
+def render_equipment_diff(sys_set, ocr_set):
+    """
+    渲染消防設備比對結果（視覺化 Diff View）
+    
+    Args:
+        sys_set: 系統列管設備集合
+        ocr_set: 申報設備集合
+    
+    Returns:
+        HTML 字串，包含顏色標記的比對結果
+    """
+    html = "<div style='line-height: 2.5;'>"
+    
+    # 1. 顯示系統有的 (漏報的標紅，吻合的標綠)
+    html += "<strong>系統列管：</strong><br>"
+    for item in sorted(sys_set):
+        if item in ocr_set:
+            # 吻合 (綠色底)
+            html += f"<span style='background-color:#d1fae5; color:#065f46; padding:4px 8px; border-radius:4px; margin-right:5px; margin-bottom:5px; display:inline-block;'>✅ {item}</span>"
+        else:
+            # 漏報 (紅色底)
+            html += f"<span style='background-color:#fee2e2; color:#991b1b; padding:4px 8px; border-radius:4px; margin-right:5px; margin-bottom:5px; display:inline-block;'>❌ {item} (漏報)</span>"
+    
+    html += "<br><br><strong>申報資料：</strong><br>"
+    for item in sorted(ocr_set):
+        if item in sys_set:
+            # 吻合 (綠色底)
+            html += f"<span style='background-color:#d1fae5; color:#065f46; padding:4px 8px; border-radius:4px; margin-right:5px; margin-bottom:5px; display:inline-block;'>✅ {item}</span>"
+        else:
+            # 多報 (黃色底)
+            html += f"<span style='background-color:#fef3c7; color:#92400e; padding:4px 8px; border-radius:4px; margin-right:5px; margin-bottom:5px; display:inline-block;'>⚠️ {item} (新增)</span>"
+            
+    html += "</div>"
+    return html
 
 @st.cache_data
 def load_system_data(excel_path):

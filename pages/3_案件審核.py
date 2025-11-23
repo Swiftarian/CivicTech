@@ -320,13 +320,22 @@ if page == "案件審核":
     with tab1:
         st.subheader("案件總覽")
         
+        # 篩選器 (Pills UI / Radio Buttons)
+        col_filter_title, col_search, col_refresh = st.columns([2, 2, 0.5])
         
-        # Filter
-        col_filter1, col_filter2, col_refresh = st.columns([1, 2, 0.5])
-        with col_filter1:
-            filter_status = st.selectbox("篩選狀態", ["全部", "待分案", "審核中", "可領件", "已退件", "待補件"])
-        with col_filter2:
+        with col_filter_title:
+            st.write("**篩選案件**")
+            # 使用 radio 按鈕，horizontal 佈局
+            selected_filter = st.radio(
+                "篩選案件",
+                ["📌 進行中", "✅ 已結案", "📂 全部", "🗄️ 已封存"],
+                horizontal=True,
+                label_visibility="collapsed"
+            )
+        
+        with col_search:
             search_term = st.text_input("🔍 搜尋 (單號/場所/申請人)", placeholder="輸入關鍵字...")
+        
         with col_refresh:
             st.write(" ") # Spacer
             st.write(" ")
@@ -336,6 +345,24 @@ if page == "案件審核":
                     del st.session_state.case_editor_df
                 st.rerun()
         
+        # 根據篩選器決定查詢條件
+        if selected_filter == "📌 進行中":
+            status_filter = None  # 不設定 status_filter，改用後續篩選
+            include_archived = False
+            filter_statuses = ["待分案", "審核中", "待補件"]
+        elif selected_filter == "✅ 已結案":
+            status_filter = None
+            include_archived = False
+            filter_statuses = ["可領件", "已退件"]
+        elif selected_filter == "📂 全部":
+            status_filter = None
+            include_archived = False
+            filter_statuses = None  # 顯示所有未封存
+        else:  # 🗄️ 已封存
+            status_filter = None
+            include_archived = True
+            filter_statuses = None  # 顯示所有已封存
+        
         # 取得當前登入者資訊（從 user 物件中讀取）
         current_user = st.session_state.user['username']
         current_role = st.session_state.user['role']
@@ -343,12 +370,18 @@ if page == "案件審核":
         # 根據角色篩選案件
         if current_role == "admin":
             # 管理員：看全部案件
-            cases = db_manager.get_all_cases(filter_status)
-            st.info("👤 管理員模式：顯示所有案件")
+            all_cases = db_manager.get_all_cases(status_filter=None, include_archived=include_archived)
+            st.info(f"👤 管理員模式：{selected_filter}")
         else:
             # 一般同仁：只看指派給自己的案件
-            cases = db_manager.get_cases_by_assignee(current_user, filter_status)
-            st.info(f"👤 同仁模式：僅顯示指派給 {current_user} 的案件")
+            all_cases = db_manager.get_cases_by_assignee(current_user, status_filter=None, include_archived=include_archived)
+            st.info(f"👤 同仁模式：僅顯示指派給 {current_user} 的案件 ({selected_filter})")
+        
+        # 根據狀態篩選
+        if filter_statuses:
+            cases = [c for c in all_cases if dict(c)['status'] in filter_statuses]
+        else:
+            cases = all_cases
         
         if not cases:
             if user['role'] == 'admin':
@@ -389,8 +422,8 @@ if page == "案件審核":
                     df.insert(0, "選取", False)
                     st.session_state.case_editor_df = df
                 
-                # 全選/取消全選按鈕
-                col_select1, col_select2, col_select3 = st.columns([1, 1, 6])
+                # 全選/取消全選按鈕 + 封存按鈕
+                col_select1, col_select2, col_archive, _ = st.columns([1, 1, 1.5, 5])
                 
                 with col_select1:
                     if st.button("✅ 全選", use_container_width=True):
@@ -401,6 +434,44 @@ if page == "案件審核":
                     if st.button("⬜ 取消全選", use_container_width=True):
                         st.session_state.case_editor_df['選取'] = False
                         st.rerun()
+                
+                with col_archive:
+                    if st.button("🗄️ 封存案件", type="secondary", use_container_width=True, help="只能封存「可領件」或「已退件」的案件"):
+                        import time
+                        selected_rows = st.session_state.case_editor_df[st.session_state.case_editor_df["選取"]]
+                        if not selected_rows.empty:
+                            # 篩選出可以封存的案件（移除 Emoji 再比對）
+                            archivable_case_ids = []
+                            non_archivable_cases = []
+                            
+                            for idx, row in selected_rows.iterrows():
+                                # 移除 Emoji 取得原始狀態
+                                raw_status = row['status'].replace("🟢 ", "").replace("⚫ ", "").replace("🔴 ", "").replace("🟡 ", "").replace("🟠 ", "").strip()
+                                
+                                # 寬鬆比對
+                                if "可領件" in raw_status or "已退件" in raw_status:
+                                    archivable_case_ids.append(row['id'])
+                                else:
+                                    non_archivable_cases.append(f"{row['id']} ({raw_status})")
+                            
+                            if not archivable_case_ids:
+                                st.warning("⚠️ 只有「可領件」或「已退件」的案件可以被封存")
+                            else:
+                                success, msg = db_manager.archive_cases(archivable_case_ids)
+                                if success:
+                                    st.success(msg)
+                                    db_manager.add_log(current_user, "封存案件", f"封存 {len(archivable_case_ids)} 筆案件")
+                                    if non_archivable_cases:
+                                        st.info(f"以下案件因狀態不符未封存：{', '.join(non_archivable_cases)}")
+                                    st.cache_data.clear()
+                                    if 'case_editor_df' in st.session_state:
+                                        del st.session_state.case_editor_df
+                                    time.sleep(1)
+                                    st.rerun()
+                                else:
+                                    st.error(msg)
+                        else:
+                            st.warning("請先勾選要封存的案件")
                 
                 # Configure columns for data_editor
                 edited_df = st.data_editor(
@@ -457,6 +528,8 @@ if page == "案件審核":
                                     st.rerun()
                                 else:
                                     st.warning("請先勾選案件")
+                    
+
 
     # --- Tab 2: 單筆審核與比對 ---
     with tab2:

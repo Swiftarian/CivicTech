@@ -32,6 +32,10 @@ def migrate_database():
             conn.commit()
             print("✅ 已新增 assigned_to 欄位")
         
+        # 重新取得欄位列表
+        c.execute("PRAGMA table_info(cases)")
+        columns = [column[1] for column in c.fetchall()]
+        
         # 檢查 cases 表是否有 line_id 欄位（使用者自訂 ID）
         if 'line_id' not in columns:
             print("⚠️ 正在新增 line_id 欄位...")
@@ -39,17 +43,33 @@ def migrate_database():
             conn.commit()
             print("✅ 已新增 line_id 欄位")
         
+        # 重新取得欄位列表
+        c.execute("PRAGMA table_info(cases)")
+        columns = [column[1] for column in c.fetchall()]
+        
         # 檢查 cases 表是否有 line_user_id 欄位（LINE Messaging API 用）
         if 'line_user_id' not in columns:
             print("⚠️ 正在新增 line_user_id 欄位（LINE Messaging API）...")
             c.execute("ALTER TABLE cases ADD COLUMN line_user_id TEXT")
             conn.commit()
             print("✅ 已新增 line_user_id 欄位")
+        
+        # 重新取得欄位列表
+        c.execute("PRAGMA table_info(cases)")
+        columns = [column[1] for column in c.fetchall()]
+        
+        # 檢查 cases 表是否有 is_archived 欄位（封存功能）
+        if 'is_archived' not in columns:
+            print("⚠️ 正在新增 is_archived 欄位（封存功能）...")
+            c.execute("ALTER TABLE cases ADD COLUMN is_archived INTEGER DEFAULT 0")
+            conn.commit()
+            print("✅ 已新增 is_archived 欄位")
     
     except Exception as e:
         print(f"❌ 資料庫遷移失敗: {e}")
     finally:
         conn.close()
+
 
 def backup_database():
     """
@@ -118,6 +138,32 @@ def cleanup_old_backups(backup_dir, max_backups=30):
     except Exception as e:
         print(f"⚠️ 備份清理失敗: {e}")
 
+def archive_cases(case_ids):
+    """
+    封存指定案件
+    
+    Args:
+        case_ids: 要封存的案件 ID 列表
+    
+    Returns:
+        (success: bool, message: str)
+    """
+    if not case_ids:
+        return False, "未選擇任何案件"
+    
+    conn = get_connection()
+    c = conn.cursor()
+    try:
+        # 使用參數化查詢防止 SQL 注入
+        placeholders = ','.join(['?' for _ in case_ids])
+        c.execute(f"UPDATE cases SET is_archived = 1 WHERE id IN ({placeholders})", case_ids)
+        conn.commit()
+        return True, f"成功封存 {len(case_ids)} 筆案件"
+    except Exception as e:
+        return False, f"封存失敗: {e}"
+    finally:
+        conn.close()
+
 def init_db():
     """初始化資料庫：建立案件資料表"""
     # 在初始化之前先備份現有資料庫（如果存在）
@@ -139,7 +185,8 @@ def init_db():
             review_notes TEXT,
             assigned_to TEXT,
             line_id TEXT,
-            line_user_id TEXT
+            line_user_id TEXT,
+            is_archived INTEGER DEFAULT 0
         )
     ''')
 
@@ -314,30 +361,46 @@ def get_cases_by_email(email):
     conn.close()
     return cases
 
-def get_all_cases(status_filter=None):
+def get_all_cases(status_filter=None, include_archived=False):
     """取得所有案件 (管理者用)"""
     conn = get_connection()
     c = conn.cursor()
     
-    if status_filter and status_filter != "全部":
-        c.execute('SELECT * FROM cases WHERE status = ? ORDER BY submission_date DESC', (status_filter,))
+    # 建構查詢條件
+    if include_archived:
+        # 只顯示已封存案件
+        archived_condition = "is_archived = 1"
     else:
-        c.execute('SELECT * FROM cases ORDER BY submission_date DESC')
+        # 預設只顯示未封存案件
+        archived_condition = "is_archived = 0"
+    
+    if status_filter and status_filter != "全部":
+        c.execute(f'SELECT * FROM cases WHERE {archived_condition} AND status = ? ORDER BY submission_date DESC', (status_filter,))
+    else:
+        c.execute(f'SELECT * FROM cases WHERE {archived_condition} ORDER BY submission_date DESC')
         
     cases = c.fetchall()
     conn.close()
     return cases
 
-def get_cases_by_assignee(username, status_filter=None):
+def get_cases_by_assignee(username, status_filter=None, include_archived=False):
     """取得指派給特定同仁的案件 (用於權限控管)"""
     conn = get_connection()
     c = conn.cursor()
     
+    # 建構查詢條件
+    if include_archived:
+        # 只顯示已封存案件
+        archived_condition = "is_archived = 1"
+    else:
+        # 預設只顯示未封存案件
+        archived_condition = "is_archived = 0"
+    
     if status_filter and status_filter != "全部":
-        c.execute('SELECT * FROM cases WHERE assigned_to = ? AND status = ? ORDER BY submission_date DESC', 
+        c.execute(f'SELECT * FROM cases WHERE assigned_to = ? AND {archived_condition} AND status = ? ORDER BY submission_date DESC', 
                   (username, status_filter))
     else:
-        c.execute('SELECT * FROM cases WHERE assigned_to = ? ORDER BY submission_date DESC', 
+        c.execute(f'SELECT * FROM cases WHERE assigned_to = ? AND {archived_condition} ORDER BY submission_date DESC', 
                   (username,))
     
     cases = c.fetchall()

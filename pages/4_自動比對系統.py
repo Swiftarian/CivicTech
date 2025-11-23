@@ -820,6 +820,27 @@ with col2:
         # --- 消防設備專屬比對區 ---
         st.write("---")
         with st.expander("🔥 消防設備詳細比對與編輯", expanded=True):
+            # 視覺化比對區塊 (Diff View)
+            st.subheader("📊 視覺化比對")
+            
+            # 轉換為集合以進行比對
+            sys_set = set(equip_sys_val.split("、")) if equip_sys_val else set()
+            ocr_set = set(equip_ocr_val.split("、")) if equip_ocr_val else set()
+            
+            # 去除空字串
+            sys_set.discard("")
+            ocr_set.discard("")
+            
+            # 渲染差異視覺化
+            if sys_set or ocr_set:
+                diff_html = utils.render_equipment_diff(sys_set, ocr_set)
+                st.markdown(diff_html, unsafe_allow_html=True)
+            else:
+                st.info("無設備資料")
+            
+            st.divider()
+            st.subheader("✏️ 編輯設備清單")
+            
             col_equip1, col_equip2 = st.columns(2)
             
             # 格式化顯示 (將頓號轉為換行)
