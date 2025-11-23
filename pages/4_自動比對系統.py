@@ -726,13 +726,22 @@ with col2:
                 st.info("💡 提示：若需發送真實郵件，請至側邊欄設定寄件者資訊。")
 
         if b1.button("✅ 合格"):
+            db_manager.update_case_status(target_case['id'], "可領件")
+            st.cache_data.clear()
             handle_review("success", "合格", "恭喜您，案件已審核通過。")
+            st.rerun()
         
         if b2.button("⚠️ 補件"):
+            db_manager.update_case_status(target_case['id'], "待補件")
+            st.cache_data.clear()
             handle_review("warning", "補件", "請儘速補齊相關文件。")
+            st.rerun()
 
         if b3.button("🚫 退件"):
+            db_manager.update_case_status(target_case['id'], "已退件")
+            st.cache_data.clear()
             handle_review("error", "退件", "案件已被退回，請修正後重新申報。")
+            st.rerun()
     
     st.divider()
     
@@ -846,6 +855,7 @@ with col2:
             if field == '場所地址':
                 # 定義正規化函式
                 def normalize_addr(addr):
+                    if not addr: return ""
                     # 1. 統一 台/臺
                     addr = addr.replace("台", "臺")
                     # 2. 去除開頭的 "臺東縣" (或 "台東縣")
@@ -857,72 +867,99 @@ with col2:
                 norm_sys = normalize_addr(sys_val)
                 norm_ocr = normalize_addr(ocr_val)
                 
-                if ocr_val and norm_sys != norm_ocr:
-                     # 嘗試更寬鬆的比對 (例如包含關係)
-                     if norm_ocr in norm_sys or norm_sys in norm_ocr:
-                          st.success(f"✅ 【{field}】一致 (模糊比對成功)")
-                     else:
-                          st.error(f"⚠️ 【{field}】不一致！\n系統：{sys_val} (正規化後: {norm_sys})\n申報：{ocr_val} (正規化後: {norm_ocr})")
-                elif ocr_val and norm_sys == norm_ocr:
-                    st.success(f"✅ 【{field}】一致")
+                # 嚴格判斷邏輯
+                if not sys_val and ocr_val:
+                    st.error(f"❌ 【{field}】不一致 (系統無資料)")
+                elif not sys_val and not ocr_val:
+                    st.success(f"✅ 【{field}】一致 (皆無資料)")
+                elif sys_val and not ocr_val:
+                    st.warning(f"⚠️ 【{field}】申報資料空白 (系統: {sys_val})")
                 else:
-                    st.info(f"⚪ 【{field}】待確認")
+                    # 兩者皆有值，進行比對
+                    if norm_sys == norm_ocr:
+                        st.success(f"✅ 【{field}】一致")
+                    elif norm_ocr in norm_sys or norm_sys in norm_ocr:
+                        st.success(f"✅ 【{field}】一致 (模糊比對成功)")
+                    else:
+                        st.error(f"❌ 【{field}】不一致！\n系統：{sys_val}\n申報：{ocr_val}")
             
             elif field == '消防設備種類':
-                if ocr_val and sys_val != ocr_val:
-                    # 轉為集合進行比對
-                    sys_set = set(sys_val.split("、")) if sys_val else set()
+                # 嚴格判斷邏輯
+                if not sys_val and ocr_val:
+                    st.error(f"❌ 【{field}】不一致 (系統無資料)")
+                    # 依然顯示差異詳情
                     ocr_set = set(ocr_val.split("、")) if ocr_val else set()
-                    
-                    # 去除空字串
-                    sys_set.discard("")
                     ocr_set.discard("")
-                    
-                    # 計算差異
-                    missing_in_ocr = sys_set - ocr_set # 系統有，申報無 (漏報?)
-                    extra_in_ocr = ocr_set - sys_set   # 申報有，系統無 (新增?)
-                    
-                    if not missing_in_ocr and not extra_in_ocr:
-                        st.success(f"✅ 【{field}】一致")
-                    else:
-                        st.error(f"⚠️ 【{field}】不一致！")
-                        
-                        # 使用 Columns 顯示差異，比較清楚
-                        col1, col2 = st.columns(2)
-                        
-                        with col1:
-                            if missing_in_ocr:
-                                st.markdown(f"**❌ 系統有，但申報資料未列出：**")
-                                for item in missing_in_ocr:
-                                    st.markdown(f"- <span style='color:red'>{item}</span>", unsafe_allow_html=True)
-                            else:
-                                st.markdown("**✅ 系統項目皆已申報**")
-                                
-                        with col2:
-                            if extra_in_ocr:
-                                st.markdown(f"**❓ 申報資料多出的項目：**")
-                                for item in extra_in_ocr:
-                                    st.markdown(f"- <span style='color:orange'>{item}</span>", unsafe_allow_html=True)
-                            else:
-                                st.markdown("**✅ 無額外申報項目**")
-                                
-                elif ocr_val and sys_val == ocr_val:
-                    st.success(f"✅ 【{field}】一致")
+                    col1, col2 = st.columns(2)
+                    with col1:
+                         st.markdown("**❌ 系統無資料**")
+                    with col2:
+                         st.markdown(f"**❓ 申報資料：**")
+                         for item in ocr_set:
+                             st.markdown(f"- <span style='color:orange'>{item}</span>", unsafe_allow_html=True)
+                             
+                elif not sys_val and not ocr_val:
+                    st.success(f"✅ 【{field}】一致 (皆無資料)")
+                elif sys_val and not ocr_val:
+                    st.warning(f"⚠️ 【{field}】申報資料空白 (系統: {sys_val})")
                 else:
-                    st.info(f"⚪ 【{field}】待確認")
+                    # 兩者皆有值
+                    if sys_val != ocr_val:
+                        # 轉為集合進行比對
+                        sys_set = set(sys_val.split("、")) if sys_val else set()
+                        ocr_set = set(ocr_val.split("、")) if ocr_val else set()
+                        
+                        # 去除空字串
+                        sys_set.discard("")
+                        ocr_set.discard("")
+                        
+                        # 計算差異
+                        missing_in_ocr = sys_set - ocr_set # 系統有，申報無 (漏報?)
+                        extra_in_ocr = ocr_set - sys_set   # 申報有，系統無 (新增?)
+                        
+                        if not missing_in_ocr and not extra_in_ocr:
+                            st.success(f"✅ 【{field}】一致")
+                        else:
+                            st.error(f"⚠️ 【{field}】不一致！")
+                            
+                            # 使用 Columns 顯示差異，比較清楚
+                            col1, col2 = st.columns(2)
+                            
+                            with col1:
+                                if missing_in_ocr:
+                                    st.markdown(f"**❌ 系統有，但申報資料未列出：**")
+                                    for item in missing_in_ocr:
+                                        st.markdown(f"- <span style='color:red'>{item}</span>", unsafe_allow_html=True)
+                                else:
+                                    st.markdown("**✅ 系統項目皆已申報**")
+                                    
+                            with col2:
+                                if extra_in_ocr:
+                                    st.markdown(f"**❓ 申報資料多出的項目：**")
+                                    for item in extra_in_ocr:
+                                        st.markdown(f"- <span style='color:orange'>{item}</span>", unsafe_allow_html=True)
+                                else:
+                                    st.markdown("**✅ 無額外申報項目**")
+                    else:
+                        st.success(f"✅ 【{field}】一致")
 
             # 其他欄位的一般比對
             else:
-                if ocr_val and sys_val != ocr_val:
-                    # 嘗試更寬鬆的比對 (例如包含關係)
-                    if ocr_val in sys_val or sys_val in ocr_val:
+                # 嚴格判斷邏輯
+                if not sys_val and ocr_val:
+                    st.error(f"❌ 【{field}】不一致 (系統無資料)")
+                elif not sys_val and not ocr_val:
+                    st.success(f"✅ 【{field}】一致 (皆無資料)")
+                elif sys_val and not ocr_val:
+                    st.warning(f"⚠️ 【{field}】申報資料空白 (系統: {sys_val})")
+                else:
+                    # 兩者皆有值
+                    if sys_val == ocr_val:
+                        st.success(f"✅ 【{field}】一致")
+                    elif ocr_val in sys_val or sys_val in ocr_val:
                          st.success(f"✅ 【{field}】一致 (部分符合)")
                     else:
-                         st.error(f"⚠️ 【{field}】不一致！系統：{sys_val} vs 申報：{ocr_val}")
-                elif ocr_val and sys_val == ocr_val:
-                    st.success(f"✅ 【{field}】一致")
-                else:
-                    st.info(f"⚪ 【{field}】待確認")
+                         st.error(f"❌ 【{field}】不一致！\n系統：{sys_val}\n申報：{ocr_val}")
 
         # --- 新增：檢查項目 (消防設備) ---
         st.write("---")

@@ -18,6 +18,10 @@ if 'logged_in' not in st.session_state:
     st.session_state.logged_in = False
 if 'user' not in st.session_state:
     st.session_state.user = None
+if 'username' not in st.session_state:
+    st.session_state.username = None
+if 'role' not in st.session_state:
+    st.session_state.role = None
 if 'awaiting_2fa' not in st.session_state:
     st.session_state.awaiting_2fa = False
 
@@ -38,6 +42,10 @@ def login():
                     user = st.session_state.temp_user
                     st.session_state.logged_in = True
                     st.session_state.user = dict(user)
+                    # Sync flat variables
+                    st.session_state.username = user['username']
+                    st.session_state.role = user['role']
+                    
                     st.session_state.awaiting_2fa = False
                     del st.session_state.otp
                     del st.session_state.temp_user
@@ -128,6 +136,9 @@ def login():
                                 # Staff Login (No 2FA)
                                 st.session_state.logged_in = True
                                 st.session_state.user = dict(user) # 轉換為字典
+                                # Sync flat variables
+                                st.session_state.username = user['username']
+                                st.session_state.role = user['role']
                                 db_manager.update_last_login(user['username'])
                                 db_manager.add_log(user['username'], "登入成功", "一般登入")
                                 st.success("登入成功！")
@@ -311,11 +322,19 @@ if page == "案件審核":
         
         
         # Filter
-        col_filter1, col_filter2 = st.columns([1, 2])
+        col_filter1, col_filter2, col_refresh = st.columns([1, 2, 0.5])
         with col_filter1:
             filter_status = st.selectbox("篩選狀態", ["全部", "待分案", "審核中", "可領件", "已退件", "待補件"])
         with col_filter2:
             search_term = st.text_input("🔍 搜尋 (單號/場所/申請人)", placeholder="輸入關鍵字...")
+        with col_refresh:
+            st.write(" ") # Spacer
+            st.write(" ")
+            if st.button("🔄", help="強制刷新資料"):
+                st.cache_data.clear()
+                if 'case_editor_df' in st.session_state:
+                    del st.session_state.case_editor_df
+                st.rerun()
         
         # 取得當前登入者資訊（從 user 物件中讀取）
         current_user = st.session_state.user['username']
