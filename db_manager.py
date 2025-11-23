@@ -82,6 +82,15 @@ def migrate_database():
             c.execute("ALTER TABLE delivery_records ADD COLUMN volunteer_id TEXT")
             conn.commit()
             print("✅ 已新增 volunteer_id 欄位")
+
+        # 檢查 delivery_records 表是否有 abnormal_reason 欄位
+        c.execute("PRAGMA table_info(delivery_records)")
+        columns = [column[1] for column in c.fetchall()]
+        if columns and 'abnormal_reason' not in columns:
+            print("⚠️ 正在新增 abnormal_reason 欄位 (delivery_records)...")
+            c.execute("ALTER TABLE delivery_records ADD COLUMN abnormal_reason TEXT")
+            conn.commit()
+            print("✅ 已新增 abnormal_reason 欄位")
     
     except Exception as e:
         print(f"❌ 資料庫遷移失敗: {e}")
@@ -340,6 +349,7 @@ def init_db():
             elderly_id INTEGER NOT NULL,
             delivery_time TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
             status TEXT DEFAULT '已送達',
+            abnormal_reason TEXT,
             photo_path TEXT,
             notes TEXT,
             volunteer_id TEXT,
@@ -755,6 +765,21 @@ def get_tasks_by_date(date):
     conn.close()
     return tasks
 
+def get_tasks_by_date_range(start_date, end_date):
+    """取得指定日期範圍內的所有任務 (用於行事曆)"""
+    conn = get_connection()
+    c = conn.cursor()
+    c.execute('''
+        SELECT dt.*, dr.route_name, dr.description
+        FROM daily_tasks dt
+        JOIN delivery_routes dr ON dt.route_id = dr.id
+        WHERE dt.date BETWEEN ? AND ?
+        ORDER BY dt.date, dr.route_name
+    ''', (start_date, end_date))
+    tasks = c.fetchall()
+    conn.close()
+    return tasks
+
 def get_my_tasks_today(username, date):
     """取得當前使用者今日的任務"""
     conn = get_connection()
@@ -785,15 +810,74 @@ def update_task_status(task_id, status):
     conn.commit()
     conn.close()
 
+def claim_task(task_id, username):
+    """認領任務 (包裝器函式供測試使用)"""
+    update_task_volunteer(task_id, username)
+
+def release_task(task_id):
+    """釋出任務 (包裝器函式供測試使用)"""
+    update_task_volunteer(task_id, None)
+
+def get_task_events(start_date, end_date, current_user=None):
+    """
+    獲取日曆事件格式的任務資料 (用於streamlit-calendar)
+    
+    Args:
+        start_date: 開始日期 (YYYY-MM-DD)
+        end_date: 結束日期 (YYYY-MM-DD)
+        current_user: 當前使用者帳號 (用於顏色區分), 可為 None
+        
+    Returns:
+        list: 日曆事件列表, 每個事件包含 title, start, backgroundColor 等欄位
+    """
+    tasks = get_tasks_by_date_range(start_date, end_date)
+    events = []
+    
+    for task in tasks:
+        volunteer = task['assigned_volunteer']
+        route_name = task['route_name']
+        task_date = task['date']
+        task_id = task['id']
+        
+        # 顏色邏輯
+        if not volunteer:
+            # 缺人 -> 紅色
+            color = "#FF4B4B"
+            title = f"🔴 {route_name} (缺人)"
+        elif current_user and volunteer == current_user:
+            # 自己 -> 綠色
+            color = "#3DD598"
+            title = f"🟢 {route_name} (我)"
+        else:
+            # 別人 -> 藍色
+            color = "#3788d8" 
+            title = f"👤 {route_name} ({volunteer})"
+            
+        events.append({
+            "title": title,
+            "start": task_date,
+            "allDay": True,
+            "backgroundColor": color,
+            "borderColor": color,
+            "extendedProps": {
+                "taskId": task_id,
+                "currentVolunteer": volunteer,
+                "routeId": task['route_id'],
+                "routeName": route_name
+            }
+        })
+        
+    return events
+
 # --- 送達紀錄管理 ---
-def create_delivery_record(task_id, elderly_id, status="已送達", notes="", photo_path=None, volunteer_id=None):
+def create_delivery_record(task_id, elderly_id, status="已送達", notes="", photo_path=None, volunteer_id=None, abnormal_reason=None):
     """建立送達紀錄"""
     conn = get_connection()
     c = conn.cursor()
     c.execute('''
-        INSERT INTO delivery_records (task_id, elderly_id, status, notes, photo_path, volunteer_id)
-        VALUES (?, ?, ?, ?, ?, ?)
-    ''', (task_id, elderly_id, status, notes, photo_path, volunteer_id))
+        INSERT INTO delivery_records (task_id, elderly_id, status, notes, photo_path, volunteer_id, abnormal_reason)
+        VALUES (?, ?, ?, ?, ?, ?, ?)
+    ''', (task_id, elderly_id, status, notes, photo_path, volunteer_id, abnormal_reason))
     record_id = c.lastrowid
     conn.commit()
     conn.close()
@@ -837,6 +921,7 @@ def get_delivery_reports(start_date, end_date):
             ep.name as elderly_name,
             rec.volunteer_id,
             rec.status,
+            rec.abnormal_reason,
             rec.notes,
             rec.photo_path,
             rec.delivery_time

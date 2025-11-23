@@ -620,3 +620,91 @@ def extract_info_from_ocr(text, pages_text_list=None):
                     info['消防設備種類'] = normalized_eq
                  
     return info
+
+def save_delivery_photo(uploaded_file, task_id):
+    """
+    儲存送餐照片
+    
+    Args:
+        uploaded_file: Streamlit UploadedFile object
+        task_id: 任務 ID
+        
+    Returns:
+        str: 儲存的檔案相對路徑 (用於存入資料庫)
+    """
+    if uploaded_file is None:
+        return None
+    
+    import datetime
+    
+    upload_dir = "uploads/delivery_photos"
+    if not os.path.exists(upload_dir):
+        os.makedirs(upload_dir)
+        
+    timestamp = datetime.datetime.now().strftime("%Y%m%d_%H%M%S")
+    filename = f"delivery_{task_id}_{timestamp}.jpg"
+    file_path = os.path.join(upload_dir, filename)
+    
+    with open(file_path, "wb") as f:
+        f.write(uploaded_file.getbuffer())
+        
+    return file_path
+
+def save_proof_photo(file_buffer, task_id):
+    """
+    儲存送達證明照片（強制拍照模式）
+    - 按月份分類資料夾
+    - 壓縮圖片至 800px 寬
+    
+    Args:
+        file_buffer: Streamlit camera_input 或 file_uploader 的 buffer
+        task_id: 任務 ID
+        
+    Returns:
+        str: 儲存的檔案相對路徑
+    """
+    if file_buffer is None:
+        return None
+    
+    import datetime
+    from PIL import Image
+    import io
+    
+    # 按月份建立資料夾
+    now = datetime.datetime.now()
+    year_month = now.strftime("%Y%m")
+    upload_dir = f"uploads/delivery_proofs/{year_month}"
+    
+    if not os.path.exists(upload_dir):
+        os.makedirs(upload_dir)
+    
+    # 生成檔名
+    timestamp = now.strftime("%Y%m%d_%H%M%S")
+    filename = f"{task_id}_{timestamp}.jpg"
+    file_path = os.path.join(upload_dir, filename)
+    
+    try:
+        # 開啟圖片
+        image = Image.open(file_buffer)
+        
+        # 壓縮圖片（寬度 800px）
+        if image.width > 800:
+            ratio = 800 / image.width
+            new_height = int(image.height * ratio)
+            image = image.resize((800, new_height), Image.Resampling.LANCZOS)
+        
+        # 轉換為 RGB（避免 RGBA 錯誤）
+        if image.mode in ("RGBA", "P"):
+            image = image.convert("RGB")
+        
+        # 儲存圖片
+        image.save(file_path, "JPEG", quality=85, optimize=True)
+        
+        return file_path
+        
+    except Exception as e:
+        print(f"圖片處理失敗: {e}")
+        # 如果壓縮失敗，直接儲存原圖
+        with open(file_path, "wb") as f:
+            f.write(file_buffer.getbuffer())
+        return file_path

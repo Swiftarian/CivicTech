@@ -2,7 +2,10 @@ import streamlit as st
 import db_manager as db
 import datetime
 import urllib.parse
+import urllib.parse
 import os
+import utils
+from streamlit_calendar import calendar
 
 st.set_page_config(page_title="社區互助送餐", page_icon="🍱", layout="wide")
 
@@ -20,27 +23,7 @@ def get_google_maps_url(address):
     encoded_address = urllib.parse.quote(address)
     return f"https://www.google.com/maps/dir/?api=1&destination={encoded_address}"
 
-def save_uploaded_file(uploaded_file, task_id=None):
-    """Save uploaded file and return path"""
-    if uploaded_file is None:
-        return None
-    
-    upload_dir = "uploads/delivery_photos"
-    if not os.path.exists(upload_dir):
-        os.makedirs(upload_dir)
-        
-    timestamp = datetime.datetime.now().strftime("%Y%m%d_%H%M%S")
-    if task_id:
-        filename = f"delivery_{task_id}_{timestamp}.jpg"
-    else:
-        filename = f"{timestamp}_{uploaded_file.name}"
-        
-    file_path = os.path.join(upload_dir, filename)
-    
-    with open(file_path, "wb") as f:
-        f.write(uploaded_file.getbuffer())
-        
-    return file_path
+
 
 # --- Main Page ---
 
@@ -127,99 +110,130 @@ def main():
                             if is_delivered:
                                 st.success("已完成配送")
                             else:
-                                st.write("📷 **拍照存證 (選填)**")
-                                photo = st.camera_input(f"拍照-{elderly_id}", label_visibility="collapsed")
+                                # 強制拍照流程
+                                st.write("📷 **送達證明 (必須拍照)**")
+                                st.caption("⚠️ 請拍攝餐點+門牌證明")
                                 
-                                # Delivery Actions
-                                c1, c2 = st.columns(2)
-                                with c1:
-                                    if st.button("✅ 送達", key=f"btn_ok_{elderly_id}", use_container_width=True):
-                                        photo_path = None
-                                        if photo:
-                                            photo_path = save_uploaded_file(photo, task_id)
-                                        
-                                        db.create_delivery_record(task_id, elderly_id, "已送達", photo_path=photo_path, volunteer_id=username)
-                                        st.rerun()
-                                        
-                                with c2:
-                                    if st.button("⚠️ 異常", key=f"btn_err_{elderly_id}", use_container_width=True):
-                                        # Show input for issue
-                                        st.session_state[f"show_issue_{elderly_id}"] = True
+                                photo = st.camera_input(
+                                    f"📸 拍攝送達證明", 
+                                    key=f"cam_{elderly_id}",
+                                    label_visibility="collapsed"
+                                )
                                 
+                                st.markdown("<br>", unsafe_allow_html=True)
+                                
+                                # 只有在有照片時才顯示按鈕
+                                if photo is not None:
+                                    col_deliver, col_issue = st.columns(2)
+                                    
+                                    with col_deliver:
+                                        if st.button("✅ 確認送達並上傳", key=f"btn_ok_{elderly_id}", use_container_width=True, type="primary"):
+                                            # 使用新的 save_proof_photo
+                                            photo_path = utils.save_proof_photo(photo, task_id)
+                                            
+                                            db.create_delivery_record(task_id, elderly_id, "已送達", photo_path=photo_path, volunteer_id=username)
+                                            st.rerun()
+                                    
+                                    with col_issue:
+                                        if st.button("⚠️ 異常", key=f"btn_err_{elderly_id}", use_container_width=True):
+                                            st.session_state[f"show_issue_{elderly_id}"] = True
+                                else:
+                                    st.warning("🚫 請先拍照才能送達")
+                                
+                                # 異常回報處理
                                 if st.session_state.get(f"show_issue_{elderly_id}"):
+                                    st.markdown("<br>", unsafe_allow_html=True)
                                     issue_reason = st.selectbox("異常類型", ["長者不在家", "長者拒收", "餐點損壞", "長者身體不適", "其他"], key=f"reason_{elderly_id}")
                                     issue_note = st.text_area("備註說明 (選填)", key=f"issue_{elderly_id}")
                                     if st.button("確認回報", key=f"confirm_issue_{elderly_id}"):
-                                        final_note = f"[{issue_reason}] {issue_note}"
-                                        db.create_delivery_record(task_id, elderly_id, "異常", notes=final_note, volunteer_id=username)
-                                        st.session_state[f"show_issue_{elderly_id}"] = False
-                                        st.rerun()
+                                        # 異常情況也必須有照片
+                                        if photo is not None:
+                                            photo_path = utils.save_proof_photo(photo, task_id)
+                                            db.create_delivery_record(task_id, elderly_id, "異常", notes=issue_note, volunteer_id=username, abnormal_reason=issue_reason, photo_path=photo_path)
+                                            st.session_state[f"show_issue_{elderly_id}"] = False
+                                            st.rerun()
+                                        else:
+                                            st.error("請先拍照再回報異常")
 
     # --- Tab 2: Scheduling & Claiming ---
     with tab2:
-        st.header("🗓️ 排班表")
+        st.header("🗓️ 排班表 (互動式日曆)")
         
-        # Date range: Today to +6 days
-        dates = [datetime.date.today() + datetime.timedelta(days=i) for i in range(7)]
+        # 1. 準備資料
+        # 取得前後一個月的任務 (或是全部，視資料量而定，這裡先取前後 30 天)
+        start_date = (datetime.date.today() - datetime.timedelta(days=30)).strftime("%Y-%m-%d")
+        end_date = (datetime.date.today() + datetime.timedelta(days=60)).strftime("%Y-%m-%d")
         
-        # Create a grid for the schedule
-        # Columns: Date | Route 1 | Route 2 | ...
+        tasks = db.get_tasks_by_date_range(start_date, end_date)
         
-        routes = [dict(r) for r in db.get_all_routes()]
+        # 2. 使用後端函式獲取日曆事件
+        events = db.get_task_events(start_date, end_date, current_user=username)
+            
+        # 3. 設定 Calendar 選項
+        calendar_options = {
+            "editable": False,
+            "navLinks": True,
+            "headerToolbar": {
+                "left": "today prev,next",
+                "center": "title",
+                "right": "dayGridMonth,listWeek"
+            },
+            "initialView": "dayGridMonth",
+            "selectable": True,
+        }
         
-        # Prepare data for display
-        schedule_data = []
+        # 4. 顯示 Calendar
+        cal_state = calendar(events=events, options=calendar_options, key="meal_calendar")
         
-        for d in dates:
-            d_str = d.strftime("%Y-%m-%d")
-            day_tasks = db.get_tasks_by_date(d_str)
+        # 5. 處理點擊事件
+        if cal_state.get("eventClick"):
+            event = cal_state["eventClick"]["event"]
+            props = event["extendedProps"]
+            task_id = props["taskId"]
+            current_vol = props["currentVolunteer"]
+            route_name = props["routeName"]
             
-            # Map route_id to task info
-            task_map = {t['route_id']: t for t in day_tasks}
-            
-            row = {"日期": f"{d_str} ({d.strftime('%a')})"}
-            
-            cols = st.columns([1] + [1]*len(routes))
-            
-            # Date Column
-            with cols[0]:
-                st.write(f"**{d_str}**")
-                st.caption(d.strftime('%A'))
-            
-            # Route Columns
-            for i, route in enumerate(routes):
-                with cols[i+1]:
-                    st.write(f"**{route['route_name']}**")
+            with st.expander(f"📝 任務詳情：{event['title']}", expanded=True):
+                st.write(f"**日期**：{event['start']}")
+                st.write(f"**路線**：{route_name}")
+                st.write(f"**目前志工**：{current_vol if current_vol else '無 (缺人)'}")
+                
+                if not current_vol:
+                    st.warning("⚠️ 此路線目前缺人配送！")
+                    if st.button("🙋‍♂️ 我要認領", key=f"claim_cal_{task_id}"):
+                        db.update_task_volunteer(task_id, username)
+                        st.rerun()
+                elif current_vol == username:
+                    st.success("這是您的任務")
+                    if st.button("🚫 請假 / 釋出任務", key=f"leave_cal_{task_id}"):
+                        db.update_task_volunteer(task_id, None)
+                        st.rerun()
+                else:
+                    st.info("此任務已有其他志工負責。")
+                    # 管理員可強制換人? (Optional)
                     
-                    task = task_map.get(route['id'])
+        # 6. 新增任務按鈕 (如果某天沒有任務)
+        # 這裡可以做一個簡單的介面來新增特定日期的任務
+        st.divider()
+        with st.expander("➕ 新增排班任務"):
+            with st.form("add_task_form"):
+                new_task_date = st.date_input("日期", min_value=datetime.date.today())
+                # 轉換為字典以避免 pickle 錯誤
+                routes_list = [dict(r) for r in db.get_all_routes()]
+                new_task_route = st.selectbox("路線", options=routes_list, format_func=lambda x: x['route_name'])
+                if st.form_submit_button("新增任務"):
+                    # Check if exists?
+                    # For simplicity, just create. DB might need unique constraint or check logic.
+                    # Assuming one task per route per day.
+                    existing = db.get_tasks_by_date(new_task_date.strftime("%Y-%m-%d"))
+                    exists = any(t['route_id'] == new_task_route['id'] for t in existing)
                     
-                    if task:
-                        assigned = task['assigned_volunteer']
-                        task_id = task['id']
-                        
-                        if assigned:
-                            st.info(f"👤 {assigned}")
-                            if assigned == username:
-                                if st.button("請假", key=f"leave_{task_id}"):
-                                    db.update_task_volunteer(task_id, None)
-                                    st.rerun()
-                        else:
-                            st.warning("⚠️ 缺人")
-                            if st.button("🙋‍♂️ 認領", key=f"claim_{task_id}"):
-                                db.update_task_volunteer(task_id, username)
-                                st.rerun()
+                    if exists:
+                        st.error("該日期此路線已存在任務！")
                     else:
-                        st.write("未排班")
-                        # Option to create task if admin? Or auto-create?
-                        # For now, assume tasks are created by seed or admin logic (not fully implemented yet)
-                        # But seed only creates for TODAY.
-                        # We should probably auto-create tasks if they don't exist for the week?
-                        # Or provide a button to "Initialize Schedule"
-                        if st.button("➕ 新增", key=f"add_task_{d_str}_{route['id']}"):
-                            db.create_daily_task(d_str, route['id'], None)
-                            st.rerun()
-            
-            st.divider()
+                        db.create_daily_task(new_task_date.strftime("%Y-%m-%d"), new_task_route['id'], None)
+                        st.success("任務已建立！")
+                        st.rerun()
 
     # --- Tab 3: Admin Management ---
     with tab3:
@@ -238,6 +252,9 @@ def main():
             st.header("⚙️ 管理後台")
             
             col_a, col_b = st.columns(2)
+            
+            # 先獲取路線資料供後續使用
+            routes = db.get_all_routes()
             
             with col_a:
                 st.subheader("長者資料管理")
@@ -391,12 +408,26 @@ def main():
                         "elderly_name": "長者姓名",
                         "volunteer_id": "志工帳號",
                         "status": "狀態",
+                        "abnormal_reason": "異常原因",
                         "notes": "備註",
-                        "photo_path": "照片路徑",
+                        "photo_path": "送達證明",
                         "delivery_time": "打卡時間"
                     })
                     
-                    st.dataframe(df_report, use_container_width=True)
+                    # 配置 ImageColumn
+                    column_config = {
+                        "送達證明": st.column_config.ImageColumn(
+                            "📸 送達證明",
+                            help="點擊查看大圖",
+                            width="small"
+                        )
+                    }
+                    
+                    st.dataframe(
+                        df_report, 
+                        use_container_width=True,
+                        column_config=column_config
+                    )
                     
                     # CSV Download
                     csv = df_report.to_csv(index=False).encode('utf-8-sig')

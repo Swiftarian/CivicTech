@@ -28,18 +28,13 @@ if errorlevel 1 (
     exit /b 1
 )
 
-REM 檢查是否已安裝依賴
+REM 檢查並安裝依賴
 echo [INFO] 檢查依賴套件...
-pip show streamlit >nul 2>&1
+pip install -r requirements.txt
 if errorlevel 1 (
-    echo [WARNING] 尚未安裝依賴套件
-    echo [INFO] 正在安裝 requirements.txt...
-    pip install -r requirements.txt
-    if errorlevel 1 (
-        echo [ERROR] 套件安裝失敗
-        pause
-        exit /b 1
-    )
+    echo [ERROR] 套件安裝失敗
+    pause
+    exit /b 1
 )
 
 REM 啟動 Streamlit

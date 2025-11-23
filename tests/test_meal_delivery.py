@@ -65,7 +65,7 @@ class TestMealDeliverySystem(unittest.TestCase):
         # 檢查 delivery_records 表
         self.cursor.execute("PRAGMA table_info(delivery_records)")
         columns = {row['name'] for row in self.cursor.fetchall()}
-        required_cols = {'id', 'task_id', 'elderly_id', 'status', 'photo_path', 'volunteer_id'}
+        required_cols = {'id', 'task_id', 'elderly_id', 'status', 'photo_path', 'volunteer_id', 'abnormal_reason'}
         
         missing = required_cols - columns
         self.assertTrue(len(missing) == 0, f"delivery_records 缺少欄位: {missing}")
@@ -127,9 +127,10 @@ class TestMealDeliverySystem(unittest.TestCase):
         record_id = db_manager.create_delivery_record(
             task_id=task_id,
             elderly_id=elderly_id,
-            status="已送達",
+            status="異常",
             notes="測試備註",
-            photo_path="/tmp/test_photo.jpg"
+            photo_path="/tmp/test_photo.jpg",
+            abnormal_reason="長者不在家"
         )
         self.assertTrue(record_id > 0, "建立打卡紀錄失敗")
         
@@ -137,9 +138,10 @@ class TestMealDeliverySystem(unittest.TestCase):
         self.cursor.execute("SELECT * FROM delivery_records WHERE id = ?", (record_id,))
         record = self.cursor.fetchone()
         self.assertIsNotNone(record, "找不到打卡紀錄")
-        self.assertEqual(record['status'], "已送達", "狀態錯誤")
+        self.assertEqual(record['status'], "異常", "狀態錯誤")
         self.assertEqual(record['notes'], "測試備註", "備註錯誤")
-        print(f"   ✅ 成功建立打卡紀錄 ID: {record_id}")
+        self.assertEqual(record['abnormal_reason'], "長者不在家", "異常原因錯誤")
+        print(f"   ✅ 成功建立打卡紀錄 ID: {record_id} (含異常原因)")
         
         # 驗證 check_delivery_status 函式
         is_delivered = db_manager.check_delivery_status(task_id, elderly_id)
@@ -148,6 +150,46 @@ class TestMealDeliverySystem(unittest.TestCase):
         
         # 清理測試資料
         self.cursor.execute("DELETE FROM delivery_records WHERE id = ?", (record_id,))
+        self.cursor.execute("DELETE FROM daily_tasks WHERE id = ?", (task_id,))
+        self.cursor.execute("DELETE FROM elderly_profiles WHERE id = ?", (elderly_id,))
+        self.cursor.execute("DELETE FROM delivery_routes WHERE id = ?", (route_id,))
+        self.conn.commit()
+
+        self.cursor.execute("DELETE FROM delivery_routes WHERE id = ?", (route_id,))
+        self.conn.commit()
+
+    def test_4_report_generation(self):
+        """測試 4: 報表生成邏輯"""
+        print("\n🧪 測試 4: 報表生成邏輯...")
+        
+        # 1. 準備資料
+        route_id = db_manager.create_delivery_route("測試路線_C")
+        elderly_id = db_manager.create_elderly_profile("測試長者C", "地址C", "0900", route_id=route_id)
+        today = datetime.date.today().strftime("%Y-%m-%d")
+        task_id = db_manager.create_daily_task(today, route_id, "test_vol")
+        
+        db_manager.create_delivery_record(
+            task_id, elderly_id, "異常", "門鎖著", None, "test_vol", "長者不在家"
+        )
+        
+        # 2. 執行查詢
+        reports = db_manager.get_delivery_reports(today, today)
+        
+        # 3. 驗證
+        self.assertTrue(len(reports) > 0, "查無報表資料")
+        found = False
+        for r in reports:
+            if r['route_name'] == "測試路線_C" and r['elderly_name'] == "測試長者C":
+                self.assertEqual(r['status'], "異常")
+                self.assertEqual(r['abnormal_reason'], "長者不在家")
+                found = True
+                break
+        
+        self.assertTrue(found, "報表中找不到剛建立的測試資料")
+        print("   ✅ 報表查詢成功，資料正確")
+        
+        # 清理
+        self.cursor.execute("DELETE FROM delivery_records WHERE task_id = ?", (task_id,))
         self.cursor.execute("DELETE FROM daily_tasks WHERE id = ?", (task_id,))
         self.cursor.execute("DELETE FROM elderly_profiles WHERE id = ?", (elderly_id,))
         self.cursor.execute("DELETE FROM delivery_routes WHERE id = ?", (route_id,))
