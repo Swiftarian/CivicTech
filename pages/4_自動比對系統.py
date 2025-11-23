@@ -97,24 +97,6 @@ def download_lang_data():
         except:
             pass # 英文非必要，失敗就算了
 
-@st.cache_data
-def load_system_data(excel_path):
-    """讀取系統列管資料 Excel"""
-    if not os.path.exists(excel_path):
-        return None
-    try:
-        # 嘗試讀取 (支援 .xls 和 .xlsx)
-        if excel_path.endswith('.xls'):
-            df = pd.read_excel(excel_path, header=1, engine='xlrd')
-        else:
-            df = pd.read_excel(excel_path, header=1)
-            
-        # 清理欄位名稱 (去除前後空白、換行符號)
-        df.columns = df.columns.astype(str).str.strip().str.replace('\n', '').str.replace('\r', '')
-        return df
-    except Exception as e:
-        st.error(f"讀取 Excel 失敗: {e}")
-        return None
 
 def pdf_to_images(pdf_file):
     """將 PDF 轉為圖片列表 (每一頁一張圖)"""
@@ -363,25 +345,12 @@ st.markdown("""
 
 # --- CRITICAL: 路徑變數 Session 記憶與初始化 ---
 # Tesseract 路徑初始化
-# 如果 Session 中沒有 key，或是值為空 (例如被清空)，則重新偵測並設定預設值
 if "tesseract_exe_path" not in st.session_state or not st.session_state["tesseract_exe_path"]:
-    possible_paths = [
-        r"C:\Program Files\Tesseract-OCR\tesseract.exe",
-        r"D:\Program Files\Tesseract-OCR\tesseract.exe",
-        r"E:\Program Files\Tesseract-OCR\tesseract.exe",
-        r"C:\Program Files (x86)\Tesseract-OCR\tesseract.exe",
-        r"D:\Program Files (x86)\Tesseract-OCR\tesseract.exe"
-    ]
-    detected_path = possible_paths[0]
-    for p in possible_paths:
-        if os.path.exists(p):
-            detected_path = p
-            break
-    st.session_state["tesseract_exe_path"] = detected_path
+    st.session_state["tesseract_exe_path"] = utils.get_default_tesseract_path()
 
 # Excel 路徑初始化
 if "system_excel_path" not in st.session_state or not st.session_state["system_excel_path"]:
-    st.session_state["system_excel_path"] = r"d:\下載\downloads\00. 列管場所資料.xls"
+    st.session_state["system_excel_path"] = utils.get_default_excel_path()
 
 # 檢查狀態以決定 Expander 是否展開
 # 使用 Session State 的值進行檢查，確保穩定性
@@ -398,7 +367,7 @@ excel_is_loaded = False
 
 if os.path.exists(st.session_state["system_excel_path"]):
     # 嘗試預載入檢查 (利用 cache)
-    df_check = load_system_data(st.session_state["system_excel_path"])
+    df_check = utils.load_system_data(st.session_state["system_excel_path"])
     if df_check is not None and not df_check.empty:
         excel_is_loaded = True
 
@@ -439,7 +408,7 @@ with st.sidebar:
              st.error("❌ 找不到 Excel 檔案")
 
     # 載入資料 (使用 Session State 的值)
-    df_system = load_system_data(st.session_state["system_excel_path"])
+    df_system = utils.load_system_data(st.session_state["system_excel_path"])
     
     selected_place = None
     
@@ -792,6 +761,11 @@ with col2:
 
         # 建立比對表格資料
         comparison_data = []
+        
+        # 獨立儲存消防設備資料
+        equip_sys_val = ""
+        equip_ocr_val = ""
+        
         for display_name, excel_col in field_mapping.items():
             # 系統資料
             sys_val = ""
@@ -799,21 +773,22 @@ with col2:
                 sys_val = target_row.get(excel_col, "無資料")
                 if pd.isna(sys_val): sys_val = ""
             
-            # 特殊處理：消防設備種類 (系統資料) - 換行顯示
-            if display_name == '消防設備種類' and isinstance(sys_val, str) and show_system_data:
-                # 使用標準化函式處理系統資料
-                # 這會過濾掉不相關的文字，只保留標準設備名稱，並以頓號分隔
-                normalized_sys_val = normalize_equipment_str(sys_val)
-                
-                # 直接使用頓號分隔
-                sys_val = normalized_sys_val
-            
             # 申報資料
             ocr_key = display_name
             if display_name == '電話':
                 ocr_key = '場所電話'
             
             ocr_val = extracted_data.get(ocr_key, "")
+            
+            # 特殊處理：消防設備種類 (獨立處理，不加入表格)
+            if display_name == '消防設備種類':
+                if isinstance(sys_val, str) and show_system_data:
+                    equip_sys_val = normalize_equipment_str(sys_val)
+                else:
+                    equip_sys_val = sys_val # 可能是空字串
+                
+                equip_ocr_val = ocr_val
+                continue # 跳過加入表格
             
             comparison_data.append({
                 "欄位": display_name,
@@ -842,10 +817,47 @@ with col2:
         
         st.warning("💡 申報資料欄位若為空白，請參考左側影像手動輸入。")
         
+        # --- 消防設備專屬比對區 ---
+        st.write("---")
+        with st.expander("🔥 消防設備詳細比對與編輯", expanded=True):
+            col_equip1, col_equip2 = st.columns(2)
+            
+            # 格式化顯示 (將頓號轉為換行)
+            fmt_sys_val = equip_sys_val.replace("、", "\n") if equip_sys_val else ""
+            
+            # 檢查 Session State 是否有暫存的修改值
+            if "modified_equip_ocr" not in st.session_state:
+                st.session_state.modified_equip_ocr = equip_ocr_val
+            
+            # 如果 OCR 重新辨識 (extracted_data 變了)，可能需要更新 session state?
+            # 這裡簡化處理：如果 extracted_data 的值跟 session state 初始值不同，且 session state 未被修改過...
+            # 比較保險的做法是：以 session state 為主，但提供按鈕重置
+            
+            # 格式化 OCR 值 (顯示用)
+            fmt_ocr_val = st.session_state.modified_equip_ocr.replace("、", "\n") if st.session_state.modified_equip_ocr else ""
+
+            with col_equip1:
+                st.text_area("系統列管設備 (唯讀)", value=fmt_sys_val, height=200, disabled=True)
+            
+            with col_equip2:
+                new_equip_str = st.text_area("申報設備 (可編輯)", value=fmt_ocr_val, height=200, help="若辨識有誤，請在此修正 (每行一項)")
+                
+                # 處理修改
+                if new_equip_str != fmt_ocr_val:
+                    # 將換行轉回頓號儲存
+                    updated_val = new_equip_str.replace("\n", "、")
+                    st.session_state.modified_equip_ocr = updated_val
+                    # 更新 extracted_data 以便後續邏輯使用 (雖然這裡是局部變數，但為了保險)
+                    equip_ocr_val = updated_val
+                    st.rerun()
+                else:
+                    # 使用 Session State 的值 (轉回頓號格式) 作為比對用
+                    equip_ocr_val = st.session_state.modified_equip_ocr
+
         # 檢核清單
         st.write("### ✅ 差異檢核")
         
-        # 自動判斷差異 (簡單比對)
+        # 自動判斷差異 (表格部分)
         for index, row in edited_df.iterrows():
             field = row['欄位']
             sys_val = str(row['系統資料']).strip()
@@ -883,66 +895,6 @@ with col2:
                     else:
                         st.error(f"❌ 【{field}】不一致！\n系統：{sys_val}\n申報：{ocr_val}")
             
-            elif field == '消防設備種類':
-                # 嚴格判斷邏輯
-                if not sys_val and ocr_val:
-                    st.error(f"❌ 【{field}】不一致 (系統無資料)")
-                    # 依然顯示差異詳情
-                    ocr_set = set(ocr_val.split("、")) if ocr_val else set()
-                    ocr_set.discard("")
-                    col1, col2 = st.columns(2)
-                    with col1:
-                         st.markdown("**❌ 系統無資料**")
-                    with col2:
-                         st.markdown(f"**❓ 申報資料：**")
-                         for item in ocr_set:
-                             st.markdown(f"- <span style='color:orange'>{item}</span>", unsafe_allow_html=True)
-                             
-                elif not sys_val and not ocr_val:
-                    st.success(f"✅ 【{field}】一致 (皆無資料)")
-                elif sys_val and not ocr_val:
-                    st.warning(f"⚠️ 【{field}】申報資料空白 (系統: {sys_val})")
-                else:
-                    # 兩者皆有值
-                    if sys_val != ocr_val:
-                        # 轉為集合進行比對
-                        sys_set = set(sys_val.split("、")) if sys_val else set()
-                        ocr_set = set(ocr_val.split("、")) if ocr_val else set()
-                        
-                        # 去除空字串
-                        sys_set.discard("")
-                        ocr_set.discard("")
-                        
-                        # 計算差異
-                        missing_in_ocr = sys_set - ocr_set # 系統有，申報無 (漏報?)
-                        extra_in_ocr = ocr_set - sys_set   # 申報有，系統無 (新增?)
-                        
-                        if not missing_in_ocr and not extra_in_ocr:
-                            st.success(f"✅ 【{field}】一致")
-                        else:
-                            st.error(f"⚠️ 【{field}】不一致！")
-                            
-                            # 使用 Columns 顯示差異，比較清楚
-                            col1, col2 = st.columns(2)
-                            
-                            with col1:
-                                if missing_in_ocr:
-                                    st.markdown(f"**❌ 系統有，但申報資料未列出：**")
-                                    for item in missing_in_ocr:
-                                        st.markdown(f"- <span style='color:red'>{item}</span>", unsafe_allow_html=True)
-                                else:
-                                    st.markdown("**✅ 系統項目皆已申報**")
-                                    
-                            with col2:
-                                if extra_in_ocr:
-                                    st.markdown(f"**❓ 申報資料多出的項目：**")
-                                    for item in extra_in_ocr:
-                                        st.markdown(f"- <span style='color:orange'>{item}</span>", unsafe_allow_html=True)
-                                else:
-                                    st.markdown("**✅ 無額外申報項目**")
-                    else:
-                        st.success(f"✅ 【{field}】一致")
-
             # 其他欄位的一般比對
             else:
                 # 嚴格判斷邏輯
@@ -960,6 +912,70 @@ with col2:
                          st.success(f"✅ 【{field}】一致 (部分符合)")
                     else:
                          st.error(f"❌ 【{field}】不一致！\n系統：{sys_val}\n申報：{ocr_val}")
+
+        # --- 消防設備比對邏輯 (獨立) ---
+        field = '消防設備種類'
+        sys_val = equip_sys_val
+        ocr_val = equip_ocr_val
+        
+        # 嚴格判斷邏輯
+        if not sys_val and ocr_val:
+            st.error(f"❌ 【{field}】不一致 (系統無資料)")
+            # 依然顯示差異詳情
+            ocr_set = set(ocr_val.split("、")) if ocr_val else set()
+            ocr_set.discard("")
+            col1, col2 = st.columns(2)
+            with col1:
+                 st.markdown("**❌ 系統無資料**")
+            with col2:
+                 st.markdown(f"**❓ 申報資料：**")
+                 for item in ocr_set:
+                     st.markdown(f"- <span style='color:orange'>{item}</span>", unsafe_allow_html=True)
+                     
+        elif not sys_val and not ocr_val:
+            st.success(f"✅ 【{field}】一致 (皆無資料)")
+        elif sys_val and not ocr_val:
+            st.warning(f"⚠️ 【{field}】申報資料空白 (系統: {sys_val})")
+        else:
+            # 兩者皆有值
+            if sys_val != ocr_val:
+                # 轉為集合進行比對
+                sys_set = set(sys_val.split("、")) if sys_val else set()
+                ocr_set = set(ocr_val.split("、")) if ocr_val else set()
+                
+                # 去除空字串
+                sys_set.discard("")
+                ocr_set.discard("")
+                
+                # 計算差異
+                missing_in_ocr = sys_set - ocr_set # 系統有，申報無 (漏報?)
+                extra_in_ocr = ocr_set - sys_set   # 申報有，系統無 (新增?)
+                
+                if not missing_in_ocr and not extra_in_ocr:
+                    st.success(f"✅ 【{field}】一致")
+                else:
+                    st.error(f"⚠️ 【{field}】不一致！")
+                    
+                    # 使用 Columns 顯示差異，比較清楚
+                    col1, col2 = st.columns(2)
+                    
+                    with col1:
+                        if missing_in_ocr:
+                            st.markdown(f"**❌ 系統有，但申報資料未列出：**")
+                            for item in missing_in_ocr:
+                                st.markdown(f"- <span style='color:red'>{item}</span>", unsafe_allow_html=True)
+                        else:
+                            st.markdown("**✅ 系統項目皆已申報**")
+                            
+                    with col2:
+                        if extra_in_ocr:
+                            st.markdown(f"**❓ 申報資料多出的項目：**")
+                            for item in extra_in_ocr:
+                                st.markdown(f"- <span style='color:orange'>{item}</span>", unsafe_allow_html=True)
+                        else:
+                            st.markdown("**✅ 無額外申報項目**")
+            else:
+                st.success(f"✅ 【{field}】一致")
 
         # --- 新增：檢查項目 (消防設備) ---
         st.write("---")

@@ -250,24 +250,63 @@ def download_lang_data():
         except:
             pass # 英文非必要，失敗就算了
 
+import shutil
+import uuid
+
+def get_default_tesseract_path():
+    """自動偵測 Tesseract 執行檔路徑"""
+    possible_paths = [
+        r"C:\Program Files\Tesseract-OCR\tesseract.exe",
+        r"D:\Program Files\Tesseract-OCR\tesseract.exe",
+        r"E:\Program Files\Tesseract-OCR\tesseract.exe",
+        r"C:\Program Files (x86)\Tesseract-OCR\tesseract.exe",
+        r"D:\Program Files (x86)\Tesseract-OCR\tesseract.exe"
+    ]
+    
+    for path in possible_paths:
+        if os.path.exists(path):
+            return path
+    
+    # 若都找不到，返回預設第一個路徑（即使不存在）
+    return possible_paths[0] if possible_paths else ""
+
+def get_default_excel_path():
+    """回傳預設的系統列管 Excel 路徑"""
+    return r"d:\下載\downloads\00. 列管場所資料.xls"
+
 @st.cache_data
 def load_system_data(excel_path):
-    """讀取系統列管資料 Excel"""
+    """讀取系統列管資料 Excel (使用複製策略以避免檔案鎖定)"""
     if not os.path.exists(excel_path):
         return None
+        
+    temp_path = f"temp_system_data_{uuid.uuid4().hex[:8]}.xls"
+    
     try:
-        # 嘗試讀取 (支援 .xls 和 .xlsx)
+        # 1. 複製檔案到暫存檔
+        shutil.copy2(excel_path, temp_path)
+        
+        # 2. 讀取暫存檔
         if excel_path.endswith('.xls'):
-            df = pd.read_excel(excel_path, header=1, engine='xlrd')
+            df = pd.read_excel(temp_path, header=1, engine='xlrd')
         else:
-            df = pd.read_excel(excel_path, header=1)
+            df = pd.read_excel(temp_path, header=1)
             
         # 清理欄位名稱 (去除前後空白、換行符號)
         df.columns = df.columns.astype(str).str.strip().str.replace('\n', '').str.replace('\r', '')
         return df
+        
     except Exception as e:
         st.error(f"讀取 Excel 失敗: {e}")
         return None
+        
+    finally:
+        # 3. 刪除暫存檔
+        if os.path.exists(temp_path):
+            try:
+                os.remove(temp_path)
+            except:
+                pass # 刪除失敗不影響流程
 
 def pdf_to_images(pdf_file):
     """將 PDF 轉為圖片列表 (每一頁一張圖)"""

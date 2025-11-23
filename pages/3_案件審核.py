@@ -573,6 +573,29 @@ elif page == "系統紀錄":
         st.error("⛔ 您沒有權限存取此頁面")
     else:
         st.title("📜 系統稽核紀錄")
+        
+        # 資料庫備份功能
+        st.subheader("💾 資料庫備份")
+        col_backup1, col_backup2 = st.columns([2, 1])
+        
+        with col_backup1:
+            st.write("系統會在每次重啟時自動備份資料庫。您也可以隨時手動進行備份。")
+            st.caption("備份檔案儲存於：`backups/` 資料夾，保留最新 30 個備份")
+        
+        with col_backup2:
+            if st.button("💾 立即備份資料庫", type="primary", use_container_width=True):
+                backup_path = db_manager.backup_database()
+                if backup_path:
+                    st.success(f"✅ 備份成功！")
+                    st.info(f"📂 備份路徑：`{backup_path}`")
+                    db_manager.add_log(user['username'], "手動備份資料庫", f"備份至：{backup_path}")
+                else:
+                    st.error("❌ 備份失敗！請檢查系統權限或磁碟空間。")
+        
+        st.divider()
+        
+        # 稽核紀錄
+        st.subheader("📋 稽核紀錄")
         logs = db_manager.get_audit_logs()
         if logs:
             df_logs = pd.DataFrame(logs, columns=["ID", "帳號", "動作", "詳情", "時間"])

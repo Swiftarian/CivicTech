@@ -2,6 +2,8 @@ import sqlite3
 import datetime
 import uuid
 import os
+import shutil
+import time
 
 DB_NAME = "cases.db"
 
@@ -49,8 +51,78 @@ def migrate_database():
     finally:
         conn.close()
 
+def backup_database():
+    """
+    資料庫自動備份
+    - 建立 backups/ 資料夾（若不存在）
+    - 產生備份檔名：cases_YYYYMMDD_HHMMSS.db
+    - 複製當前資料庫檔案
+    - 自動清理：保留最新 30 個備份，刪除舊備份
+    """
+    # 檢查資料庫檔案是否存在
+    if not os.path.exists(DB_NAME):
+        print(f"⚠️ 資料庫檔案 {DB_NAME} 不存在，跳過備份")
+        return None
+    
+    # 建立備份資料夾
+    backup_dir = "backups"
+    if not os.path.exists(backup_dir):
+        os.makedirs(backup_dir)
+        print(f"✅ 已建立備份資料夾：{backup_dir}")
+    
+    # 產生備份檔名
+    timestamp = time.strftime("%Y%m%d_%H%M%S")
+    backup_filename = f"cases_{timestamp}.db"
+    backup_path = os.path.join(backup_dir, backup_filename)
+    
+    try:
+        # 複製資料庫檔案
+        shutil.copy2(DB_NAME, backup_path)
+        print(f"✅ 資料庫備份成功：{backup_path}")
+        
+        # 自動清理：保留最新 30 個備份
+        cleanup_old_backups(backup_dir, max_backups=30)
+        
+        return backup_path
+    except Exception as e:
+        print(f"❌ 資料庫備份失敗: {e}")
+        return None
+
+def cleanup_old_backups(backup_dir, max_backups=30):
+    """
+    清理舊備份檔案
+    只保留最新的 max_backups 個備份，刪除最舊的
+    """
+    try:
+        # 取得所有備份檔案
+        backup_files = [
+            os.path.join(backup_dir, f) 
+            for f in os.listdir(backup_dir) 
+            if f.startswith("cases_") and f.endswith(".db")
+        ]
+        
+        # 如果備份數量超過上限
+        if len(backup_files) > max_backups:
+            # 按修改時間排序（最舊的在前）
+            backup_files.sort(key=lambda x: os.path.getmtime(x))
+            
+            # 計算需要刪除的數量
+            files_to_delete = backup_files[:len(backup_files) - max_backups]
+            
+            # 刪除舊備份
+            for old_file in files_to_delete:
+                os.remove(old_file)
+                print(f"🗑️  已刪除舊備份：{os.path.basename(old_file)}")
+            
+            print(f"✅ 備份清理完成，保留最新 {max_backups} 個備份")
+    except Exception as e:
+        print(f"⚠️ 備份清理失敗: {e}")
+
 def init_db():
     """初始化資料庫：建立案件資料表"""
+    # 在初始化之前先備份現有資料庫（如果存在）
+    backup_database()
+    
     conn = get_connection()
     c = conn.cursor()
     c.execute('''
