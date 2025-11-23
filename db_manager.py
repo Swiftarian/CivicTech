@@ -91,6 +91,24 @@ def migrate_database():
             c.execute("ALTER TABLE delivery_records ADD COLUMN abnormal_reason TEXT")
             conn.commit()
             print("✅ 已新增 abnormal_reason 欄位")
+        
+        # 檢查 elderly_profiles 表是否有 diet_type 欄位
+        c.execute("PRAGMA table_info(elderly_profiles)")
+        columns = [column[1] for column in c.fetchall()]
+        if columns and 'diet_type' not in columns:
+            print("⚠️ 正在新增 diet_type 欄位 (elderly_profiles)...")
+            c.execute("ALTER TABLE elderly_profiles ADD COLUMN diet_type TEXT DEFAULT '一般'")
+            conn.commit()
+            print("✅ 已新增 diet_type 欄位")
+        
+        # 檢查 delivery_records 表是否有 photo_path 欄位
+        c.execute("PRAGMA table_info(delivery_records)")
+        columns = [column[1] for column in c.fetchall()]
+        if columns and 'photo_path' not in columns:
+            print("⚠️ 正在新增 photo_path 欄位 (delivery_records)...")
+            c.execute("ALTER TABLE delivery_records ADD COLUMN photo_path TEXT")
+            conn.commit()
+            print("✅ 已新增 photo_path 欄位")
     
     except Exception as e:
         print(f"❌ 資料庫遷移失敗: {e}")
@@ -204,9 +222,21 @@ def seed_meal_data():
 
         print("🌱 正在寫入送餐系統測試資料...")
         
-        # 1. Routes
+        # 1. 建立測試帳號 volunteer1
+        import auth
+        c.execute("SELECT * FROM users WHERE username = 'volunteer1'")
+        if not c.fetchone():
+            print("👤 建立測試帳號: volunteer1 / 123")
+            salt, hash_value = auth.hash_password("123")
+            c.execute("""
+                INSERT INTO users (username, password_salt, password_hash, role, email)
+                VALUES (?, ?, ?, ?, ?)
+            """, ("volunteer1", salt, hash_value, "volunteer", "volunteer1@example.com"))
+            conn.commit()
+        
+        # 2. Routes
         routes = [
-            ("建和線", "建和社區方向", "admin"),
+            ("建和線", "建和社區方向", "volunteer1"),  # 指派給 volunteer1
             ("溫泉線", "知本溫泉方向", "josh"),
             ("市區線", "台東市區", None)
         ]
@@ -228,8 +258,9 @@ def seed_meal_data():
         for name, addr, diet, rid, seq in elderly_data:
             c.execute("INSERT INTO elderly_profiles (name, address, diet_type, route_id, sequence) VALUES (?, ?, ?, ?, ?)", (name, addr, diet, rid, seq))
             
-        # 3. Today's Tasks
+        # 3. Today's Tasks (確保包含今天)
         today = datetime.date.today().strftime("%Y-%m-%d")
+        print(f"📅 建立今天 ({today}) 的排班資料")
         
         # Create tasks for all routes
         for i, (name, desc, volunteer) in enumerate(routes):
@@ -238,9 +269,18 @@ def seed_meal_data():
             assigned = volunteer
             c.execute("INSERT INTO daily_tasks (date, route_id, assigned_volunteer, status) VALUES (?, ?, ?, ?)", 
                       (today, route_id, assigned, "待執行"))
+        
+        # 也建立未來1週的排班 (用於日曆測試)
+        for day_offset in range(1, 8):
+            future_date = (datetime.date.today() + datetime.timedelta(days=day_offset)).strftime("%Y-%m-%d")
+            for i, (name, desc, volunteer) in enumerate(routes):
+                route_id = route_ids[i]
+                # 未來的任務不指派，留給志工認領
+                c.execute("INSERT INTO daily_tasks (date, route_id, assigned_volunteer, status) VALUES (?, ?, ?, ?)", 
+                          (future_date, route_id, None, "待執行"))
                       
         conn.commit()
-        print("✅ 測試資料寫入完成")
+        print("✅ 測試資料寫入完成 (包含今天與未來7天)")
     except Exception as e:
         print(f"❌ 寫入測試資料失敗: {e}")
     finally:
@@ -998,3 +1038,36 @@ def cancel_museum_booking(booking_id):
     success = c.rowcount > 0
     conn.close()
     return success
+# =================================
+# 除錯工具 (Debug Tools)
+# =================================
+def reset_meal_data():
+    """
+    重置送餐系統所有資料（除錯專用）
+    刪除 delivery_routes, elderly_profiles, daily_tasks, delivery_records 的所有資料
+    並重新執行 seed_meal_data()
+    """
+    conn = get_connection()
+    c = conn.cursor()
+    
+    try:
+        print("🗑️ 正在清除送餐系統資料...")
+        
+        # 刪除所有送餐相關表格資料（保留表結構）
+        tables = ['delivery_records', 'daily_tasks', 'elderly_profiles', 'delivery_routes']
+        for table in tables:
+            c.execute(f"DELETE FROM {table}")
+            print(f"  ✅ 已清空 {table}")
+        
+        conn.commit()
+        print("🔄 重新載入種子資料...")
+        
+        # 重新執行種子資料
+        seed_meal_data()
+        
+        return True
+    except Exception as e:
+        print(f"❌ 重置失敗: {e}")
+        return False
+    finally:
+        conn.close()
