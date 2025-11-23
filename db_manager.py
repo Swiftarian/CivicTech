@@ -64,6 +64,24 @@ def migrate_database():
             c.execute("ALTER TABLE cases ADD COLUMN is_archived INTEGER DEFAULT 0")
             conn.commit()
             print("✅ 已新增 is_archived 欄位")
+
+        # 檢查 elderly_profiles 表是否有 sequence 欄位
+        c.execute("PRAGMA table_info(elderly_profiles)")
+        columns = [column[1] for column in c.fetchall()]
+        if columns and 'sequence' not in columns:
+            print("⚠️ 正在新增 sequence 欄位 (elderly_profiles)...")
+            c.execute("ALTER TABLE elderly_profiles ADD COLUMN sequence INTEGER DEFAULT 0")
+            conn.commit()
+            print("✅ 已新增 sequence 欄位")
+
+        # 檢查 delivery_records 表是否有 volunteer_id 欄位
+        c.execute("PRAGMA table_info(delivery_records)")
+        columns = [column[1] for column in c.fetchall()]
+        if columns and 'volunteer_id' not in columns:
+            print("⚠️ 正在新增 volunteer_id 欄位 (delivery_records)...")
+            c.execute("ALTER TABLE delivery_records ADD COLUMN volunteer_id TEXT")
+            conn.commit()
+            print("✅ 已新增 volunteer_id 欄位")
     
     except Exception as e:
         print(f"❌ 資料庫遷移失敗: {e}")
@@ -164,6 +182,61 @@ def archive_cases(case_ids):
     finally:
         conn.close()
 
+def seed_meal_data():
+    """若資料表為空，寫入測試資料"""
+    conn = get_connection()
+    c = conn.cursor()
+    
+    try:
+        # Check if routes exist
+        c.execute("SELECT count(*) FROM delivery_routes")
+        if c.fetchone()[0] > 0:
+            return
+
+        print("🌱 正在寫入送餐系統測試資料...")
+        
+        # 1. Routes
+        routes = [
+            ("建和線", "建和社區方向", "admin"),
+            ("溫泉線", "知本溫泉方向", "josh"),
+            ("市區線", "台東市區", None)
+        ]
+        
+        route_ids = []
+        for name, desc, volunteer in routes:
+            c.execute("INSERT INTO delivery_routes (route_name, description, default_volunteer_id) VALUES (?, ?, ?)", (name, desc, volunteer))
+            route_ids.append(c.lastrowid)
+        
+        # 2. Elderly
+        elderly_data = [
+            ("張爺爺", "台東市建和路1號", "一般", route_ids[0], 1),
+            ("李奶奶", "台東市建和路20號", "素食", route_ids[0], 2),
+            ("王伯伯", "台東市溫泉路5號", "切碎", route_ids[1], 1),
+            ("陳阿姨", "台東市溫泉路18號", "低鹽", route_ids[1], 2),
+            ("林爺爺", "台東市中華路一段100號", "一般", route_ids[2], 1)
+        ]
+        
+        for name, addr, diet, rid, seq in elderly_data:
+            c.execute("INSERT INTO elderly_profiles (name, address, diet_type, route_id, sequence) VALUES (?, ?, ?, ?, ?)", (name, addr, diet, rid, seq))
+            
+        # 3. Today's Tasks
+        today = datetime.date.today().strftime("%Y-%m-%d")
+        
+        # Create tasks for all routes
+        for i, (name, desc, volunteer) in enumerate(routes):
+            route_id = route_ids[i]
+            # Use default volunteer if available
+            assigned = volunteer
+            c.execute("INSERT INTO daily_tasks (date, route_id, assigned_volunteer, status) VALUES (?, ?, ?, ?)", 
+                      (today, route_id, assigned, "待執行"))
+                      
+        conn.commit()
+        print("✅ 測試資料寫入完成")
+    except Exception as e:
+        print(f"❌ 寫入測試資料失敗: {e}")
+    finally:
+        conn.close()
+
 def init_db():
     """初始化資料庫：建立案件資料表"""
     # 在初始化之前先備份現有資料庫（如果存在）
@@ -226,6 +299,7 @@ def init_db():
             diet_type TEXT,
             special_notes TEXT,
             route_id INTEGER,
+            sequence INTEGER DEFAULT 0,
             status TEXT DEFAULT '啟用',
             created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
         )
@@ -268,6 +342,7 @@ def init_db():
             status TEXT DEFAULT '已送達',
             photo_path TEXT,
             notes TEXT,
+            volunteer_id TEXT,
             FOREIGN KEY (task_id) REFERENCES daily_tasks(id),
             FOREIGN KEY (elderly_id) REFERENCES elderly_profiles(id)
         )
@@ -294,6 +369,9 @@ def init_db():
     
     # Execute database migration for existing databases
     migrate_database()
+    
+    # Seed meal data if empty
+    seed_meal_data()
     
     # Initialize default admin if no users exist
     init_admin_user()
@@ -553,14 +631,14 @@ def delete_case(case_id):
 # ==========================================
 
 # --- 長者資料管理 ---
-def create_elderly_profile(name, address, phone, gps_lat=None, gps_lon=None, diet_type="", special_notes="", route_id=None):
+def create_elderly_profile(name, address, phone, gps_lat=None, gps_lon=None, diet_type="", special_notes="", route_id=None, sequence=0):
     """建立長者資料"""
     conn = get_connection()
     c = conn.cursor()
     c.execute('''
-        INSERT INTO elderly_profiles (name, address, phone, gps_lat, gps_lon, diet_type, special_notes, route_id)
-        VALUES (?, ?, ?, ?, ?, ?, ?, ?)
-    ''', (name, address, phone, gps_lat, gps_lon, diet_type, special_notes, route_id))
+        INSERT INTO elderly_profiles (name, address, phone, gps_lat, gps_lon, diet_type, special_notes, route_id, sequence)
+        VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)
+    ''', (name, address, phone, gps_lat, gps_lon, diet_type, special_notes, route_id, sequence))
     elderly_id = c.lastrowid
     conn.commit()
     conn.close()
@@ -677,14 +755,14 @@ def update_task_status(task_id, status):
     conn.close()
 
 # --- 送達紀錄管理 ---
-def create_delivery_record(task_id, elderly_id, status="已送達", notes="", photo_path=None):
+def create_delivery_record(task_id, elderly_id, status="已送達", notes="", photo_path=None, volunteer_id=None):
     """建立送達紀錄"""
     conn = get_connection()
     c = conn.cursor()
     c.execute('''
-        INSERT INTO delivery_records (task_id, elderly_id, status, notes, photo_path)
-        VALUES (?, ?, ?, ?, ?)
-    ''', (task_id, elderly_id, status, notes, photo_path))
+        INSERT INTO delivery_records (task_id, elderly_id, status, notes, photo_path, volunteer_id)
+        VALUES (?, ?, ?, ?, ?, ?)
+    ''', (task_id, elderly_id, status, notes, photo_path, volunteer_id))
     record_id = c.lastrowid
     conn.commit()
     conn.close()
