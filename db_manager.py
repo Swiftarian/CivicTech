@@ -214,6 +214,81 @@ def init_db():
         )
     ''')
     
+    # Create elderly_profiles table (送餐系統：長者資料)
+    c.execute('''
+        CREATE TABLE IF NOT EXISTS elderly_profiles (
+            id INTEGER PRIMARY KEY AUTOINCREMENT,
+            name TEXT NOT NULL,
+            address TEXT NOT NULL,
+            gps_lat REAL,
+            gps_lon REAL,
+            phone TEXT,
+            diet_type TEXT,
+            special_notes TEXT,
+            route_id INTEGER,
+            status TEXT DEFAULT '啟用',
+            created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+        )
+    ''')
+    
+    # Create delivery_routes table (送餐系統：送餐路線)
+    c.execute('''
+        CREATE TABLE IF NOT EXISTS delivery_routes (
+            id INTEGER PRIMARY KEY AUTOINCREMENT,
+            route_name TEXT NOT NULL,
+            description TEXT,
+            default_volunteer_id TEXT,
+            num_stops INTEGER DEFAULT 0,
+            estimated_time INTEGER DEFAULT 60,
+            created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+        )
+    ''')
+    
+    # Create daily_tasks table (送餐系統：每日排班)
+    c.execute('''
+        CREATE TABLE IF NOT EXISTS daily_tasks (
+            id INTEGER PRIMARY KEY AUTOINCREMENT,
+            date TEXT NOT NULL,
+            route_id INTEGER NOT NULL,
+            assigned_volunteer TEXT,
+            status TEXT DEFAULT '待執行',
+            notes TEXT,
+            created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+            FOREIGN KEY (route_id) REFERENCES delivery_routes(id)
+        )
+    ''')
+    
+    # Create delivery_records table (送餐系統：送達紀錄)
+    c.execute('''
+        CREATE TABLE IF NOT EXISTS delivery_records (
+            id INTEGER PRIMARY KEY AUTOINCREMENT,
+            task_id INTEGER NOT NULL,
+            elderly_id INTEGER NOT NULL,
+            delivery_time TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+            status TEXT DEFAULT '已送達',
+            photo_path TEXT,
+            notes TEXT,
+            FOREIGN KEY (task_id) REFERENCES daily_tasks(id),
+            FOREIGN KEY (elderly_id) REFERENCES elderly_profiles(id)
+        )
+    ''')
+    
+    # Create museum_bookings table (防災館預約系統)
+    c.execute('''
+        CREATE TABLE IF NOT EXISTS museum_bookings (
+            id INTEGER PRIMARY KEY AUTOINCREMENT,
+            visit_date TEXT NOT NULL,
+            time_slot TEXT NOT NULL,
+            applicant_name TEXT NOT NULL,
+            applicant_phone TEXT NOT NULL,
+            visitor_count INTEGER NOT NULL,
+            organization TEXT,
+            email TEXT,
+            status TEXT DEFAULT '已預約',
+            created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+        )
+    ''')
+    
     conn.commit()
     conn.close()
     
@@ -472,3 +547,231 @@ def delete_case(case_id):
     c.execute('DELETE FROM cases WHERE id = ?', (case_id,))
     conn.commit()
     conn.close()
+
+# ==========================================
+# 送餐系統資料庫函式 (Meal Delivery System)
+# ==========================================
+
+# --- 長者資料管理 ---
+def create_elderly_profile(name, address, phone, gps_lat=None, gps_lon=None, diet_type="", special_notes="", route_id=None):
+    """建立長者資料"""
+    conn = get_connection()
+    c = conn.cursor()
+    c.execute('''
+        INSERT INTO elderly_profiles (name, address, phone, gps_lat, gps_lon, diet_type, special_notes, route_id)
+        VALUES (?, ?, ?, ?, ?, ?, ?, ?)
+    ''', (name, address, phone, gps_lat, gps_lon, diet_type, special_notes, route_id))
+    elderly_id = c.lastrowid
+    conn.commit()
+    conn.close()
+    return elderly_id
+
+def get_all_elderly():
+    """取得所有啟用中的長者資料"""
+    conn = get_connection()
+    c = conn.cursor()
+    c.execute('SELECT * FROM elderly_profiles WHERE status = "啟用" ORDER BY route_id, name')
+    profiles = c.fetchall()
+    conn.close()
+    return profiles
+
+def get_elderly_by_route(route_id):
+    """取得特定路線的長者名單"""
+    conn = get_connection()
+    c = conn.cursor()
+    c.execute('SELECT * FROM elderly_profiles WHERE route_id = ? AND status = "啟用" ORDER BY id', (route_id,))
+    profiles = c.fetchall()
+    conn.close()
+    return profiles
+
+# --- 送餐路線管理 ---
+def create_delivery_route(route_name, description="", default_volunteer_id=None):
+    """建立送餐路線"""
+    conn = get_connection()
+    c = conn.cursor()
+    c.execute('''
+        INSERT INTO delivery_routes (route_name, description, default_volunteer_id)
+        VALUES (?, ?, ?)
+    ''', (route_name, description, default_volunteer_id))
+    route_id = c.lastrowid
+    conn.commit()
+    conn.close()
+    return route_id
+
+def get_all_routes():
+    """取得所有路線"""
+    conn = get_connection()
+    c = conn.cursor()
+    c.execute('SELECT * FROM delivery_routes ORDER BY route_name')
+    routes = c.fetchall()
+    conn.close()
+    return routes
+
+def update_route_stop_count(route_id):
+    """更新路線的站點數量"""
+    conn = get_connection()
+    c = conn.cursor()
+    c.execute('SELECT COUNT(*) FROM elderly_profiles WHERE route_id = ? AND status = "啟用"', (route_id,))
+    count = c.fetchone()[0]
+    c.execute('UPDATE delivery_routes SET num_stops = ? WHERE id = ?', (count, route_id))
+    conn.commit()
+    conn.close()
+
+# --- 每日任務管理 ---
+def create_daily_task(date, route_id, assigned_volunteer=None):
+    """建立每日送餐任務"""
+    conn = get_connection()
+    c = conn.cursor()
+    c.execute('''
+        INSERT INTO daily_tasks (date, route_id, assigned_volunteer, status)
+        VALUES (?, ?, ?, "待執行")
+    ''', (date, route_id, assigned_volunteer))
+    task_id = c.lastrowid
+    conn.commit()
+    conn.close()
+    return task_id
+
+def get_tasks_by_date(date):
+    """取得特定日期的所有任務"""
+    conn = get_connection()
+    c = conn.cursor()
+    c.execute('''
+        SELECT dt.*, dr.route_name, dr.num_stops
+        FROM daily_tasks dt
+        JOIN delivery_routes dr ON dt.route_id = dr.id
+        WHERE dt.date = ?
+        ORDER BY dr.route_name
+    ''', (date,))
+    tasks = c.fetchall()
+    conn.close()
+    return tasks
+
+def get_my_tasks_today(username, date):
+    """取得當前使用者今日的任務"""
+    conn = get_connection()
+    c = conn.cursor()
+    c.execute('''
+        SELECT dt.*, dr.route_name, dr.num_stops
+        FROM daily_tasks dt
+        JOIN delivery_routes dr ON dt.route_id = dr.id
+        WHERE dt.assigned_volunteer = ? AND dt.date = ?
+    ''', (username, date))
+    tasks = c.fetchall()
+    conn.close()
+    return tasks
+
+def update_task_volunteer(task_id, new_volunteer):
+    """更改任務的志工"""
+    conn = get_connection()
+    c = conn.cursor()
+    c.execute('UPDATE daily_tasks SET assigned_volunteer = ? WHERE id = ?', (new_volunteer, task_id))
+    conn.commit()
+    conn.close()
+
+def update_task_status(task_id, status):
+    """更新任務狀態"""
+    conn = get_connection()
+    c = conn.cursor()
+    c.execute('UPDATE daily_tasks SET status = ? WHERE id = ?', (status, task_id))
+    conn.commit()
+    conn.close()
+
+# --- 送達紀錄管理 ---
+def create_delivery_record(task_id, elderly_id, status="已送達", notes="", photo_path=None):
+    """建立送達紀錄"""
+    conn = get_connection()
+    c = conn.cursor()
+    c.execute('''
+        INSERT INTO delivery_records (task_id, elderly_id, status, notes, photo_path)
+        VALUES (?, ?, ?, ?, ?)
+    ''', (task_id, elderly_id, status, notes, photo_path))
+    record_id = c.lastrowid
+    conn.commit()
+    conn.close()
+    return record_id
+
+def get_delivery_records_by_task(task_id):
+    """取得特定任務的所有送達紀錄"""
+    conn = get_connection()
+    c = conn.cursor()
+    c.execute('''
+        SELECT dr.*, ep.name as elderly_name, ep.address
+        FROM delivery_records dr
+        JOIN elderly_profiles ep ON dr.elderly_id = ep.id
+        WHERE dr.task_id = ?
+        ORDER BY dr.delivery_time
+    ''', (task_id,))
+    records = c.fetchall()
+    conn.close()
+    return records
+
+def check_delivery_status(task_id, elderly_id):
+    """檢查是否已送達"""
+    conn = get_connection()
+    c = conn.cursor()
+    c.execute('SELECT id FROM delivery_records WHERE task_id = ? AND elderly_id = ?', (task_id, elderly_id))
+    record = c.fetchone()
+    conn.close()
+    return record is not None
+
+# ==========================================
+# 防災館預約系統資料庫函式 (Museum Booking System)
+# ==========================================
+
+def create_museum_booking(visit_date, time_slot, applicant_name, applicant_phone, visitor_count, organization="", email=""):
+    """建立防災館參觀預約"""
+    conn = get_connection()
+    c = conn.cursor()
+    c.execute('''
+        INSERT INTO museum_bookings (visit_date, time_slot, applicant_name, applicant_phone, visitor_count, organization, email)
+        VALUES (?, ?, ?, ?, ?, ?, ?)
+    ''', (visit_date, time_slot, applicant_name, applicant_phone, visitor_count, organization, email))
+    booking_id = c.lastrowid
+    conn.commit()
+    conn.close()
+    return booking_id
+
+def get_bookings_by_date(visit_date):
+    """取得特定日期的所有預約"""
+    conn = get_connection()
+    c = conn.cursor()
+    c.execute('SELECT * FROM museum_bookings WHERE visit_date = ? AND status != "已取消" ORDER BY time_slot', (visit_date,))
+    bookings = c.fetchall()
+    conn.close()
+    return bookings
+
+def get_bookings_by_phone(phone):
+    """依電話號碼查詢預約記錄"""
+    conn = get_connection()
+    c = conn.cursor()
+    c.execute('SELECT * FROM museum_bookings WHERE applicant_phone = ? ORDER BY visit_date DESC, time_slot', (phone,))
+    bookings = c.fetchall()
+    conn.close()
+    return bookings
+
+def get_booking_count_by_slot(visit_date, time_slot):
+    """取得特定時段的預約人數總計"""
+    conn = get_connection()
+    c = conn.cursor()
+    c.execute('''
+        SELECT COALESCE(SUM(visitor_count), 0) as total_count
+        FROM museum_bookings
+        WHERE visit_date = ? AND time_slot = ? AND status != "已取消"
+    ''', (visit_date, time_slot))
+    result = c.fetchone()
+    conn.close()
+    return result['total_count'] if result else 0
+
+def cancel_museum_booking(booking_id):
+    """取消預約"""
+    conn = get_connection()
+    c = conn.cursor()
+    c.execute('''
+        UPDATE museum_bookings
+        SET status = "已取消"
+        WHERE id = ?
+    ''', (booking_id,))
+    conn.commit()
+    success = c.rowcount > 0
+    conn.close()
+    return success
