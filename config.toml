@@ -49,3 +49,31 @@ enable_2fa = true  # 管理員二階段驗證
 enable_line_notify = false  # LINE 通知（開發中）
 enable_ocr = true  # OCR 比對功能
 enable_self_registration = true  # 內部同仁自助註冊
+enable_meal_delivery = true  # 社區送餐系統
+enable_museum_booking = true  # 防災館預約系統
+
+[meal_delivery]
+# 送餐系統設定
+system_name = "社區互助送餐系統"
+max_upload_size_mb = 10
+photo_quality = 85
+photo_max_width = 800
+backup_retention_days = 30
+
+[museum]
+# 防災教育館設定
+name = "臺東縣消防局 防災教育館"
+phone = "089-XXXXXX"
+email = "museum@ttfd.gov.tw"
+address = "臺東縣臺東市中山路XXX號"
+maps_url = "https://www.google.com/maps/search/臺東縣消防局"
+facebook_url = "https://www.facebook.com/"
+
+# 營運時間
+opening_hours = "週二至週日 09:00-17:00"
+closed_days = "每週一"
+last_entry = "16:30"
+
+# 預約設定
+max_visitors_per_slot = 50
+booking_advance_days = 60

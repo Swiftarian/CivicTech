@@ -8,9 +8,69 @@
 
 ## 📋 專案簡介
 
-本系統為臺東縣消防局開發的消防安全設備檢修申報自動化平台，旨在簡化民眾申報流程、提升審核效率，並透過 OCR 技術實現申報書自動比對功能。
+本系統為**臺東縣消防局公私協力防災媒合平台**，整合三大子系統於單一平台：
 
-### 🎯 核心功能
+### 🎯 三大子系統
+
+1. **🚒 消防檢修申報系統**
+   - 線上申報與審核管理
+   - OCR 自動比對功能
+   - Email 通知與稽核紀錄
+
+2. **🍱 社區互助送餐系統**
+   - 長照餐食配送管理
+   - 互動式日曆排班
+   - 強制拍照驗證（符合公部門核銷）
+   - GPS 路線導航
+
+3. **📢 防災智慧導覽系統**
+   - 防災教育館線上預約
+   - 影音防災知識庫
+   - 團體/個人預約管理
+
+## 🏗️ 系統架構圖
+
+```mermaid
+graph TB
+    subgraph 前端介面
+        A[首頁入口<br/>首頁.py] --> B[消防檢修申報<br/>1_民眾申辦.py]
+        A --> C[進度查詢<br/>2_進度查詢.py]
+        A --> D[送餐系統<br/>2_🍱_社區互助送餐.py]
+        A --> E[案件審核<br/>3_案件審核.py]
+        A --> F[防災導覽<br/>3_📢_防災智慧導覽.py]
+        A --> G[OCR比對<br/>4_自動比對系統.py]
+    end
+    
+    subgraph 業務邏輯層
+        H[auth.py<br/>身份驗證]
+        I[utils.py<br/>工具函式<br/>OCR/Email/CSS]
+        J[db_manager.py<br/>資料庫操作]
+    end
+    
+    subgraph 資料層
+        K[(cases.db<br/>SQLite)]
+        L[uploads/<br/>檔案儲存]
+    end
+    
+    subgraph 設定檔
+        M[config.toml<br/>系統設定]
+        N[secrets.toml<br/>機密資訊]
+    end
+    
+    B & C & D & E & F & G --> H
+    H --> J
+    I --> J
+    J --> K
+    B & D & F --> L
+    H & I --> M
+    I --> N
+    
+    style A fill:#FF4B4B,color:#fff
+    style D fill:#3DD598,color:#fff
+    style F fill:#3788d8,color:#fff
+```
+
+### 核心功能
 
 - **📝 線上申報**：民眾可線上填寫申請表並上傳檢修申報書
 - **🔍 進度查詢**：支援單號查詢與 Email 查詢
@@ -151,42 +211,89 @@ downloads/00. 列管場所資料.xls
 
 ### 4. 多縣市部署設定（重要）
 
-本系統支援**輕鬆移植至其他縣市消防局**！只需修改 `config.toml` 設定檔即可。
+本系統支援**輕鬆移植至其他縣市消防局**！只需修改 `config.toml` 設定檔即可完成客製化。
 
-#### 設定檔位置
+#### 📂 設定檔位置
 ```
 fire_dept_automation/config.toml
 ```
 
-#### 設定範例
+#### ⚙️ 設定檔結構
+
 ```toml
 [agency]
-# 機構資訊
-name = "臺東縣消防局"        # 修改為您的消防局名稱
-department = "預防調查科"     # 修改為您的部門名稱
-phone = "089-322112"         # 修改為您的聯絡電話
+# 機構資訊 - 影響所有系統的標題與簽名
+name = "臺東縣消防局"
+department = "預防調查科"
+phone = "089-322112"
+email = "fire@taitung.gov.tw"
 
-[system]
-# 系統設定
-title = "消防安全設備檢修申報平台"
-registration_key = "Fire2025"  # 內部同仁註冊通行碼
+[features]
+# 功能開關 - 可按需啟用/停用子系統
+enable_meal_delivery = true    # 送餐系統
+enable_museum_booking = true   # 防災館預約
+enable_ocr = true               # OCR比對
 
-[email]
-# Email 簽名設定
-signature_org = "臺東縣消防局 預防調查科 敬啟"  # 自動依 agency 設定
+[museum]
+# 防災教育館專屬設定
+name = "臺東縣消防局 防災教育館"
+phone = "089-XXXXXX"
+address = "臺東縣臺東市中山路XXX號"
+max_visitors_per_slot = 50
+
+[meal_delivery]
+# 送餐系統專屬設定
+photo_max_width = 800          # 照片壓縮寬度
+backup_retention_days = 30     # 備份保留天數
 ```
 
-#### 其他縣市使用範例
+#### 🌐 其他縣市使用範例
 
-**花蓮縣消防局**：
+**範例 1：花蓮縣消防局**
 ```toml
 [agency]
 name = "花蓮縣消防局"
 department = "預防調查科"
 phone = "03-8234567"
+email = "fire@hualien.gov.tw"
+
+[features]
+enable_meal_delivery = true    # 啟用送餐
+enable_museum_booking = false  # 停用防災館（沒有實體館）
+enable_ocr = true
+
+[museum]
+name = "花蓮縣消防局 防災體驗館"
+address = "花蓮縣花蓮市....."
 ```
 
-修改後，整個系統的標題、Email 簽名、通知訊息會自動更新！✨
+**範例 2：新北市消防局**
+```toml
+[agency]
+name = "新北市政府消防局"
+department = "火災預防科"
+phone = "02-29603456"
+
+[museum]
+max_visitors_per_slot = 100    # 調整為更大容量
+```
+
+#### 🔄 客製化流程
+
+1. **修改 `config.toml`** - 更新機關名稱、聯絡資訊
+2. **更新 Hero 圖片** - 替換防災館/首頁的橫幅圖片
+3. **啟用/停用功能** - 在 `[features]` 中調整開關
+4. **初始化資料庫** - 執行 `db_manager.init_db()`
+5. **啟動測試** - 確認所有設定正確
+
+#### ✨ 自動更新項目
+
+修改 `config.toml` 後，以下內容會自動更新：
+- ✅ 所有頁面的標題與頁名
+- ✅ Email 通知的簽名檔
+- ✅ 聯絡資訊顯示
+- ✅ Google Maps 導航連結
+- ✅ 系統設定參數
 
 ---
 
