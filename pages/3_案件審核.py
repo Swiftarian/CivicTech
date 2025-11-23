@@ -105,8 +105,23 @@ def login():
                                 
                                 # Send OTP Email
                                 subject = "【消防局後台】登入驗證碼"
-                                body = f"您的登入驗證碼為：{otp}"
-                                utils.send_email(sender_email, sender_password, user['email'], subject, body)
+                                
+                                # 準備 HTML 內容
+                                content_html = f"""
+                                <p>您正在進行消防局後台系統的登入驗證。</p>
+                                <p>請在驗證頁面輸入以下 6 位數代碼：</p>
+                                """
+                                
+                                # 呼叫共用模板
+                                email_html = utils.generate_email_html(
+                                    title="登入驗證碼 (2FA)",
+                                    recipient_name=user['username'],
+                                    content_html=content_html,
+                                    highlight_info=otp,
+                                    color_theme="#2b6cb0" # 科技藍
+                                )
+                                
+                                utils.send_email(sender_email, sender_password, user['email'], subject, email_html)
                                 
                                 st.rerun()
                             else:

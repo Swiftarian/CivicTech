@@ -484,10 +484,18 @@ with st.sidebar:
 uploaded_file = None
 target_row = None
 
-# 1. 取得指派給當前使用者的案件
+# 1. 取得案件資料 (根據角色權限)
 if 'user' in st.session_state and st.session_state.user:
     current_username = st.session_state.user['username']
-    my_cases = db_manager.get_cases_by_assignee(current_username)
+    current_role = st.session_state.user['role']
+    
+    if current_role == "admin":
+        # Admin 可以看到所有案件
+        my_cases = db_manager.get_all_cases()
+        st.toast(f"👑 管理員模式：已載入全系統共 {len(my_cases)} 筆案件", icon="🛡️")
+    else:
+        # 一般同仁只能看到指派給自己的
+        my_cases = db_manager.get_cases_by_assignee(current_username)
 else:
     my_cases = []
 
