@@ -20,7 +20,7 @@ def get_google_maps_url(address):
     encoded_address = urllib.parse.quote(address)
     return f"https://www.google.com/maps/dir/?api=1&destination={encoded_address}"
 
-def save_uploaded_file(uploaded_file):
+def save_uploaded_file(uploaded_file, task_id=None):
     """Save uploaded file and return path"""
     if uploaded_file is None:
         return None
@@ -30,7 +30,11 @@ def save_uploaded_file(uploaded_file):
         os.makedirs(upload_dir)
         
     timestamp = datetime.datetime.now().strftime("%Y%m%d_%H%M%S")
-    filename = f"{timestamp}_{uploaded_file.name}"
+    if task_id:
+        filename = f"delivery_{task_id}_{timestamp}.jpg"
+    else:
+        filename = f"{timestamp}_{uploaded_file.name}"
+        
     file_path = os.path.join(upload_dir, filename)
     
     with open(file_path, "wb") as f:
@@ -47,7 +51,7 @@ def main():
     # Initialize DB (ensure tables exist)
     db.init_db()
 
-    tab1, tab2, tab3 = st.tabs(["🚚 今日配送", "🗓️ 排班與認領", "⚙️ 個案與路線管理"])
+    tab1, tab2, tab3, tab4 = st.tabs(["🚚 今日配送", "🗓️ 排班與認領", "⚙️ 個案與路線管理", "📊 歷史紀錄與報表"])
 
     # --- Tab 1: Today's Delivery ---
     with tab1:
@@ -132,7 +136,7 @@ def main():
                                     if st.button("✅ 送達", key=f"btn_ok_{elderly_id}", use_container_width=True):
                                         photo_path = None
                                         if photo:
-                                            photo_path = save_uploaded_file(photo)
+                                            photo_path = save_uploaded_file(photo, task_id)
                                         
                                         db.create_delivery_record(task_id, elderly_id, "已送達", photo_path=photo_path, volunteer_id=username)
                                         st.rerun()
@@ -143,9 +147,11 @@ def main():
                                         st.session_state[f"show_issue_{elderly_id}"] = True
                                 
                                 if st.session_state.get(f"show_issue_{elderly_id}"):
-                                    issue_note = st.text_input("異常原因", key=f"issue_{elderly_id}")
+                                    issue_reason = st.selectbox("異常類型", ["長者不在家", "長者拒收", "餐點損壞", "長者身體不適", "其他"], key=f"reason_{elderly_id}")
+                                    issue_note = st.text_area("備註說明 (選填)", key=f"issue_{elderly_id}")
                                     if st.button("確認回報", key=f"confirm_issue_{elderly_id}"):
-                                        db.create_delivery_record(task_id, elderly_id, "異常", notes=issue_note, volunteer_id=username)
+                                        final_note = f"[{issue_reason}] {issue_note}"
+                                        db.create_delivery_record(task_id, elderly_id, "異常", notes=final_note, volunteer_id=username)
                                         st.session_state[f"show_issue_{elderly_id}"] = False
                                         st.rerun()
 
@@ -234,30 +240,110 @@ def main():
             col_a, col_b = st.columns(2)
             
             with col_a:
-                st.subheader("新增長者個案")
-                with st.form("add_elderly_form"):
-                    e_name = st.text_input("姓名")
-                    e_addr = st.text_input("地址")
-                    e_phone = st.text_input("電話")
-                    e_diet = st.selectbox("飲食類型", ["一般", "素食", "切碎", "低鹽", "流質"])
-                    e_route = st.selectbox("所屬路線", routes, format_func=lambda x: x['route_name'])
-                    e_seq = st.number_input("順序", min_value=1, value=1)
-                    e_note = st.text_area("備註")
+                st.subheader("長者資料管理")
+                
+                # Fetch all elderly profiles
+                profiles = db.get_all_elderly()
+                # Convert to DataFrame for editor
+                import pandas as pd
+                if profiles:
+                    df = pd.DataFrame([dict(p) for p in profiles])
                     
-                    if st.form_submit_button("新增個案"):
-                        if e_name and e_addr and e_route:
-                            db.create_elderly_profile(e_name, e_addr, e_phone, diet_type=e_diet, special_notes=e_note, route_id=e_route['id'], sequence=e_seq)
-                            # Update sequence manually if needed, but create_elderly_profile needs update to accept sequence
-                            # Wait, I added sequence column but did I update create_elderly_profile?
-                            # I need to check db_manager.py again.
-                            # I didn't update create_elderly_profile signature in the previous step!
-                            # I only updated the table schema.
-                            # I should update the function or use a direct SQL here?
-                            # Better to update the function in db_manager.py.
-                            st.success("已新增")
-                            st.rerun()
-                        else:
-                            st.error("請填寫必要欄位")
+                    # Configure columns
+                    column_config = {
+                        "id": st.column_config.NumberColumn("ID", disabled=True),
+                        "name": "姓名",
+                        "address": "地址",
+                        "phone": "電話",
+                        "diet_type": st.column_config.SelectboxColumn("飲食類型", options=["一般", "素食", "切碎", "低鹽", "流質"]),
+                        "route_id": st.column_config.SelectboxColumn("所屬路線", options=[r['id'] for r in routes], help="對應路線ID"), # Ideally map to names, but ID is simpler for now or need a mapping
+                        "sequence": st.column_config.NumberColumn("順序", min_value=1),
+                        "status": st.column_config.SelectboxColumn("狀態", options=["啟用", "停用"]),
+                        "created_at": st.column_config.DatetimeColumn("建立時間", disabled=True),
+                        "gps_lat": None, # Hide
+                        "gps_lon": None, # Hide
+                        "special_notes": "備註"
+                    }
+                    
+                    edited_df = st.data_editor(
+                        df,
+                        column_config=column_config,
+                        num_rows="dynamic",
+                        key="elderly_editor",
+                        use_container_width=True,
+                        hide_index=True
+                    )
+                    
+                    # Handle Updates
+                    # This is tricky with st.data_editor. We need to detect changes.
+                    # Streamlit doesn't give a callback with changes easily unless we use on_change and session state.
+                    # But for simplicity, we can just iterate and update if we want, OR rely on the user to click "Save" if we implement a manual save.
+                    # However, st.data_editor returns the edited dataframe.
+                    # A better approach for real-time DB update is to compare or use a callback.
+                    # Let's use a "Save Changes" button for safety and clarity, or just assume immediate update?
+                    # The prompt says "Implement st.data_editor for CRUD".
+                    # Let's try to detect changes.
+                    
+                    # Actually, st.data_editor has `on_change` but it's for the widget state.
+                    # Let's add a "💾 儲存變更" button to commit changes from `edited_df` to DB.
+                    if st.button("💾 儲存長者資料變更"):
+                        # We need to compare `df` and `edited_df` or just update all? Updating all is inefficient.
+                        # Better: Iterate over edited_df and update each record.
+                        # For new records (no ID), create them.
+                        # For deleted records? st.data_editor handles deletion if `num_rows="dynamic"`.
+                        # But `edited_df` only contains the current rows. We need to find missing IDs to delete.
+                        
+                        current_ids = set(df['id'].tolist())
+                        new_ids = set(edited_df['id'].dropna().tolist())
+                        
+                        # 1. Update existing & Create new
+                        for index, row in edited_df.iterrows():
+                            if pd.isna(row['id']): # New row (ID is NaN usually for new rows in some configs, or we need to handle it)
+                                # Actually st.data_editor new rows might have None/NaN ID if we didn't set it.
+                                # We should check if 'id' exists in DB.
+                                db.create_elderly_profile(
+                                    row['name'], row['address'], row['phone'], 
+                                    diet_type=row['diet_type'], special_notes=row['special_notes'], 
+                                    route_id=row['route_id'], sequence=row['sequence']
+                                )
+                            else:
+                                # Update
+                                updates = {
+                                    "name": row['name'],
+                                    "address": row['address'],
+                                    "phone": row['phone'],
+                                    "diet_type": row['diet_type'],
+                                    "special_notes": row['special_notes'],
+                                    "route_id": row['route_id'],
+                                    "sequence": row['sequence'],
+                                    "status": row['status']
+                                }
+                                db.update_elderly_profile_fields(row['id'], updates)
+                        
+                        # 2. Delete removed
+                        # IDs in current but not in new
+                        deleted_ids = current_ids - new_ids
+                        for pid in deleted_ids:
+                            db.delete_elderly_profile(pid)
+                            
+                        st.success("資料已更新")
+                        st.rerun()
+                else:
+                    st.info("尚無長者資料")
+                    # Still show editor for adding new?
+                    # If empty, create empty DF
+                    df = pd.DataFrame(columns=["id", "name", "address", "phone", "diet_type", "route_id", "sequence", "status", "special_notes"])
+                    edited_df = st.data_editor(df, num_rows="dynamic", key="elderly_editor_empty")
+                    if st.button("💾 儲存新增資料"):
+                        for index, row in edited_df.iterrows():
+                            if row['name']:
+                                db.create_elderly_profile(
+                                    row['name'], row['address'], row['phone'], 
+                                    diet_type=row['diet_type'], special_notes=row['special_notes'], 
+                                    route_id=row['route_id'], sequence=row['sequence']
+                                )
+                        st.success("資料已新增")
+                        st.rerun()
 
             with col_b:
                 st.subheader("新增路線")
@@ -271,6 +357,57 @@ def main():
                             db.create_delivery_route(r_name, r_desc, r_vol)
                             st.success("已新增")
                             st.rerun()
+
+    # --- Tab 4: History & Reports ---
+    with tab4:
+        user_info = db.get_user(username)
+        role = user_info['role'] if user_info else 'user'
+        
+        if role != 'admin':
+            st.error("此區域僅限管理員進入")
+        else:
+            st.header("📊 歷史紀錄與報表")
+            
+            c1, c2 = st.columns(2)
+            with c1:
+                start_date = st.date_input("開始日期", datetime.date.today() - datetime.timedelta(days=30))
+            with c2:
+                end_date = st.date_input("結束日期", datetime.date.today())
+                
+            if start_date > end_date:
+                st.error("開始日期不能晚於結束日期")
+            else:
+                # Fetch data
+                report_data = db.get_delivery_reports(start_date.strftime("%Y-%m-%d"), end_date.strftime("%Y-%m-%d"))
+                
+                if report_data:
+                    import pandas as pd
+                    df_report = pd.DataFrame([dict(r) for r in report_data])
+                    
+                    # Rename columns for display
+                    df_report = df_report.rename(columns={
+                        "date": "日期",
+                        "route_name": "路線",
+                        "elderly_name": "長者姓名",
+                        "volunteer_id": "志工帳號",
+                        "status": "狀態",
+                        "notes": "備註",
+                        "photo_path": "照片路徑",
+                        "delivery_time": "打卡時間"
+                    })
+                    
+                    st.dataframe(df_report, use_container_width=True)
+                    
+                    # CSV Download
+                    csv = df_report.to_csv(index=False).encode('utf-8-sig')
+                    st.download_button(
+                        label="📥 下載報表 (CSV)",
+                        data=csv,
+                        file_name=f"送餐紀錄_{start_date}_{end_date}.csv",
+                        mime="text/csv"
+                    )
+                else:
+                    st.info("查無資料")
 
 if __name__ == "__main__":
     main()

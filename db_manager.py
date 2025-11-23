@@ -662,6 +662,37 @@ def get_elderly_by_route(route_id):
     conn.close()
     return profiles
 
+def update_elderly_profile_fields(profile_id, updates):
+    """
+    更新長者資料 (用於 st.data_editor)
+    updates: dict, e.g. {'name': 'New Name', 'route_id': 2}
+    """
+    if not updates:
+        return
+        
+    conn = get_connection()
+    c = conn.cursor()
+    
+    set_clause = ", ".join([f"{k} = ?" for k in updates.keys()])
+    values = list(updates.values())
+    values.append(profile_id)
+    
+    try:
+        c.execute(f"UPDATE elderly_profiles SET {set_clause} WHERE id = ?", values)
+        conn.commit()
+    except Exception as e:
+        print(f"Error updating profile: {e}")
+    finally:
+        conn.close()
+
+def delete_elderly_profile(profile_id):
+    """刪除長者資料 (軟刪除)"""
+    conn = get_connection()
+    c = conn.cursor()
+    c.execute('UPDATE elderly_profiles SET status = "停用" WHERE id = ?', (profile_id,))
+    conn.commit()
+    conn.close()
+
 # --- 送餐路線管理 ---
 def create_delivery_route(route_name, description="", default_volunteer_id=None):
     """建立送餐路線"""
@@ -791,6 +822,35 @@ def check_delivery_status(task_id, elderly_id):
     record = c.fetchone()
     conn.close()
     return record is not None
+
+def get_delivery_reports(start_date, end_date):
+    """
+    取得送餐報表
+    Returns: list of dicts (Date, Route, Elderly, Volunteer, Status, Notes, Photo)
+    """
+    conn = get_connection()
+    c = conn.cursor()
+    c.execute('''
+        SELECT 
+            dt.date,
+            dr.route_name,
+            ep.name as elderly_name,
+            rec.volunteer_id,
+            rec.status,
+            rec.notes,
+            rec.photo_path,
+            rec.delivery_time
+        FROM delivery_records rec
+        JOIN daily_tasks dt ON rec.task_id = dt.id
+        JOIN elderly_profiles ep ON rec.elderly_id = ep.id
+        JOIN delivery_routes dr ON dt.route_id = dr.id
+        WHERE dt.date BETWEEN ? AND ?
+        ORDER BY dt.date DESC, dr.route_name, ep.sequence
+    ''', (start_date, end_date))
+    
+    rows = c.fetchall()
+    conn.close()
+    return rows
 
 # ==========================================
 # 防災館預約系統資料庫函式 (Museum Booking System)
