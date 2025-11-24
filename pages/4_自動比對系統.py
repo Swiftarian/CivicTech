@@ -375,8 +375,46 @@ expand_config = not (tesseract_is_ok and excel_is_loaded)
 
 # --- 側邊欄：資料載入 ---
 with st.sidebar:
-    # 使用 Expander 包覆設定
-    with st.expander("1. 設定與資料來源", expanded=expand_config):
+    # 載入資料 (使用 Session State 的值)
+    df_system = utils.load_system_data(st.session_state["system_excel_path"])
+    
+    selected_place = None
+    
+    # 1. 選擇場所 (放在最上面)
+    if df_system is not None:
+        st.header("1. 選擇比對場所")
+        
+        # 取得所有場所名稱
+        all_place_names = df_system['場所名稱'].astype(str).unique().tolist()
+        
+        # 搜尋框
+        search_term = st.text_input("🔍 搜尋場所名稱 (支援模糊比對)", "")
+        
+        # 根據搜尋結果過濾
+        if search_term:
+            filtered_places = [p for p in all_place_names if search_term in p]
+        else:
+            filtered_places = all_place_names
+            
+        # 如果搜尋不到，顯示提示
+        if not filtered_places:
+            st.warning("找不到符合的場所")
+        else:
+            # 下拉選單 (只顯示過濾後的結果)
+            selected_place = st.selectbox(
+                "請選擇場所", 
+                filtered_places,
+                index=None,  # 預設不選取任何項目
+                placeholder="請選擇場所..."
+            )
+        
+        st.divider()
+    else:
+        st.warning("尚未載入系統資料，請先設定資料來源。")
+        st.divider()
+    
+    # 2. 設定與資料來源 (使用 Expander 包覆)
+    with st.expander("2. 設定與資料來源", expanded=expand_config):
         # Tesseract 設定
         st.markdown("#### OCR 辨識引擎設定")
         user_input_path = st.text_input("Tesseract 執行檔路徑", key="tesseract_exe_path")
@@ -406,48 +444,11 @@ with st.sidebar:
         
         if not os.path.exists(system_file_path):
              st.error("❌ 找不到 Excel 檔案")
-
-    # 載入資料 (使用 Session State 的值)
-    df_system = utils.load_system_data(st.session_state["system_excel_path"])
     
-    selected_place = None
-    
+    # 3. 除錯用：顯示欄位名稱
     if df_system is not None:
-        # st.success(f"已載入系統資料: {len(df_system)} 筆") # 為了版面簡潔，隱藏此訊息，或移至 Expander 內
-        
-        # 除錯用：顯示欄位名稱
-        with st.expander("🔍 查看 Excel 欄位名稱 (除錯用)"):
+        with st.expander("3. 🔍 查看 Excel 欄位名稱 (除錯用)"):
             st.write(df_system.columns.tolist())
-        
-        # 2. 選擇場所 (增加搜尋功能)
-        st.header("2. 選擇比對場所")
-        
-        # 取得所有場所名稱
-        all_place_names = df_system['場所名稱'].astype(str).unique().tolist()
-        
-        # 搜尋框
-        search_term = st.text_input("🔍 搜尋場所名稱 (支援模糊比對)", "")
-        
-        # 根據搜尋結果過濾
-        if search_term:
-            filtered_places = [p for p in all_place_names if search_term in p]
-        else:
-            filtered_places = all_place_names
-            
-        # 如果搜尋不到，顯示提示
-        if not filtered_places:
-            st.warning("找不到符合的場所")
-        else:
-            # 下拉選單 (只顯示過濾後的結果)
-            selected_place = st.selectbox(
-                "請選擇場所", 
-                filtered_places,
-                index=None,  # 預設不選取任何項目
-                placeholder="請選擇場所..."
-            )
-        
-    else:
-        st.warning("尚未載入系統資料，請確認路徑。")
 
 # --- 主畫面：比對區 ---
 uploaded_file = None

@@ -553,6 +553,87 @@ elif page == " 預約參觀":
                         st.success(f"🎉 預約成功! 預約編號: **{booking_id}**")
                         st.info(f"📋 **{visit_type}** 預約\n人數: {visitor_count} 人\n請保存您的聯絡電話 **{applicant_phone}**, 以便查詢或取消預約.")
                         st.balloons()
+                        
+                        # 發送 Email 通知
+                        if email:
+                            # 取得 Email 設定
+                            sender_email = st.secrets["email"].get("sender_email", "") if "email" in st.secrets else ""
+                            sender_password = st.secrets["email"].get("sender_password", "") if "email" in st.secrets else ""
+                            
+                            if sender_email and sender_password:
+                                with st.spinner("📧 正在發送預約確認信..."):
+                                    # 組建郵件內容
+                                    subject = f"【臺東縣消防局】防災教育館預約確認通知 - 預約編號 {booking_id}"
+                                    
+                                    # 格式化日期顯示
+                                    date_obj = datetime.datetime.strptime(st.session_state.selected_date, "%Y-%m-%d")
+                                    weekday = ["一","二","三","四","五","六","日"][date_obj.weekday()]
+                                    date_display = f"{date_obj.strftime('%Y年%m月%d日')} (週{weekday})"
+                                    
+                                    content_html = f"""
+                                    <p>感謝您預約臺東縣消防局防災教育館參觀！</p>
+                                    <p>您的預約資訊如下：</p>
+                                    <table style="width: 100%; border-collapse: collapse; margin: 20px 0;">
+                                        <tr style="background-color: #f7fafc;">
+                                            <td style="padding: 10px; border: 1px solid #e2e8f0; font-weight: bold; width: 30%;">預約編號</td>
+                                            <td style="padding: 10px; border: 1px solid #e2e8f0;">{booking_id}</td>
+                                        </tr>
+                                        <tr>
+                                            <td style="padding: 10px; border: 1px solid #e2e8f0; font-weight: bold;">參觀類型</td>
+                                            <td style="padding: 10px; border: 1px solid #e2e8f0;">{visit_type}</td>
+                                        </tr>
+                                        <tr style="background-color: #f7fafc;">
+                                            <td style="padding: 10px; border: 1px solid #e2e8f0; font-weight: bold;">參觀日期</td>
+                                            <td style="padding: 10px; border: 1px solid #e2e8f0;">{date_display}</td>
+                                        </tr>
+                                        <tr>
+                                            <td style="padding: 10px; border: 1px solid #e2e8f0; font-weight: bold;">參觀時段</td>
+                                            <td style="padding: 10px; border: 1px solid #e2e8f0;">{st.session_state.selected_time_slot}</td>
+                                        </tr>
+                                        <tr style="background-color: #f7fafc;">
+                                            <td style="padding: 10px; border: 1px solid #e2e8f0; font-weight: bold;">預約人數</td>
+                                            <td style="padding: 10px; border: 1px solid #e2e8f0;">{visitor_count} 人</td>
+                                        </tr>
+                                        <tr>
+                                            <td style="padding: 10px; border: 1px solid #e2e8f0; font-weight: bold;">聯絡人</td>
+                                            <td style="padding: 10px; border: 1px solid #e2e8f0;">{applicant_name}</td>
+                                        </tr>
+                                        <tr style="background-color: #f7fafc;">
+                                            <td style="padding: 10px; border: 1px solid #e2e8f0; font-weight: bold;">聯絡電話</td>
+                                            <td style="padding: 10px; border: 1px solid #e2e8f0;">{applicant_phone}</td>
+                                        </tr>
+                                    </table>
+                                    
+                                    <p><strong>重要提醒：</strong></p>
+                                    <ul style="line-height: 1.8;">
+                                        <li>請妥善保存此預約編號：<strong>{booking_id}</strong></li>
+                                        <li>參觀當日請提前 10 分鐘抵達</li>
+                                        <li>如需取消或變更預約，請撥打電話：089-322112</li>
+                                        <li>本館地址：950 臺東縣臺東市四維路二段100號</li>
+                                    </ul>
+                                    
+                                    <p>期待您的蒞臨！</p>
+                                    """
+                                    
+                                    # 使用統一模板生成完整 HTML
+                                    full_html = utils.generate_email_html(
+                                        title="防災教育館預約確認",
+                                        recipient_name=applicant_name,
+                                        content_html=content_html,
+                                        highlight_info=f"預約編號：{booking_id}",
+                                        color_theme="#2563eb"  # 藍色主題
+                                    )
+                                    
+                                    # 發送郵件
+                                    success, msg = utils.send_email(sender_email, sender_password, email, subject, full_html)
+                                    
+                                    if success:
+                                        st.toast(f"✅ 預約確認信已發送至 {email}", icon="📧")
+                                    else:
+                                        st.warning(f"預約成功，但郵件發送失敗：{msg}")
+                            else:
+                                st.info("💡 提示：若需自動發送預約確認信，請聯絡系統管理員設定郵件服務。")
+                        
                         # 清除選擇
                         st.session_state.selected_date = None
                         st.session_state.selected_time_slot = None
