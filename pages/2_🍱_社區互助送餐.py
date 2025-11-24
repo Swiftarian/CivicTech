@@ -10,6 +10,9 @@ from streamlit_calendar import calendar
 
 st.set_page_config(page_title="社區互助送餐", page_icon="🍱", layout="wide")
 
+# 載入自定義 CSS
+utils.load_custom_css()
+
 # --- Initialize Auth State & Auto-Login ---
 auth_session.initialize_auth_state()
 if not st.session_state.logged_in:
