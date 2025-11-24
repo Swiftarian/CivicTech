@@ -118,9 +118,28 @@ def parse_toc_requirements(toc_image, toc_text):
     """
     required_docs = []
     
-    # 使用 pytesseract 取得詳細資料 (包含座標)
-    # pytesseract.image_to_data 回傳 dict
-    data = pytesseract.image_to_data(toc_image, lang='chi_tra', output_type=pytesseract.Output.DICT)
+    try:
+        # 使用 pytesseract 取得詳細資料 (包含座標)
+        # pytesseract.image_to_data 回傳 dict
+        data = pytesseract.image_to_data(toc_image, lang='chi_tra', output_type=pytesseract.Output.DICT)
+    except pytesseract.pytesseract.TesseractNotFoundError:
+        # Tesseract 未安裝或不在 PATH
+        raise RuntimeError(
+            "❌ Tesseract OCR 未安裝或未加入系統 PATH\n\n"
+            "請選擇以下任一解決方案：\n\n"
+            "【方案 1】安裝 Tesseract OCR (Windows):\n"
+            "  1. 下載：https://github.com/UB-Mannheim/tesseract/wiki\n"
+            "  2. 安裝時勾選 'Chinese - Traditional' 語言包\n"
+            "  3. 安裝完成後重新啟動 Streamlit\n\n"
+            "【方案 2】使用 Vision AI (無需 Tesseract):\n"
+            "  1. 在側邊欄勾選「🔍 啟用 Vision AI 文件分析」\n"
+            "  2. 確保 Ollama 已啟動且安裝 llama3.2-vision\n"
+            "  3. Vision AI 準確度更高且無需額外安裝"
+        )
+    except Exception as e:
+        # 其他 OCR 錯誤
+        raise RuntimeError(f"OCR 處理失敗: {str(e)}\n建議：切換到 Vision AI 模式以獲得更好的結果")
+    
     
     n_boxes = len(data['text'])
     
