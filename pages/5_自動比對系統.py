@@ -286,7 +286,7 @@ def extract_info_from_ocr(text, pages_text_list=None):
             clean_text = page_text.replace(" ", "").replace("　", "").strip()
             # 檢查頁面開頭是否有「目錄」兩個字
             if clean_text.startswith("目錄"):
-               target_page_text = page_text
+                target_page_text = page_text
                 break
         
         # 2. 如果找不到開頭有「目錄」的頁面，搜尋包含「消防安全設備檢修申報書目錄」的頁面
