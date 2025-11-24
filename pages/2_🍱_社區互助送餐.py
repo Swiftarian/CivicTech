@@ -2,12 +2,18 @@ import streamlit as st
 import db_manager as db
 import datetime
 import urllib.parse
-import urllib.parse
 import os
+import time
 import utils
+import auth_session  # Cookie-based session management
 from streamlit_calendar import calendar
 
 st.set_page_config(page_title="社區互助送餐", page_icon="🍱", layout="wide")
+
+# --- Initialize Auth State & Auto-Login ---
+auth_session.initialize_auth_state()
+if not st.session_state.logged_in:
+    auth_session.check_auto_login()
 
 # --- Helper Functions ---
 
@@ -27,6 +33,32 @@ def get_google_maps_url(address):
 
 # --- Main Page ---
 
+# --- Dialog Function ---
+@st.dialog("📅 任務管理")
+def task_management_dialog(task_id, route_name, current_vol, event_date, username):
+    st.write(f"**日期**：{event_date}")
+    st.write(f"**路線**：{route_name}")
+    st.write(f"**目前志工**：{current_vol if current_vol else '無 (缺人)'}")
+    
+    if not current_vol:
+        st.warning("⚠️ 此路線目前缺人配送！")
+        if st.button("🙋‍♂️ 我要認領", key=f"claim_dlg_{task_id}"):
+            db.update_task_volunteer(task_id, username)
+            st.toast("✅ 認領成功！感謝您的付出", icon="🎉")
+            time.sleep(1) # Give time for toast
+            st.rerun()
+    elif current_vol == username:
+        st.success("這是您的任務")
+        if st.button("🚫 請假 / 釋出任務", key=f"leave_dlg_{task_id}"):
+            db.update_task_volunteer(task_id, None)
+            st.toast("✅ 已取消認領", icon="👋")
+            time.sleep(1)
+            st.rerun()
+    else:
+        st.info("此任務已有其他志工負責。")
+
+# --- Main Page ---
+
 def main():
     username = check_login()
     st.title("🍱 社區互助送餐系統")
@@ -41,8 +73,34 @@ def main():
         st.header(f"👋 早安，{username}")
         today = datetime.date.today().strftime("%Y-%m-%d")
         
-        # Get tasks assigned to current user today
+        # Metrics Calculation
         my_tasks = db.get_my_tasks_today(username, today)
+        total_tasks_count = len(my_tasks)
+        completed_tasks_count = 0
+        
+        # Calculate completed tasks (based on stops)
+        # Logic: If all stops in a task are delivered, the task is "completed". 
+        # But maybe metrics should be "Stops to deliver" vs "Stops delivered"?
+        # Let's do "Total Stops" vs "Completed Stops" for better granularity.
+        total_stops_count = 0
+        completed_stops_count = 0
+        
+        for task in my_tasks:
+            route_id = task['route_id']
+            task_id = task['id']
+            elderly_list = db.get_elderly_by_route(route_id)
+            total_stops_count += len(elderly_list)
+            for elderly in elderly_list:
+                if db.check_delivery_status(task_id, elderly['id']):
+                    completed_stops_count += 1
+        
+        # Display Metrics
+        m1, m2, m3 = st.columns(3)
+        m1.metric("📅 今日任務數", f"{total_tasks_count} 條路線")
+        m2.metric("📦 需配送戶數", f"{total_stops_count} 戶")
+        m3.metric("✅ 已完成戶數", f"{completed_stops_count} 戶", delta=f"{completed_stops_count - total_stops_count} 待送" if total_stops_count > 0 else None)
+        
+        st.divider()
         
         if not my_tasks:
             st.info("🎉 今日無排班任務，或是您可以去【排班與認領】區支援其他路線！")
@@ -132,6 +190,11 @@ def main():
                                             photo_path = utils.save_proof_photo(photo, task_id)
                                             
                                             db.create_delivery_record(task_id, elderly_id, "已送達", photo_path=photo_path, volunteer_id=username)
+                                            
+                                            # UI Feedback
+                                            st.toast("✅ 送達成功！感謝您的付出", icon="🎉")
+                                            st.balloons()
+                                            time.sleep(1.5) # Wait for balloons
                                             st.rerun()
                                     
                                     with col_issue:
@@ -150,7 +213,9 @@ def main():
                                         if photo is not None:
                                             photo_path = utils.save_proof_photo(photo, task_id)
                                             db.create_delivery_record(task_id, elderly_id, "異常", notes=issue_note, volunteer_id=username, abnormal_reason=issue_reason, photo_path=photo_path)
+                                            st.toast("⚠️ 異常回報已提交", icon="🛡️")
                                             st.session_state[f"show_issue_{elderly_id}"] = False
+                                            time.sleep(1)
                                             st.rerun()
                                         else:
                                             st.error("請先拍照再回報異常")
@@ -185,7 +250,7 @@ def main():
         # 4. 顯示 Calendar
         cal_state = calendar(events=events, options=calendar_options, key="meal_calendar")
         
-        # 5. 處理點擊事件
+        # 5. 處理點擊事件 (使用 Dialog)
         if cal_state.get("eventClick"):
             event = cal_state["eventClick"]["event"]
             props = event["extendedProps"]
@@ -193,24 +258,8 @@ def main():
             current_vol = props["currentVolunteer"]
             route_name = props["routeName"]
             
-            with st.expander(f"📝 任務詳情：{event['title']}", expanded=True):
-                st.write(f"**日期**：{event['start']}")
-                st.write(f"**路線**：{route_name}")
-                st.write(f"**目前志工**：{current_vol if current_vol else '無 (缺人)'}")
-                
-                if not current_vol:
-                    st.warning("⚠️ 此路線目前缺人配送！")
-                    if st.button("🙋‍♂️ 我要認領", key=f"claim_cal_{task_id}"):
-                        db.update_task_volunteer(task_id, username)
-                        st.rerun()
-                elif current_vol == username:
-                    st.success("這是您的任務")
-                    if st.button("🚫 請假 / 釋出任務", key=f"leave_cal_{task_id}"):
-                        db.update_task_volunteer(task_id, None)
-                        st.rerun()
-                else:
-                    st.info("此任務已有其他志工負責。")
-                    # 管理員可強制換人? (Optional)
+            # 呼叫 Dialog
+            task_management_dialog(task_id, route_name, current_vol, event["start"], username)
                     
         # 6. 新增任務按鈕 (如果某天沒有任務)
         # 這裡可以做一個簡單的介面來新增特定日期的任務
@@ -232,7 +281,8 @@ def main():
                         st.error("該日期此路線已存在任務！")
                     else:
                         db.create_daily_task(new_task_date.strftime("%Y-%m-%d"), new_task_route['id'], None)
-                        st.success("任務已建立！")
+                        st.toast("✅ 任務已建立！", icon="📅")
+                        time.sleep(1)
                         st.rerun()
 
     # --- Tab 3: Admin Management ---
@@ -373,6 +423,7 @@ def main():
                         if r_name:
                             db.create_delivery_route(r_name, r_desc, r_vol)
                             st.success("已新增")
+                            time.sleep(1)
                             st.rerun()
 
     # --- Tab 4: History & Reports ---
@@ -439,6 +490,55 @@ def main():
                     )
                 else:
                     st.info("查無資料")
+
+    # ==========================================
+    # 除錯工具區 (僅管理員可見)
+    # ==========================================
+    user_info = db.get_user(username)
+    if user_info and user_info['role'] == 'admin':
+        st.markdown("<br><br>", unsafe_allow_html=True)
+        st.divider()
+        
+        with st.expander("🔧 開發者除錯工具"):
+            st.warning("⚠️ 管理員專區：以下操作將影響系統資料")
+            
+            col_debug1, col_debug2 = st.columns(2)
+            
+            with col_debug1:
+                st.subheader("🔄 資料重置")
+                st.caption("清空所有送餐資料並重新載入測試資料")
+                
+                if st.button("🗑️ 重置所有送餐資料", type="secondary", use_container_width=True):
+                    with st.spinner("正在重置資料..."):
+                        success = db.reset_meal_data()
+                        if success:
+                            st.success("✅ 資料重置成功！測試帳號: volunteer1 / 123")
+                            st.info("📅 已建立今天與未來7天的排班資料")
+                            st.balloons()
+                            time.sleep(1)
+                            st.rerun()
+                        else:
+                            st.error("❌ 重置失敗，請查看終端機錯誤訊息")
+            
+            with col_debug2:
+                st.subheader("📊 資料統計")
+                conn = db.get_connection()
+                c = conn.cursor()
+                
+                c.execute("SELECT COUNT(*) FROM delivery_routes")
+                route_count = c.fetchone()[0]
+                
+                c.execute("SELECT COUNT(*) FROM elderly_profiles")
+                elderly_count = c.fetchone()[0]
+                
+                c.execute("SELECT COUNT(*) FROM daily_tasks WHERE date = ?", (datetime.date.today().strftime("%Y-%m-%d"),))
+                today_tasks = c.fetchone()[0]
+                
+                conn.close()
+                
+                st.metric("路線數", route_count)
+                st.metric("長者數", elderly_count)
+                st.metric("今日任務", today_tasks)
 
 if __name__ == "__main__":
     main()

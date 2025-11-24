@@ -745,17 +745,32 @@ def delete_elderly_profile(profile_id):
 
 # --- 送餐路線管理 ---
 def create_delivery_route(route_name, description="", default_volunteer_id=None):
-    """建立送餐路線"""
+    """建立送餐路線，並自動建立今日的排班任務"""
     conn = get_connection()
     c = conn.cursor()
-    c.execute('''
-        INSERT INTO delivery_routes (route_name, description, default_volunteer_id)
-        VALUES (?, ?, ?)
-    ''', (route_name, description, default_volunteer_id))
-    route_id = c.lastrowid
-    conn.commit()
-    conn.close()
-    return route_id
+    try:
+        # 1. 建立路線
+        c.execute('''
+            INSERT INTO delivery_routes (route_name, description, default_volunteer_id)
+            VALUES (?, ?, ?)
+        ''', (route_name, description, default_volunteer_id))
+        route_id = c.lastrowid
+        
+        # 2. 自動建立今日任務
+        today = datetime.date.today().strftime("%Y-%m-%d")
+        c.execute('''
+            INSERT INTO daily_tasks (date, route_id, assigned_volunteer, status)
+            VALUES (?, ?, ?, ?)
+        ''', (today, route_id, default_volunteer_id, '未配送'))
+        
+        conn.commit()
+        return route_id
+    except Exception as e:
+        print(f"Error creating route: {e}")
+        conn.rollback()
+        return None
+    finally:
+        conn.close()
 
 def get_all_routes():
     """取得所有路線"""
@@ -876,7 +891,7 @@ def get_task_events(start_date, end_date, current_user=None):
     for task in tasks:
         volunteer = task['assigned_volunteer']
         route_name = task['route_name']
-        task_date = task['date']
+        task_date = str(task['date']) # Ensure string format YYYY-MM-DD
         task_id = task['id']
         
         # 顏色邏輯

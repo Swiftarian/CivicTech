@@ -2,6 +2,7 @@ import streamlit as st
 import db_manager
 import utils
 import auth
+import auth_session  # Cookie-based session management
 import pandas as pd
 import os
 import datetime
@@ -13,17 +14,12 @@ st.set_page_config(page_title="案件審核 - 消防安全設備檢修申報", p
 # 載入自定義 CSS
 utils.load_custom_css()
 
-# --- Session State Initialization ---
-if 'logged_in' not in st.session_state:
-    st.session_state.logged_in = False
-if 'user' not in st.session_state:
-    st.session_state.user = None
-if 'username' not in st.session_state:
-    st.session_state.username = None
-if 'role' not in st.session_state:
-    st.session_state.role = None
-if 'awaiting_2fa' not in st.session_state:
-    st.session_state.awaiting_2fa = False
+# --- Session State Initialization & Auto-Login ---
+auth_session.initialize_auth_state()
+
+# Check for auto-login via cookies
+if not st.session_state.logged_in:
+    auth_session.check_auto_login()
 
 # --- Login & Authentication Functions ---
 
@@ -40,11 +36,9 @@ def login():
                 if otp_input == st.session_state.otp:
                     # 2FA Success
                     user = st.session_state.temp_user
-                    st.session_state.logged_in = True
-                    st.session_state.user = dict(user)
-                    # Sync flat variables
-                    st.session_state.username = user['username']
-                    st.session_state.role = user['role']
+                    
+                    # Save login session to cookies
+                    auth_session.save_login_session(user['username'], user['role'])
                     
                     st.session_state.awaiting_2fa = False
                     del st.session_state.otp
@@ -134,11 +128,7 @@ def login():
                                 st.rerun()
                             else:
                                 # Staff Login (No 2FA)
-                                st.session_state.logged_in = True
-                                st.session_state.user = dict(user) # 轉換為字典
-                                # Sync flat variables
-                                st.session_state.username = user['username']
-                                st.session_state.role = user['role']
+                                auth_session.save_login_session(user['username'], user['role'])
                                 db_manager.update_last_login(user['username'])
                                 db_manager.add_log(user['username'], "登入成功", "一般登入")
                                 st.success("登入成功！")
@@ -274,8 +264,7 @@ st.sidebar.title(f"👤 {user['username']} ({user['role']})")
 
 if st.sidebar.button("登出"):
     db_manager.add_log(user['username'], "登出")
-    st.session_state.logged_in = False
-    st.session_state.user = None
+    auth_session.clear_login_session()
     st.rerun()
 
 st.sidebar.divider()
@@ -697,8 +686,7 @@ elif page == "修改密碼":
                     st.success("密碼修改成功！請重新登入。")
                     
                     # Force logout
-                    st.session_state.logged_in = False
-                    st.session_state.user = None
+                    auth_session.clear_login_session()
                     st.rerun()
                 else:
                     st.error("舊密碼錯誤")

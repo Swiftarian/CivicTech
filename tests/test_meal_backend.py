@@ -135,5 +135,60 @@ class TestMealBackend(unittest.TestCase):
         self.cursor.execute("DELETE FROM delivery_routes WHERE id = ?", (route_id,))
         self.conn.commit()
 
+    def test_4_create_route_auto_schedules(self):
+        """測試 4: 新增路線自動排班"""
+        print("\n🧪 測試 4: 新增路線自動產生今日任務...")
+        
+        # 1. 取得當前今日任務數量
+        today = datetime.date.today().strftime("%Y-%m-%d")
+        self.cursor.execute("SELECT COUNT(*) FROM daily_tasks WHERE date = ?", (today,))
+        initial_task_count = self.cursor.fetchone()[0]
+        print(f"   📊 初始今日任務數: {initial_task_count}")
+        
+        # 2. 建立新路線 (應該自動建立今日任務)
+        test_route_name = "建和線_測試"
+        test_volunteer = "admin"
+        route_id = db_manager.create_delivery_route(test_route_name, "測試用路線", test_volunteer)
+        
+        # 驗證路線建立成功
+        self.assertIsNotNone(route_id, "路線應該建立成功")
+        self.cursor.execute("SELECT route_name FROM delivery_routes WHERE id = ?", (route_id,))
+        result = self.cursor.fetchone()
+        self.assertEqual(result['route_name'], test_route_name, "路線名稱應該正確")
+        print(f"   ✅ 路線建立成功: {test_route_name} (ID: {route_id})")
+        
+        # 3. 驗證是否自動建立今日任務
+        self.cursor.execute("""
+            SELECT id, route_id, assigned_volunteer_id, status, date 
+            FROM daily_tasks 
+            WHERE date = ? AND route_id = ?
+        """, (today, route_id))
+        task = self.cursor.fetchone()
+        
+        # 檢查任務是否存在
+        self.assertIsNotNone(task, "應該自動建立今日任務")
+        print(f"   ✅ 自動建立今日任務成功 (Task ID: {task['id']})")
+        
+        # 檢查任務詳情
+        self.assertEqual(task['date'], today, "任務日期應該是今天")
+        self.assertEqual(task['route_id'], route_id, "任務應該屬於新路線")
+        self.assertEqual(task['assigned_volunteer_id'], test_volunteer, "任務應該指派給預設志工")
+        self.assertEqual(task['status'], '未配送', "任務初始狀態應該是未配送")
+        print(f"   ✅ 任務日期: {task['date']}")
+        print(f"   ✅ 指派志工: {task['assigned_volunteer_id']}")
+        print(f"   ✅ 任務狀態: {task['status']}")
+        
+        # 4. 驗證任務總數增加
+        self.cursor.execute("SELECT COUNT(*) FROM daily_tasks WHERE date = ?", (today,))
+        final_task_count = self.cursor.fetchone()[0]
+        self.assertEqual(final_task_count, initial_task_count + 1, "今日任務數應該增加 1")
+        print(f"   ✅ 今日任務總數: {initial_task_count} → {final_task_count}")
+        
+        # 清理測試資料
+        self.cursor.execute("DELETE FROM daily_tasks WHERE route_id = ?", (route_id,))
+        self.cursor.execute("DELETE FROM delivery_routes WHERE id = ?", (route_id,))
+        self.conn.commit()
+        print("   🧹 測試資料已清理")
+
 if __name__ == '__main__':
     unittest.main(verbosity=2)

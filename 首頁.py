@@ -86,8 +86,8 @@ with col_footer1:
     st.markdown("""
         #### 📞 聯絡資訊
         臺東縣消防局預防調查科  
-        電話：089-XXXXXX  
-        地址：臺東縣臺東市XX路XX號
+        電話：089-322301  
+        地址：臺東縣臺東市博愛路256號
     """)
 
 with col_footer2:
@@ -103,7 +103,7 @@ with col_footer3:
         #### ℹ️ 關於平台
         本平台由臺東縣消防局建置  
         整合公私資源，提供多元服務  
-        版本：v2.0
+        版本：v2.1
     """)
 
 st.markdown("<br>", unsafe_allow_html=True)
