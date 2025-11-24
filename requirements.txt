@@ -10,8 +10,14 @@ Pillow==10.2.0
 # PDF Processing
 PyMuPDF==1.23.8
 
-# OCR
+# OCR - Traditional (Required)
 pytesseract==0.3.10
+
+# OCR - Enhanced (Optional, for improved accuracy +30%)
+# Install with: pip install paddlepaddle paddleocr
+# Uncomment below to include in auto-install:
+# paddlepaddle>=2.6.0
+# paddleocr>=2.8.0
 
 # Security & Authentication
 bcrypt==4.1.2

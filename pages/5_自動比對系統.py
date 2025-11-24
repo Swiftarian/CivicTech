@@ -455,6 +455,66 @@ with st.sidebar:
         
         st.divider()
         
+
+        # OCR 引擎選擇
+
+        st.markdown("#### 📝 OCR 辨識引擎")
+
+        ocr_engine = st.radio(
+
+            "選擇辨識引擎",
+
+            options=["Tesseract (傳統)", "PaddleOCR (高準確率)"],
+
+            index=0,
+
+            help="PaddleOCR 提供更高的繁體中文辨識準確率（+30%），但需要較多記憶體（4GB+）"
+
+        )
+
+        
+
+        use_paddle = (ocr_engine == "PaddleOCR (高準確率)")
+
+        
+
+        # 顯示引擎狀態
+
+        if use_paddle:
+
+            try:
+
+                import paddle_ocr
+
+                if paddle_ocr.is_paddle_available():
+
+                    info = paddle_ocr.get_paddle_info()
+
+                    st.success(f"✅ PaddleOCR {info.get('paddleocr_version', '')} 可用")
+
+                else:
+
+                    st.warning("⚠️ PaddleOCR 未安裝，將使用 Tesseract")
+
+                    st.caption("執行安裝: `python setup_paddle.py`")
+
+                    use_paddle = False
+
+            except Exception as e:
+
+                st.error(f"❌ PaddleOCR 載入失敗: {e}")
+
+                use_paddle = False
+
+        else:
+
+            st.info("ℹ️ 使用 Tesseract OCR")
+
+        
+
+        st.divider()
+
+        
         # AI 設定 (實驗性功能)
         st.markdown("#### 🤖 AI 智慧分析 (實驗性)")
         use_ai_mode = st.checkbox("啟用 AI 智慧分析 (需安裝 Ollama)", value=False, help="使用本地 LLM 模型進行更精準的語意分析")
@@ -590,7 +650,16 @@ with col1:
                         pages_info = [] # Store page info
                         
                         for i, img in enumerate(images):
-                            ocr_text = perform_ocr(img, tesseract_path)
+                            # 執行 OCR (根據選定的引擎)
+                            if use_paddle:
+                                try:
+                                    import paddle_ocr
+                                    ocr_text = paddle_ocr.perform_paddle_ocr(img)
+                                except Exception as e:
+                                    st.warning(f"PaddleOCR 執行失敗，切換至 Tesseract: {e}")
+                                    ocr_text = perform_ocr(img, tesseract_path)
+                            else:
+                                ocr_text = perform_ocr(img, tesseract_path)
                             temp_all_text += ocr_text + "\n"
                             pages_text.append(ocr_text)
                             
@@ -664,15 +733,24 @@ with col1:
             # 顯示圖片與 OCR 結果 (這是 Rerun 後或 Cache Hit 會看到的)
             for i, img in enumerate(cached_images):
                 st.image(img, caption=f"第 {i+1} 頁", use_container_width=True)
-                with st.expander(f"第 {i+1} 頁 OCR 文字內容 (除錯用)", expanded=False):
-                    # 顯示每一頁的前30個字和完整內容
-                    if i < len(pages_text):
-                        page_text = pages_text[i]
-                        preview_text = page_text[:30] if len(page_text) > 30 else page_text
-                        st.text(f"前30字: {preview_text}")
-                        st.text(f"\n完整內容:\n{page_text}")
-                    else:
-                        st.text("(無法取得此頁內容)")
+                with st.expander(f"第 {i+1} 頁 OCR 文字內容 (除錯用)", expanded=False):
+
+                    # 顯示每一頁的前30個字和完整內容
+
+                    if i < len(pages_text):
+
+                        page_text = pages_text[i]
+
+                        preview_text = page_text[:30] if len(page_text) > 30 else page_text
+
+                        st.text(f"前30字: {preview_text}")
+
+                        st.text(f"\n完整內容:\n{page_text}")
+
+                    else:
+
+                        st.text("(無法取得此頁內容)")
+
                     
                     if "Error" in all_ocr_text:
                             st.error("OCR 執行失敗，請檢查側邊欄的 Tesseract 設定。")
