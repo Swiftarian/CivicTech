@@ -202,11 +202,16 @@ def analyze_document_structure(pdf_images_or_path, model=DEFAULT_VISION_MODEL):
             
             # 如果是 PIL Image，需要先儲存為臨時檔案
             if hasattr(img, 'save'):
-                temp_path = f"temp_page_{page_num}.png"
+                import os
+                import tempfile
+                temp_dir = tempfile.gettempdir()
+                temp_path = os.path.join(temp_dir, f"temp_page_{page_num}.png")
                 img.save(temp_path)
                 doc_type = classify_page_with_vision(temp_path, model)
-                import os
-                os.remove(temp_path)
+                try:
+                    os.remove(temp_path)
+                except:
+                    pass  # 忽略刪除錯誤
             else:
                 # 假設是檔案路徑
                 doc_type = classify_page_with_vision(img, model)
@@ -227,11 +232,16 @@ def analyze_document_structure(pdf_images_or_path, model=DEFAULT_VISION_MODEL):
                 # 提取勾選項目
                 img = images[page_num - 1]
                 if hasattr(img, 'save'):
-                    temp_path = f"temp_toc.png"
+                    import os
+                    import tempfile
+                    temp_dir = tempfile.gettempdir()
+                    temp_path = os.path.join(temp_dir, "temp_toc.png")
                     img.save(temp_path)
                     required_items = extract_checked_items_with_vision(temp_path, model)
-                    import os
-                    os.remove(temp_path)
+                    try:
+                        os.remove(temp_path)
+                    except:
+                        pass
                 else:
                     required_items = extract_checked_items_with_vision(img, model)
                 
@@ -289,33 +299,48 @@ def analyze_page_with_ai(text_content, model=DEFAULT_TEXT_MODEL):
     if not text_content.strip():
         return {"error": "No text content"}
 
-    prompt = f"""你是一個專業的消防安全檢查員。請分析以下文件內容，並提取關鍵資訊。
+    prompt = f"""你是一個專業的消防安全檢查員。請從以下 OCR 文字中提取關鍵資訊。
     
-    文件內容:
+    OCR 文字:
+    ----------------
     {text_content}
+    ----------------
     
-    請以 JSON 格式回傳以下欄位 (如果找不到請填 null):
-    - document_type: 文件類型 (例如: 檢修申報表, 檢查表, 證書)
-    - place_name: 場所名稱
-    - address: 地址
-    - management_person: 管理權人
-    - equipment_list: 提到的消防設備列表 (Array)
+    請提取以下欄位並以 JSON 格式回傳。
     
-    只回傳 JSON，不要有其他廢話。
+    ⚠️ 重要規則：
+    1. **去除所有空格**：所有輸出的值都必須去除所有空格 (例如 "鳳 仙" -> "鳳仙")。
+    2. **單一字串**：地址和管理權人必須是單一字串，嚴禁使用巢狀 JSON (例如不要回傳 {{'city': ...}})。
+    
+    欄位說明：
+    1. document_type: 文件類型
+    2. place_name: 場所名稱 (去除空格)
+    3. address: 地址 (完整地址字串，去除空格)
+    4. management_person: 管理權人 (姓名字串，去除空格)
+    5. equipment_list: 消防設備列表 (Array，每個項目也要去除空格)
+
+    如果找不到欄位，請填 null。只回傳 JSON，不要有其他文字。
     """
     
     payload = {
         "model": model,
         "prompt": prompt,
-        "stream": False,
-        "format": "json"
+        "stream": False
     }
     
     try:
         response = requests.post(OLLAMA_GENERATE_URL, json=payload, timeout=30)
         if response.status_code == 200:
             result = response.json()
-            return json.loads(result['response'])
+            response_text = result['response']
+            
+            # 嘗試使用 Regex 提取 JSON (處理 Markdown 標記)
+            json_match = re.search(r'\{.*\}', response_text, re.DOTALL)
+            if json_match:
+                return json.loads(json_match.group(0))
+            else:
+                # 如果 Regex 失敗，嘗試直接解析
+                return json.loads(response_text)
         else:
             return {"error": f"API Error: {response.status_code}"}
     except Exception as e:
@@ -335,7 +360,29 @@ def analyze_document(pages_text, model=DEFAULT_TEXT_MODEL):
         return {"error": "Ollama service not available"}
         
     # 這裡可以實作更複雜的邏輯，例如只分析第一頁，或是彙整所有頁面
-    # 目前先示範分析第一頁
+    # 優化：同時分析第一頁(基本資料)和目錄頁(設備清單)
     if pages_text:
-        return analyze_page_with_ai(pages_text[0], model)
+        combined_text = pages_text[0] # 預設包含第一頁
+        
+        # 尋找目錄頁 (關鍵字: 目錄, 附表, 檢查表)
+        toc_keywords = ["目錄", "附表", "檢查表"]
+        toc_text = ""
+        
+        # 從第二頁開始找 (index 1)
+        if len(pages_text) > 1:
+            for i in range(1, len(pages_text)):
+                page_content = pages_text[i]
+                # 簡單判斷
+                if any(kw in page_content for kw in toc_keywords):
+                    toc_text = page_content
+                    break
+            
+            # 如果沒找到明確的目錄頁，但有第二頁，就預設抓第二頁 (通常目錄在第二頁)
+            if not toc_text and len(pages_text) > 1:
+                toc_text = pages_text[1]
+        
+        if toc_text:
+            combined_text += "\n\n--- (以下為目錄頁內容) ---\n\n" + toc_text
+            
+        return analyze_page_with_ai(combined_text, model)
     return {}

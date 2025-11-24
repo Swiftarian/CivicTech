@@ -281,27 +281,18 @@ def extract_info_from_ocr(text, pages_text_list=None):
     if pages_text_list and isinstance(pages_text_list, list):
         target_page_text = None
         
-        # 1. 優先尋找以「目錄」開頭的頁面（動態偵測，不固定第2頁）
+        # 1. 優先尋找目錄頁 (根據使用者指定的關鍵字)
+        # 關鍵字: "目錄", "附表", "二、消防安全設備檢查表"
+        toc_keywords = ["目錄", "附表", "二、消防安全設備檢查表", "消防安全設備檢修申報書目錄"]
+        
         for page_text in pages_text_list:
             clean_text = page_text.replace(" ", "").replace("　", "").strip()
-            # 檢查頁面開頭是否有「目錄」兩個字
-            if clean_text.startswith("目錄"):
+            
+            # 檢查是否包含任一關鍵字
+            if any(kw.replace(" ", "") in clean_text for kw in toc_keywords):
                 target_page_text = page_text
+                # print(f"DEBUG: Found TOC page with keyword") # Debug use
                 break
-        
-        # 2. 如果找不到開頭有「目錄」的頁面，搜尋包含「消防安全設備檢修申報書目錄」的頁面
-        if not target_page_text:
-            for page_text in pages_text_list:
-                if "消防安全設備檢修申報書目錄" in page_text.replace(" ", ""):
-                    target_page_text = page_text
-                    break
-        
-        # 3. 如果還是找不到，搜尋任何包含「目錄」的頁面
-        if not target_page_text:
-            for page_text in pages_text_list:
-                if "目錄" in page_text.replace(" ", ""):
-                    target_page_text = page_text
-                    break
         
         # 4. 最後回退：使用第二頁 (Index 1)
         if not target_page_text and len(pages_text_list) > 1:
@@ -452,150 +443,6 @@ with st.sidebar:
             st.warning("⚠️ 缺少繁體中文語言包")
             if st.button("📥 下載中文語言包 (必要)"):
                 download_lang_data()
-        
-        st.divider()
-        
-
-        # OCR 引擎選擇
-
-        st.markdown("#### 📝 OCR 辨識引擎")
-
-        ocr_engine = st.radio(
-
-            "選擇辨識引擎",
-
-            options=["Tesseract (傳統)", "PaddleOCR (高準確率)"],
-
-            index=0,
-
-            help="PaddleOCR 提供更高的繁體中文辨識準確率（+30%），但需要較多記憶體（4GB+）"
-
-        )
-
-        
-
-        use_paddle = (ocr_engine == "PaddleOCR (高準確率)")
-
-        
-
-        # 顯示引擎狀態
-
-        if use_paddle:
-
-            try:
-
-                import paddle_ocr
-
-                if paddle_ocr.is_paddle_available():
-
-                    info = paddle_ocr.get_paddle_info()
-
-                    st.success(f"✅ PaddleOCR {info.get('paddleocr_version', '')} 可用")
-
-                else:
-
-                    st.warning("⚠️ PaddleOCR 未安裝，將使用 Tesseract")
-
-                    st.caption("執行安裝: `python setup_paddle.py`")
-
-                    use_paddle = False
-
-            except Exception as e:
-
-                st.error(f"❌ PaddleOCR 載入失敗: {e}")
-
-                use_paddle = False
-
-        else:
-
-            st.info("ℹ️ 使用 Tesseract OCR")
-
-        
-
-        st.divider()
-
-        
-        # AI 設定 (實驗性功能)
-        st.markdown("#### 🤖 AI 智慧分析 (實驗性)")
-        use_ai_mode = st.checkbox("啟用 AI 智慧分析 (需安裝 Ollama)", value=False, help="使用本地 LLM 模型進行更精準的語意分析")
-        
-        # Vision AI 設定 (新功能)
-        use_vision_ai = st.checkbox("🔍 啟用 Vision AI 文件分析", value=False, help="使用 Vision AI 直接分析掃描圖片，無需 OCR (需要 llama3.2-vision 模型)")
-        
-
-        # AI 模型選擇器
-
-        if use_ai_mode or use_vision_ai:
-
-            st.markdown("##### 模型選擇")
-
-            
-
-            # 文字 LLM 模型選擇
-
-            if use_ai_mode:
-
-                text_model = st.selectbox(
-
-                    "文字分析模型",
-
-                    options=["llama3", "gemma3:4b"],
-
-                    index=0,
-
-                    help="選擇用於文字分析的 LLM 模型"
-
-                )
-
-            else:
-
-                text_model = "llama3"  # 預設值
-
-            
-
-            # Vision AI 模型選擇
-
-            if use_vision_ai:
-
-                vision_model = st.selectbox(
-
-                    "視覺分析模型",
-
-                    options=["llama3.2-vision", "minicpm-v", "qwen2.5vl:7b"],
-
-                    index=0,
-
-                    help="選擇用於視覺分析的 Vision AI 模型"
-
-                )
-
-            else:
-
-                vision_model = "llama3.2-vision"  # 預設值
-
-        else:
-
-            text_model = "llama3"
-
-            vision_model = "llama3.2-vision"
-
-        
-
-        
-        if use_ai_mode or use_vision_ai:
-            st.info("⚠️ AI 功能需要本地執行 Ollama 服務 (預設 Port 11434)")
-            if use_vision_ai:
-                st.caption("📌 Vision AI 需要安裝: `ollama pull llama3.2-vision`")
-            
-        st.divider()
-        
-        # 系統資料設定
-        st.markdown("#### 列管場所資料來源")
-        system_file_path = st.text_input("系統 Excel 路徑", key="system_excel_path")
-        
-        if not os.path.exists(system_file_path):
-             st.error("❌ 找不到 Excel 檔案")
-    
     # 3. 除錯用：顯示欄位名稱
     if df_system is not None:
         with st.expander("3. 🔍 查看 Excel 欄位名稱 (除錯用)"):
@@ -651,7 +498,12 @@ ocr_place_name = ""
 
 # 左欄：民眾申報資料 (PDF/圖片)
 with col1:
-    st.subheader("📄 民眾申報資料 (OCR 辨識)")
+    # st.subheader("📄 民眾申報資料 (OCR 辨識)") # 移除舊標題
+    
+    # 使用 Columns 將標題與狀態訊息排在同一列
+    col_header, col_status_msg = st.columns([2, 3])
+    with col_header:
+        st.subheader("📄 民眾申報資料")
     
     if target_case and uploaded_file_path:
         if not os.path.exists(uploaded_file_path):
@@ -664,21 +516,71 @@ with col1:
             if 'ocr_cache' not in st.session_state:
                 st.session_state.ocr_cache = {}
             
-            # Force Re-OCR Button
-            col_ocr_btn, col_ocr_status = st.columns([1, 2])
-            with col_ocr_btn:
+            # Force Re-OCR Button & Settings Area
+            # 建立三欄佈局：按鈕 | OCR 引擎 | AI 設定
+            col_btn, col_engine, col_ai = st.columns([1, 2, 2])
+            
+            with col_btn:
                 force_reocr = st.button("🔄 強制重新辨識", help="如果覺得辨識結果有誤，可點此重新執行 OCR")
+            
+            with col_engine:
+                # OCR 引擎選擇
+                ocr_engine = st.radio(
+                    "OCR 引擎",
+                    options=["Tesseract", "PaddleOCR"],
+                    index=1, # 預設 PaddleOCR
+                    horizontal=True,
+                    label_visibility="collapsed" # 隱藏標題，節省空間
+                )
+                use_paddle = (ocr_engine == "PaddleOCR")
+                
+                # 檢查 PaddleOCR 可用性
+                if use_paddle:
+                    try:
+                        import paddle_ocr
+                        if not paddle_ocr.is_paddle_available():
+                            st.caption("⚠️ PaddleOCR 未安裝")
+                    except:
+                        st.caption("⚠️ PaddleOCR 未安裝")
+
+            with col_ai:
+                # AI 設定
+                use_ai_mode = st.checkbox("啟用 AI 智慧分析 (Ollama)", value=True)
+                # use_vision_ai = st.checkbox("啟用 Vision AI", value=False) # 暫時隱藏 Vision AI 以簡化介面
+                use_vision_ai = False # 預設關閉，避免 NameError
+                
+                # 模型選擇 (下拉式選單)
+                if use_ai_mode:
+                    text_model = st.selectbox(
+                        "選擇模型",
+                        options=["llama3", "gemma2", "mistral", "qwen2.5:7b"],
+                        index=0,
+                        label_visibility="collapsed" # 隱藏標題，節省空間
+                    )
+                else:
+                    text_model = "llama3"
             
             # 判斷是否需要執行 OCR
             # 條件：
             # 1. 檔案變更 (file_key 不同)
             # 2. 使用者強制重新辨識
             # 3. Cache 為空
+            # 4. OCR 引擎變更 (偵測 session state 中的 engine)
+            
+            # 檢查上次使用的引擎
+            last_engine = st.session_state.ocr_cache.get('last_engine')
+            engine_changed = last_engine != ocr_engine
+            
             cache_miss = st.session_state.ocr_cache.get('file_key') != file_key
             
-            if cache_miss or force_reocr:
+            if cache_miss or force_reocr or engine_changed:
                 if force_reocr:
                     st.toast("正在重新執行 OCR...", icon="🔄")
+                if engine_changed:
+                    st.toast(f"切換引擎至 {ocr_engine}，重新辨識...", icon="⚙️")
+                
+                # 更新 last_engine
+                st.session_state.ocr_cache['last_engine'] = ocr_engine
                 
                 # 1. 先轉換並顯示圖片 (讓使用者先看到預覽)
                 images = []
@@ -715,11 +617,23 @@ with col1:
                                 try:
                                     import paddle_ocr
                                     ocr_text = paddle_ocr.perform_paddle_ocr(img)
+                                    
+                                    # 檢查 PaddleOCR 是否回傳錯誤
+                                    if "Error:" in ocr_text:
+                                        st.warning(f"PaddleOCR 執行失敗 (第 {i+1} 頁): {ocr_text}")
+                                        st.info("🔄 自動切換至 Tesseract 進行重試...")
+                                        ocr_text = perform_ocr(img, tesseract_path)
+                                        
                                 except Exception as e:
                                     st.warning(f"PaddleOCR 執行失敗，切換至 Tesseract: {e}")
                                     ocr_text = perform_ocr(img, tesseract_path)
                             else:
                                 ocr_text = perform_ocr(img, tesseract_path)
+                            
+                            # 再次檢查 Tesseract 是否也失敗
+                            if "Error:" in ocr_text:
+                                st.error(f"❌ OCR 嚴重失敗 (第 {i+1} 頁): {ocr_text}")
+                                
                             temp_all_text += ocr_text + "\n"
                             pages_text.append(ocr_text)
                             
@@ -743,13 +657,13 @@ with col1:
                         st.session_state.ocr_cache['page_one_text'] = temp_p1_text
                         st.session_state.ocr_cache['page_two_text'] = temp_p2_text
                         st.session_state.ocr_cache['pages_text'] = pages_text # 儲存所有頁面文字
-                        st.session_state.ocr_cache['pages_info'] = pages_info # 儲存頁面資訊 (New)
+                        st.session_state.ocr_cache['pages_info'] = pages_info # 儲存頁面資訊
                         st.session_state.ocr_cache['images'] = images 
                         
                         # 重新整理頁面以顯示 OCR 結果
                         st.rerun()
             else:
-                with col_ocr_status:
+                with col_status_msg:
                     st.success("✅ 使用快取資料 (無需重新辨識)")
             
             # 從 Session State 取出資料 (Cache Hit)
@@ -773,14 +687,56 @@ with col1:
                             st.error(f"AI 分析失敗: {ai_result['error']}")
                             extracted_data = extract_info_from_ocr(page_one_text, pages_text) # Fallback
                         else:
+                            # Helper function to clean AI values (remove spaces, handle dicts)
+                            def clean_ai_value(val):
+                                if not val: return ""
+                                if isinstance(val, dict):
+                                    # 如果 AI 回傳了字典 (例如 {'city': '...'})，嘗試取值
+                                    return str(list(val.values())[0]).replace(" ", "") if val.values() else ""
+                                if isinstance(val, str):
+                                    return val.replace(" ", "")
+                                return str(val).replace(" ", "")
+
+                            # Helper function to process equipment list
+                            def process_equipment_list(eq_list):
+                                if not eq_list: return ""
+                                processed = []
+                                for item in eq_list:
+                                    # 遞迴清洗每個項目
+                                    clean_item = clean_ai_value(item)
+                                    if clean_item:
+                                        processed.append(clean_item)
+                                return "、".join(processed)
+
                             # 嘗試映射欄位
                             extracted_data = {
-                                '場所名稱': ai_result.get('place_name', ''),
-                                '場所地址': ai_result.get('address', ''),
-                                '管理權人': ai_result.get('management_person', ''),
-                                '消防設備種類': "、".join(ai_result.get('equipment_list', [])) if ai_result.get('equipment_list') else ''
+                                '場所名稱': clean_ai_value(ai_result.get('place_name')),
+                                '場所地址': clean_ai_value(ai_result.get('address')),
+                                '管理權人': clean_ai_value(ai_result.get('management_person')),
+                                '消防設備種類': process_equipment_list(ai_result.get('equipment_list', []))
                             }
+                            
+                            # --- Fallback 機制 ---
+                            # 如果 AI 沒抓到場所名稱，嘗試用傳統規則補救
+                            if not extracted_data.get('場所名稱'):
+                                st.warning("⚠️ AI 未能識別場所名稱，嘗試使用規則提取補救...")
+                                
+                                # Debug: 顯示 OCR 原始文字，確認是否有字
+                                with st.expander("🔍 查看 OCR 原始文字 (前 200 字)", expanded=True):
+                                    st.text(page_one_text[:200] if page_one_text else "⚠️ OCR 文字為空！")
+                                
+                                fallback_data = extract_info_from_ocr(page_one_text, pages_text)
+                                
+                                # 合併資料 (若 AI 為空則使用 Fallback)
+                                for key, val in fallback_data.items():
+                                    if not extracted_data.get(key):
+                                        extracted_data[key] = val
+                            
                             st.toast("已完成 AI 智慧分析", icon="🤖")
+                            
+                            # Debug: 顯示 AI 原始回傳 (開發階段用，可隨時移除)
+                            with st.expander("🔍 查看 AI 原始分析結果", expanded=False):
+                                st.json(ai_result)
                 else:
                     st.warning("⚠️ 偵測不到 Ollama 服務，已自動切換回傳統 OCR 規則模式")
                     extracted_data = extract_info_from_ocr(page_one_text, pages_text)
@@ -1077,7 +1033,18 @@ with col2:
             # 格式化顯示 (將頓號轉為換行)
             fmt_sys_val = equip_sys_val.replace("、", "\n") if equip_sys_val else ""
             
-            # 檢查 Session State 是否有暫存的修改值
+            # --- Session State 同步邏輯 (修正申報資料未載入問題) ---
+            # 初始化 last_equip_ocr_val
+            if "last_equip_ocr_val" not in st.session_state:
+                st.session_state.last_equip_ocr_val = equip_ocr_val
+                st.session_state.modified_equip_ocr = equip_ocr_val
+            
+            # 如果檢測到 equip_ocr_val 改變了 (例如 AI 重新分析完成)，強制更新 modified_equip_ocr
+            if equip_ocr_val != st.session_state.last_equip_ocr_val:
+                st.session_state.modified_equip_ocr = equip_ocr_val
+                st.session_state.last_equip_ocr_val = equip_ocr_val
+            
+            # 確保 modified_equip_ocr 存在
             if "modified_equip_ocr" not in st.session_state:
                 st.session_state.modified_equip_ocr = equip_ocr_val
             
@@ -1290,6 +1257,7 @@ with tab_check:
     
     if 'ocr_cache' in st.session_state and 'pages_info' in st.session_state.ocr_cache:
         images = st.session_state.ocr_cache.get('images', [])
+        pages_info = st.session_state.ocr_cache.get('pages_info', [])  # 在兩種模式都需要這個變數
         
         # === Vision AI 模式 ===
         if use_vision_ai and images:
@@ -1364,12 +1332,17 @@ with tab_check:
             except Exception as e:
                 st.error(f"❌ Vision AI 執行錯誤: {e}")
         
-        # 建立兩欄版面配置（無論哪種模式都需要）
+        # === 傳統 OCR 模式 ===
+        # (pages_info 已在上方統一初始化)
+        
+        # 建立兩欄版面配置（Vision AI 和傳統模式都需要）
         col_check_1, col_check_2 = st.columns([1, 1])
         
-        # === 傳統 OCR 模式 ===
-        else:
-            pages_info = st.session_state.ocr_cache.get('pages_info', [])
+        # 初始化變數（兩種模式都需要）
+        selected_reqs = []
+        
+        # 傳統 OCR 模式的特定邏輯
+        if not use_vision_ai:
             with col_check_1:
                 st.markdown("#### 1. 目錄解析")
                 # Find TOC
@@ -1409,7 +1382,9 @@ with tab_check:
                     selected_reqs = []
 
         with col_check_2:
-            st.markdown("#### 2. 完整性分析報告")
+            # 只有在非 Vision AI 模式下才顯示這裡的報告 (避免重複)
+            if not use_vision_ai:
+                st.markdown("#### 2. 完整性分析報告")
             
             if not selected_reqs:
                 st.info("👈 請先確認左側目錄勾選項目")
