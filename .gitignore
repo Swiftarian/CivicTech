@@ -1,0 +1,63 @@
+# Python
+__pycache__/
+*.py[cod]
+*.pyo
+*.pyd
+*.env
+.env
+*.venv
+.venv
+*.egg
+*.egg-info/
+dist/
+build/
+*.log
+
+# Flask
+instance/
+*.sqlite3
+
+# Jupyter Notebooks
+.ipynb_checkpoints
+
+# VS Code
+.vscode/
+*.code-workspace
+
+# Windows
+Thumbs.db
+Desktop.ini
+
+# macOS
+.DS_Store
+
+# Logs
+*.log
+*.out
+*.err
+
+# Temporary files
+*.tmp
+*.bak
+*.swp
+*.swo
+
+# Test coverage
+htmlcov/
+.tox/
+.coverage
+.cache
+
+# Deployment
+*.ngrok
+*.pem
+
+# Other
+.idea/
+*.iml
+*.sublime-workspace
+*.sublime-project
+/venv
+backend/.env
+/backend/app/static/uploads/pdfs
+/backend/uploads
