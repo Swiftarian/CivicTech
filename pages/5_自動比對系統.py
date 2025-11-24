@@ -522,6 +522,66 @@ with st.sidebar:
         # Vision AI 設定 (新功能)
         use_vision_ai = st.checkbox("🔍 啟用 Vision AI 文件分析", value=False, help="使用 Vision AI 直接分析掃描圖片，無需 OCR (需要 llama3.2-vision 模型)")
         
+
+        # AI 模型選擇器
+
+        if use_ai_mode or use_vision_ai:
+
+            st.markdown("##### 模型選擇")
+
+            
+
+            # 文字 LLM 模型選擇
+
+            if use_ai_mode:
+
+                text_model = st.selectbox(
+
+                    "文字分析模型",
+
+                    options=["llama3", "gemma3:4b"],
+
+                    index=0,
+
+                    help="選擇用於文字分析的 LLM 模型"
+
+                )
+
+            else:
+
+                text_model = "llama3"  # 預設值
+
+            
+
+            # Vision AI 模型選擇
+
+            if use_vision_ai:
+
+                vision_model = st.selectbox(
+
+                    "視覺分析模型",
+
+                    options=["llama3.2-vision", "minicpm-v", "qwen2.5vl:7b"],
+
+                    index=0,
+
+                    help="選擇用於視覺分析的 Vision AI 模型"
+
+                )
+
+            else:
+
+                vision_model = "llama3.2-vision"  # 預設值
+
+        else:
+
+            text_model = "llama3"
+
+            vision_model = "llama3.2-vision"
+
+        
+
+        
         if use_ai_mode or use_vision_ai:
             st.info("⚠️ AI 功能需要本地執行 Ollama 服務 (預設 Port 11434)")
             if use_vision_ai:
@@ -707,7 +767,7 @@ with col1:
                         # 這裡我們傳入 pages_text 讓 AI 分析
                         # 注意：為了保持與原有 extracted_data 格式相容，我們可能需要做一些轉換
                         # 目前先示範取得 AI 結果，並嘗試映射到原有欄位
-                        ai_result = ai_engine.analyze_document(pages_text)
+                        ai_result = ai_engine.analyze_document(pages_text, model=text_model)
                         
                         if "error" in ai_result:
                             st.error(f"AI 分析失敗: {ai_result['error']}")
