@@ -3,6 +3,7 @@ import streamlit as st
 import db_manager
 import datetime
 import utils
+from streamlit_calendar import calendar
 
 # ==========================================
 # 頁面設定
@@ -339,74 +340,215 @@ elif page == " 預約參觀":
     
     tab_reserve, tab_check_capacity, tab_my_bookings = st.tabs([" 新增預約", " 查詢剩餘名額", " 查詢我的預約"])
     
-    # Tab 1: 新增預約 (優化版)
+    # Tab 1: 新增預約 (完整日曆版)
     with tab_reserve:
-        st.subheader("填寫預約資訊")
+        # 使用 session_state 管理選擇的日期
+        if 'selected_date' not in st.session_state:
+            st.session_state.selected_date = None
         
-        with st.form("booking_form"):
-            # 新增: 參觀類型選擇
-            visit_type = st.radio(
-                "參觀類型 *",
-                ["個人/家庭", "學校/機關團體"],
-                horizontal=True
-            )
+        # Step 1: 顯示完整日曆
+        if st.session_state.selected_date is None:
+            st.subheader("📅 請選擇參觀日期")
+            st.info("💡 點擊日曆中的日期，查看該日可預約時段並填寫預約資料。綠色標記表示該日有空檔，紅色表示休館日或已額滿。")
             
             st.markdown("<br>", unsafe_allow_html=True)
             
-            col_form1, col_form2 = st.columns(2)
+            # 準備日曆事件資料
+            calendar_events = []
             
-            with col_form1:
-                visit_date = st.date_input(
-                    "參觀日期 *",
-                    min_value=datetime.date.today() + datetime.timedelta(days=1),
-                    max_value=datetime.date.today() + datetime.timedelta(days=60)
+            # 生成未來60天的事件
+            time_slots = ["09:00-11:00", "11:00-13:00", "14:00-16:00", "16:00-18:00"]
+            
+            for i in range(1, 61):
+                future_date = datetime.date.today() + datetime.timedelta(days= i)
+                date_str = future_date.strftime("%Y-%m-%d")
+                weekday = future_date.weekday()
+                
+                # 週一休館日
+                if weekday == 0:
+                    calendar_events.append({
+                        "title": "🔴 休館日",
+                        "start": date_str,
+                        "end": date_str,
+                        "backgroundColor": "#dc3545",
+                        "borderColor": "#dc3545",
+                        "allDay": True
+                    })
+                else:
+                    # 計算該日的總預約數
+                    total_count = 0
+                    available_slots = []
+                    
+                    for slot in time_slots:
+                        count = db_manager.get_booking_count_by_slot(date_str, slot)
+                        total_count += count
+                        remaining = 50 - count
+                        if remaining > 0:
+                            available_slots.append(f"{slot} ({remaining}人)")
+                    
+                    # 總容量：4個時段 * 每時段50人 = 200人
+                    total_remaining = 200 - total_count
+                    
+                    if total_remaining > 100:
+                        color = "#28a745"  # 綠色：空檔充足
+                        title = f"🟢 空檔充足"
+                    elif total_remaining > 50:
+                        color = "#ffc107"  # 黃色：尚有空檔
+                        title = f"🟡 尚有空檔"
+                    elif total_remaining > 0:
+                        color = "#fd7e14"  # 橘色：名額有限
+                        title = f"🟠 名額有限"
+                    else:
+                        color = "#dc3545"  # 紅色：已額滿
+                        title = f"🔴 已額滿"
+                    
+                    # 為每個有空檔的時段建立獨立事件
+                    for slot in available_slots:
+                        calendar_events.append({
+                            "title": slot,
+                            "start": date_str,
+                            "end": date_str,
+                            "backgroundColor": color,
+                            "borderColor": color,
+                            "allDay": False
+                        })
+            
+            # 日曆選項
+            calendar_options = {
+                "initialView": "dayGridMonth",
+                "initialDate": (datetime.date.today() + datetime.timedelta(days=1)).strftime("%Y-%m-%d"),
+                "headerToolbar": {
+                    "left": "prev,next today",
+                    "center": "title",
+                    "right": "dayGridMonth"
+                },
+                "locale": "zh-tw",
+                "firstDay": 0,
+                "height": 650,
+                "editable": False,
+                "selectable": True,
+                "selectMirror": True,
+                "dayMaxEvents": True,
+                "validRange": {
+                    "start": (datetime.date.today() + datetime.timedelta(days=1)).strftime("%Y-%m-%d"),
+                    "end": (datetime.date.today() + datetime.timedelta(days=61)).strftime("%Y-%m-%d")
+                }
+            }
+            
+            # 顯示日曆
+            cal_return = calendar(events=calendar_events, options=calendar_options, key="museum_calendar")
+            
+            # 處理日曆點擊事件
+            if cal_return and 'dateClick' in cal_return and cal_return['dateClick']:
+                clicked_date = cal_return['dateClick']['date']
+                # 移除時間部分，只保留日期
+                if 'T' in clicked_date:
+                    clicked_date = clicked_date.split('T')[0]
+                
+                # 驗證日期
+                clicked_date_obj = datetime.datetime.strptime(clicked_date, "%Y-%m-%d").date()
+                
+                # 檢查是否為週一
+                if clicked_date_obj.weekday() == 0:
+                    st.error("⚠️ 該日為休館日（週一），請選擇其他日期")
+                elif clicked_date_obj <= datetime.date.today():
+                    st.error("⚠️ 請選擇明日之後的日期")
+                else:
+                    st.session_state.selected_date = clicked_date
+                    st.rerun()
+                
+        # Step 2: 顯示預約表單（已選擇日期後）
+        else:
+            selected_date_obj = datetime.datetime.strptime(st.session_state.selected_date, "%Y-%m-%d").date()
+            weekday = ["一","二","三","四","五","六","日"][selected_date_obj.weekday()]
+            
+            st.success(f"✅ 您選擇的參觀日期：**{st.session_state.selected_date}** (週{weekday})")
+            
+            col_back1, col_back2 = st.columns([1, 5])
+            with col_back1:
+                if st.button("← 重新選擇日期"):
+                    st.session_state.selected_date = None
+                    st.rerun()
+            
+            st.markdown("<br>", unsafe_allow_html=True)
+            st.subheader("填寫預約資訊")
+            
+            with st.form("booking_form"):
+                # 新增: 參觀類型選擇
+                visit_type = st.radio(
+                    "參觀類型 *",
+                    ["個人/家庭", "學校/機關團體"],
+                    horizontal=True
                 )
                 
-                time_slot = st.selectbox(
-                    "參觀時段 *",
-                    ["09:00-11:00", "11:00-13:00", "14:00-16:00", "16:00-18:00"]
-                )
+                st.markdown("<br>", unsafe_allow_html=True)
                 
-                # 動態顯示人數欄位
-                if visit_type == "學校/機關團體":
-                    visitor_count = st.number_input("預計人數 *", min_value=10, max_value=50, value=20)
-                else:
-                    visitor_count = st.number_input("人數 *", min_value=1, max_value=10, value=2)
-            
-            with col_form2:
-                applicant_name = st.text_input("聯絡人姓名 *")
-                applicant_phone = st.text_input("聯絡電話 *", placeholder="0912-345-678")
+                col_form1, col_form2 = st.columns(2)
                 
-                # 動態顯示團體名稱
-                if visit_type == "學校/機關團體":
-                    organization = st.text_input("團體/單位名稱 *", placeholder="例如: 臺東縣XX國小")
-                else:
-                    organization = st.text_input("單位/學校名稱 (選填)")
-                
-                email = st.text_input("Email (選填)")
-            
-            st.caption("* 為必填欄位")
-            
-            submitted = st.form_submit_button("提交預約", type="primary", use_container_width=True)
-            
-            if submitted:
-                # 驗證必填欄位
-                if not applicant_name or not applicant_phone:
-                    st.error("請填寫聯絡人姓名與電話! ")
-                elif visit_type == "學校/機關團體" and not organization:
-                    st.error("團體預約請填寫團體/單位名稱! ")
-                else:
-                    # 檢查該時段是否已滿 (假設上限50人)
-                    current_count = db_manager.get_booking_count_by_slot(
-                        visit_date.strftime("%Y-%m-%d"),
-                        time_slot
+                with col_form1:
+                    # 顯示已選擇的日期（只讀）
+                    st.text_input(
+                        "參觀日期",
+                        value=f"{st.session_state.selected_date} (週{weekday})",
+                        disabled=True
                     )
                     
-                    if current_count + visitor_count > 50:
-                        st.warning(f"⚠ 該時段剩餘名額不足! 目前已預約 {current_count} 人, 剩餘 {50 - current_count} 人. ")
+                    time_slot = st.selectbox(
+                        "參觀時段 *",
+                        ["09:00-11:00", "11:00-13:00", "14:00-16:00", "16:00-18:00"]
+                    )
+                    
+                    # 顯示該時段剩餘名額
+                    current_count = db_manager.get_booking_count_by_slot(
+                        st.session_state.selected_date,
+                        time_slot
+                    )
+                    remaining = 50 - current_count
+                    
+                    if remaining > 30:
+                        st.info(f"💺 該時段剩餘名額：**{remaining}** 人")
+                    elif remaining > 10:
+                        st.warning(f"⚠️ 該時段剩餘名額：**{remaining}** 人")
+                    elif remaining > 0:
+                        st.error(f"🚨 該時段名額有限：僅剩 **{remaining}** 人")
+                    else:
+                        st.error("❌ 該時段已額滿，請選擇其他時段")
+                    
+                    # 動態顯示人數欄位
+                    if visit_type == "學校/機關團體":
+                        visitor_count = st.number_input("預計人數 *", min_value=10, max_value=50, value=20)
+                    else:
+                        visitor_count = st.number_input("人數 *", min_value=1, max_value=10, value=2)
+                
+                with col_form2:
+                    applicant_name = st.text_input("聯絡人姓名 *")
+                    applicant_phone = st.text_input("聯絡電話 *", placeholder="0912-345-678")
+                    
+                    # 動態顯示團體名稱
+                    if visit_type == "學校/機關團體":
+                        organization = st.text_input("團體/單位名稱 *", placeholder="例如: 臺東縣XX國小")
+                    else:
+                        organization = st.text_input("單位/學校名稱 (選填)")
+                    
+                    email = st.text_input("Email (選填)")
+                
+                st.caption("* 為必填欄位")
+                
+                submitted = st.form_submit_button("提交預約", type="primary", use_container_width=True)
+                
+                if submitted:
+                    # 驗證必填欄位
+                    if not applicant_name or not applicant_phone:
+                        st.error("請填寫聯絡人姓名與電話! ")
+                    elif visit_type == "學校/機關團體" and not organization:
+                        st.error("團體預約請填寫團體/單位名稱! ")
+                    elif remaining <= 0:
+                        st.error("該時段已額滿，請重新選擇日期或時段！")
+                    elif remaining < visitor_count:
+                        st.error(f"該時段剩餘名額不足！僅剩 {remaining} 人，但您預約 {visitor_count} 人")
                     else:
                         booking_id = db_manager.create_museum_booking(
-                            visit_date.strftime("%Y-%m-%d"),
+                            st.session_state.selected_date,
                             time_slot,
                             applicant_name,
                             applicant_phone,
@@ -414,8 +556,10 @@ elif page == " 預約參觀":
                             organization,
                             email
                         )
-                        st.success(f"預約成功! 預約編號: {booking_id}")
-                        st.info(f" **{visit_type}** 預約\n人數: {visitor_count} 人\n請保存您的聯絡電話 **{applicant_phone}**, 以便查詢或取消預約. ")
+                        st.success(f"🎉 預約成功! 預約編號: **{booking_id}**")
+                        st.info(f"📋 **{visit_type}** 預約\n人數: {visitor_count} 人\n請保存您的聯絡電話 **{applicant_phone}**, 以便查詢或取消預約.")
+                        st.session_state.selected_date = None  # 清除選擇的日期
+    
     
     # Tab 2: 查詢剩餘名額
     with tab_check_capacity:
