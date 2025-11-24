@@ -1364,12 +1364,12 @@ with tab_check:
             except Exception as e:
                 st.error(f"❌ Vision AI 執行錯誤: {e}")
         
+        # 建立兩欄版面配置（無論哪種模式都需要）
+        col_check_1, col_check_2 = st.columns([1, 1])
+        
         # === 傳統 OCR 模式 ===
         else:
-            pages_info = st.session_state.ocr_cache['pages_info']
-            
-            col_check_1, col_check_2 = st.columns([1, 1])
-            
+            pages_info = st.session_state.ocr_cache.get('pages_info', [])
             with col_check_1:
                 st.markdown("#### 1. 目錄解析")
                 # Find TOC
