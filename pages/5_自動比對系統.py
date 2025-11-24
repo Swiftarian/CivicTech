@@ -281,13 +281,29 @@ def extract_info_from_ocr(text, pages_text_list=None):
     if pages_text_list and isinstance(pages_text_list, list):
         target_page_text = None
         
-        # 1. 優先尋找包含 "消防安全設備檢修申報書目錄" 的頁面
+        # 1. 優先尋找以「目錄」開頭的頁面（動態偵測，不固定第2頁）
         for page_text in pages_text_list:
-            if "消防安全設備檢修申報書目錄" in page_text.replace(" ", ""):
-                target_page_text = page_text
+            clean_text = page_text.replace(" ", "").replace("　", "").strip()
+            # 檢查頁面開頭是否有「目錄」兩個字
+            if clean_text.startswith("目錄"):
+               target_page_text = page_text
                 break
         
-        # 2. 如果找不到，回退使用第二頁 (Index 1)
+        # 2. 如果找不到開頭有「目錄」的頁面，搜尋包含「消防安全設備檢修申報書目錄」的頁面
+        if not target_page_text:
+            for page_text in pages_text_list:
+                if "消防安全設備檢修申報書目錄" in page_text.replace(" ", ""):
+                    target_page_text = page_text
+                    break
+        
+        # 3. 如果還是找不到，搜尋任何包含「目錄」的頁面
+        if not target_page_text:
+            for page_text in pages_text_list:
+                if "目錄" in page_text.replace(" ", ""):
+                    target_page_text = page_text
+                    break
+        
+        # 4. 最後回退：使用第二頁 (Index 1)
         if not target_page_text and len(pages_text_list) > 1:
             target_page_text = pages_text_list[1]
             
