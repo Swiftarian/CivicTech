@@ -45,8 +45,7 @@ with col1:
         </div>
     """, unsafe_allow_html=True)
     
-    if st.button("進入系統 →", key="fire_inspection", type="primary", use_container_width=True):
-        st.switch_page("pages/1_🚒_消防檢修申報.py")
+    st.page_link("pages/3_民眾申辦與進度查詢.py", label="進入系統 →", icon="🚒", use_container_width=True)
 
 # 卡片 2：社區互助送餐
 with col2:
@@ -58,21 +57,19 @@ with col2:
         </div>
     """, unsafe_allow_html=True)
     
-    if st.button("進入系統 →", key="meal_delivery", type="primary", use_container_width=True):
-        st.switch_page("pages/2_🍱_社區互助送餐.py")
+    st.page_link("pages/2_社區互助送餐.py", label="進入系統 →", icon="🍱", use_container_width=True)
 
 # 卡片 3：防災智慧導覽
 with col3:
     st.markdown("""
         <div class="service-card">
             <div class="card-icon">📢</div>
-            <h3>防災智慧導覽</h3>
+            <h3>防災館參館預約</h3>
             <p>運用 AI 技術，提供即時防災資訊、疏散路線規劃與防災知識推廣</p>
         </div>
     """, unsafe_allow_html=True)
     
-    if st.button("進入系統 →", key="disaster_guide", type="primary", use_container_width=True):
-        st.switch_page("pages/3_📢_防災智慧導覽.py")
+    st.page_link("pages/1_防災館參館預約.py", label="進入系統 →", icon="📢", use_container_width=True)
 
 # ==========================================
 # Footer 區域

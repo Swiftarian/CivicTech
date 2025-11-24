@@ -22,7 +22,7 @@ st.set_page_config(layout="wide", page_title=f"{cfg.AGENCY_NAME}檢修申報書�
 if "logged_in" not in st.session_state or not st.session_state.logged_in:
     st.warning("⚠️ 此頁面僅限消防局同仁使用，請先進行管理者登入。")
     st.info("正在將您導向至登入頁面...")
-    st.page_link("pages/3_案件審核.py", label="🔐 前往登入頁面", icon="🔐")
+    st.page_link("pages/4_案件審核.py", label="🔐 前往登入頁面", icon="🔐")
     st.stop()  # 阻止下方程式碼執行
 
 # 顯示登入使用者資訊
@@ -34,6 +34,7 @@ st.sidebar.divider()
 # 載入自定義 CSS
 import utils
 utils.load_custom_css()
+import doc_integrity  # New module for integrity check
 
 # ==========================================
 # 原有程式碼繼續
@@ -438,6 +439,20 @@ with st.sidebar:
         
         st.divider()
         
+        # AI 設定 (實驗性功能)
+        st.markdown("#### 🤖 AI 智慧分析 (實驗性)")
+        use_ai_mode = st.checkbox("啟用 AI 智慧分析 (需安裝 Ollama)", value=False, help="使用本地 LLM 模型進行更精準的語意分析")
+        
+        # Vision AI 設定 (新功能)
+        use_vision_ai = st.checkbox("🔍 啟用 Vision AI 文件分析", value=False, help="使用 Vision AI 直接分析掃描圖片，無需 OCR (需要 llama3.2-vision 模型)")
+        
+        if use_ai_mode or use_vision_ai:
+            st.info("⚠️ AI 功能需要本地執行 Ollama 服務 (預設 Port 11434)")
+            if use_vision_ai:
+                st.caption("📌 Vision AI 需要安裝: `ollama pull llama3.2-vision`")
+            
+        st.divider()
+        
         # 系統資料設定
         st.markdown("#### 列管場所資料來源")
         system_file_path = st.text_input("系統 Excel 路徑", key="system_excel_path")
@@ -485,8 +500,11 @@ if selected_case_label:
     target_case = case_options[selected_case_label]
     uploaded_file_path = target_case['file_path']
 
-# 1. 先建立版面 (左右分欄)
-col1, col2 = st.columns([1, 1])
+# 1. 先建立版面 (使用 Tabs 分頁)
+tab_main, tab_check = st.tabs(["🔍 申報書比對", "📑 文件完整性檢查"])
+
+# 主比對頁面
+col1, col2 = tab_main.columns([1, 1])
 
 # 用於儲存 OCR 結果
 all_ocr_text = ""
@@ -510,8 +528,22 @@ with col1:
             if 'ocr_cache' not in st.session_state:
                 st.session_state.ocr_cache = {}
             
-            # 如果是新檔案或尚未辨識過
-            if st.session_state.ocr_cache.get('file_key') != file_key:
+            # Force Re-OCR Button
+            col_ocr_btn, col_ocr_status = st.columns([1, 2])
+            with col_ocr_btn:
+                force_reocr = st.button("🔄 強制重新辨識", help="如果覺得辨識結果有誤，可點此重新執行 OCR")
+            
+            # 判斷是否需要執行 OCR
+            # 條件：
+            # 1. 檔案變更 (file_key 不同)
+            # 2. 使用者強制重新辨識
+            # 3. Cache 為空
+            cache_miss = st.session_state.ocr_cache.get('file_key') != file_key
+            
+            if cache_miss or force_reocr:
+                if force_reocr:
+                    st.toast("正在重新執行 OCR...", icon="🔄")
+                
                 # 1. 先轉換並顯示圖片 (讓使用者先看到預覽)
                 images = []
                 try:
@@ -539,10 +571,23 @@ with col1:
                         
                         # 執行 OCR
                         pages_text = []
+                        pages_info = [] # Store page info
+                        
                         for i, img in enumerate(images):
                             ocr_text = perform_ocr(img, tesseract_path)
                             temp_all_text += ocr_text + "\n"
                             pages_text.append(ocr_text)
+                            
+                            # Identify page type
+                            first_30 = ocr_text[:30]
+                            page_type = doc_integrity.identify_page_type(first_30)
+                            
+                            pages_info.append({
+                                "page_num": i + 1,
+                                "first_30": first_30,
+                                "type": page_type,
+                                "text": ocr_text
+                            })
                             
                             if i == 0: temp_p1_text = ocr_text
                             if i == 1: temp_p2_text = ocr_text
@@ -553,10 +598,14 @@ with col1:
                         st.session_state.ocr_cache['page_one_text'] = temp_p1_text
                         st.session_state.ocr_cache['page_two_text'] = temp_p2_text
                         st.session_state.ocr_cache['pages_text'] = pages_text # 儲存所有頁面文字
+                        st.session_state.ocr_cache['pages_info'] = pages_info # 儲存頁面資訊 (New)
                         st.session_state.ocr_cache['images'] = images 
                         
                         # 重新整理頁面以顯示 OCR 結果
                         st.rerun()
+            else:
+                with col_ocr_status:
+                    st.success("✅ 使用快取資料 (無需重新辨識)")
             
             # 從 Session State 取出資料 (Cache Hit)
             all_ocr_text = st.session_state.ocr_cache.get('all_ocr_text', "")
@@ -565,8 +614,35 @@ with col1:
             pages_text = st.session_state.ocr_cache.get('pages_text', [])
             cached_images = st.session_state.ocr_cache.get('images', [])
             
-            # 提取資料
-            extracted_data = extract_info_from_ocr(page_one_text, pages_text)
+            # 提取資料 (邏輯分流)
+            if use_ai_mode:
+                import ai_engine
+                if ai_engine.is_ollama_available():
+                    with st.spinner("🤖 AI 正在分析文件內容..."):
+                        # 這裡我們傳入 pages_text 讓 AI 分析
+                        # 注意：為了保持與原有 extracted_data 格式相容，我們可能需要做一些轉換
+                        # 目前先示範取得 AI 結果，並嘗試映射到原有欄位
+                        ai_result = ai_engine.analyze_document(pages_text)
+                        
+                        if "error" in ai_result:
+                            st.error(f"AI 分析失敗: {ai_result['error']}")
+                            extracted_data = extract_info_from_ocr(page_one_text, pages_text) # Fallback
+                        else:
+                            # 嘗試映射欄位
+                            extracted_data = {
+                                '場所名稱': ai_result.get('place_name', ''),
+                                '場所地址': ai_result.get('address', ''),
+                                '管理權人': ai_result.get('management_person', ''),
+                                '消防設備種類': "、".join(ai_result.get('equipment_list', [])) if ai_result.get('equipment_list') else ''
+                            }
+                            st.toast("已完成 AI 智慧分析", icon="🤖")
+                else:
+                    st.warning("⚠️ 偵測不到 Ollama 服務，已自動切換回傳統 OCR 規則模式")
+                    extracted_data = extract_info_from_ocr(page_one_text, pages_text)
+            else:
+                # 傳統 OCR 規則模式
+                extracted_data = extract_info_from_ocr(page_one_text, pages_text)
+                
             ocr_place_name = extracted_data.get('場所名稱', '')
 
             # 顯示圖片與 OCR 結果 (這是 Rerun 後或 Cache Hit 會看到的)
@@ -798,25 +874,20 @@ with col2:
             })
             
         # 轉為 DataFrame
-        df_comparison = pd.DataFrame(comparison_data)
-        
-        # 顯示可編輯的表格 (讓使用者修正 OCR 結果)
-        edited_df = st.data_editor(
-            df_comparison,
-            column_config={
-                "欄位": st.column_config.TextColumn("欄位", disabled=True),
-                "系統資料": st.column_config.TextColumn("系統資料 (唯讀)", disabled=True),
-                "申報資料 (OCR/人工)": st.column_config.TextColumn(
-                    "申報資料 (可編輯修正)",
-                    help="若 OCR 辨識錯誤，請直接點擊修改",
-                    required=True
-                )
-            },
-            hide_index=True,
-            use_container_width=True
-        )
-        
-        st.warning("💡 申報資料欄位若為空白，請參考左側影像手動輸入。")
+        if comparison_data:
+            df_comp = pd.DataFrame(comparison_data)
+            st.dataframe(
+                df_comp,
+                column_config={
+                    "欄位": st.column_config.TextColumn("比對項目", width="medium"),
+                    "系統資料": st.column_config.TextColumn("系統列管資料", width="medium"),
+                    "申報資料 (OCR/人工)": st.column_config.TextColumn("申報書資料", width="medium"),
+                },
+                use_container_width=True,
+                hide_index=True
+            )
+        else:
+            st.info("尚無比對資料")
         
         # --- 消防設備專屬比對區 ---
         st.write("---")
@@ -851,10 +922,6 @@ with col2:
             if "modified_equip_ocr" not in st.session_state:
                 st.session_state.modified_equip_ocr = equip_ocr_val
             
-            # 如果 OCR 重新辨識 (extracted_data 變了)，可能需要更新 session state?
-            # 這裡簡化處理：如果 extracted_data 的值跟 session state 初始值不同，且 session state 未被修改過...
-            # 比較保險的做法是：以 session state 為主，但提供按鈕重置
-            
             # 格式化 OCR 值 (顯示用)
             fmt_ocr_val = st.session_state.modified_equip_ocr.replace("、", "\n") if st.session_state.modified_equip_ocr else ""
 
@@ -869,7 +936,6 @@ with col2:
                     # 將換行轉回頓號儲存
                     updated_val = new_equip_str.replace("\n", "、")
                     st.session_state.modified_equip_ocr = updated_val
-                    # 更新 extracted_data 以便後續邏輯使用 (雖然這裡是局部變數，但為了保險)
                     equip_ocr_val = updated_val
                     st.rerun()
                 else:
@@ -880,60 +946,61 @@ with col2:
         st.write("### ✅ 差異檢核")
         
         # 自動判斷差異 (表格部分)
-        for index, row in edited_df.iterrows():
-            field = row['欄位']
-            sys_val = str(row['系統資料']).strip()
-            ocr_val = str(row['申報資料 (OCR/人工)']).strip()
-            
-            # 地址模糊比對邏輯
-            if field == '場所地址':
-                # 定義正規化函式
-                def normalize_addr(addr):
-                    if not addr: return ""
-                    # 1. 統一 台/臺
-                    addr = addr.replace("台", "臺")
-                    # 2. 去除開頭的 "臺東縣" (或 "台東縣")
-                    addr = addr.replace("臺東縣", "")
-                    # 3. 去除空白
-                    addr = addr.replace(" ", "")
-                    return addr
+        if comparison_data:
+            for item in comparison_data:
+                field = item['欄位']
+                sys_val = str(item['系統資料']).strip()
+                ocr_val = str(item['申報資料 (OCR/人工)']).strip()
                 
-                norm_sys = normalize_addr(sys_val)
-                norm_ocr = normalize_addr(ocr_val)
+                # 地址模糊比對邏輯
+                if field == '場所地址':
+                    # 定義正規化函式
+                    def normalize_addr(addr):
+                        if not addr: return ""
+                        # 1. 統一 台/臺
+                        addr = addr.replace("台", "臺")
+                        # 2. 去除開頭的 "臺東縣" (或 "台東縣")
+                        addr = addr.replace("臺東縣", "")
+                        # 3. 去除空白
+                        addr = addr.replace(" ", "")
+                        return addr
+                    
+                    norm_sys = normalize_addr(sys_val)
+                    norm_ocr = normalize_addr(ocr_val)
+                    
+                    # 嚴格判斷邏輯
+                    if not sys_val and ocr_val:
+                        st.error(f"❌ 【{field}】不一致 (系統無資料)")
+                    elif not sys_val and not ocr_val:
+                        st.success(f"✅ 【{field}】一致 (皆無資料)")
+                    elif sys_val and not ocr_val:
+                        st.warning(f"⚠️ 【{field}】申報資料空白 (系統: {sys_val})")
+                    else:
+                        # 兩者皆有值，進行比對
+                        if norm_sys == norm_ocr:
+                            st.success(f"✅ 【{field}】一致")
+                        elif norm_ocr in norm_sys or norm_sys in norm_ocr:
+                            st.success(f"✅ 【{field}】一致 (模糊比對成功)")
+                        else:
+                            st.error(f"❌ 【{field}】不一致！\n系統：{sys_val}\n申報：{ocr_val}")
                 
-                # 嚴格判斷邏輯
-                if not sys_val and ocr_val:
-                    st.error(f"❌ 【{field}】不一致 (系統無資料)")
-                elif not sys_val and not ocr_val:
-                    st.success(f"✅ 【{field}】一致 (皆無資料)")
-                elif sys_val and not ocr_val:
-                    st.warning(f"⚠️ 【{field}】申報資料空白 (系統: {sys_val})")
+                # 其他欄位的一般比對
                 else:
-                    # 兩者皆有值，進行比對
-                    if norm_sys == norm_ocr:
-                        st.success(f"✅ 【{field}】一致")
-                    elif norm_ocr in norm_sys or norm_sys in norm_ocr:
-                        st.success(f"✅ 【{field}】一致 (模糊比對成功)")
+                    # 嚴格判斷邏輯
+                    if not sys_val and ocr_val:
+                        st.error(f"❌ 【{field}】不一致 (系統無資料)")
+                    elif not sys_val and not ocr_val:
+                        st.success(f"✅ 【{field}】一致 (皆無資料)")
+                    elif sys_val and not ocr_val:
+                        st.warning(f"⚠️ 【{field}】申報資料空白 (系統: {sys_val})")
                     else:
-                        st.error(f"❌ 【{field}】不一致！\n系統：{sys_val}\n申報：{ocr_val}")
-            
-            # 其他欄位的一般比對
-            else:
-                # 嚴格判斷邏輯
-                if not sys_val and ocr_val:
-                    st.error(f"❌ 【{field}】不一致 (系統無資料)")
-                elif not sys_val and not ocr_val:
-                    st.success(f"✅ 【{field}】一致 (皆無資料)")
-                elif sys_val and not ocr_val:
-                    st.warning(f"⚠️ 【{field}】申報資料空白 (系統: {sys_val})")
-                else:
-                    # 兩者皆有值
-                    if sys_val == ocr_val:
-                        st.success(f"✅ 【{field}】一致")
-                    elif ocr_val in sys_val or sys_val in ocr_val:
-                         st.success(f"✅ 【{field}】一致 (部分符合)")
-                    else:
-                         st.error(f"❌ 【{field}】不一致！\n系統：{sys_val}\n申報：{ocr_val}")
+                        # 兩者皆有值
+                        if sys_val == ocr_val:
+                            st.success(f"✅ 【{field}】一致")
+                        elif ocr_val in sys_val or sys_val in ocr_val:
+                             st.success(f"✅ 【{field}】一致 (部分符合)")
+                        else:
+                             st.error(f"❌ 【{field}】不一致！\n系統：{sys_val}\n申報：{ocr_val}")
 
         # --- 消防設備比對邏輯 (獨立) ---
         field = '消防設備種類'
@@ -1040,8 +1107,8 @@ with col2:
                 
                 # 使用 columns 排版
                 with cols[i % 3]:
-                    st.checkbox(item, value=is_checked, key=f"chk_{item}", disabled=True) # disabled=True 表示唯讀，反映系統資料
-
+                    st.checkbox(item, value=is_checked, key=f"chk_{item}", disabled=True)
+    
     else:
         if df_system is None:
              st.warning("請先在左側載入系統 Excel 資料。")
@@ -1049,3 +1116,207 @@ with col2:
              st.info("👈 請先從左側選單選擇一個場所，以開始進行比對。")
         else:
              st.info("👈 請在上方選擇案件以開始比對。")
+
+# ==========================================
+# Tab 2: 文件完整性檢查
+# ==========================================
+with tab_check:
+    st.subheader("📑 文件完整性檢查")
+    
+    # 顯示當前使用的分析模式
+    if use_vision_ai:
+        st.caption("🔍 使用 Vision AI 模式 (直接分析掃描圖片)")
+    else:
+        st.caption("📝 使用傳統 OCR 模式 (Tesseract)")
+    
+    if 'ocr_cache' in st.session_state and 'pages_info' in st.session_state.ocr_cache:
+        images = st.session_state.ocr_cache.get('images', [])
+        
+        # === Vision AI 模式 ===
+        if use_vision_ai and images:
+            st.info("🤖 正在使用 Vision AI 進行文件結構分析...")
+            
+            try:
+                import ai_engine
+                
+                # 檢查 Vision AI 是否可用
+                if not ai_engine.is_ollama_available():
+                    st.error("❌ Ollama 服務未啟動")
+                    st.info("請執行: `ollama serve` 或啟動 Ollama Desktop")
+                elif not ai_engine.check_vision_model_available():
+                    st.error("❌ Vision 模型未安裝")
+                    st.info("請執行: `ollama pull llama3.2-vision`")
+                else:
+                    # 執行 Vision AI 分析 (使用 cache 避免重複分析)
+                    cache_key = st.session_state.ocr_cache.get('file_key')
+                    
+                    if 'vision_analysis' not in st.session_state or st.session_state.get('vision_cache_key') != cache_key:
+                        with st.spinner("🔍 Vision AI 正在分析文件結構 (可能需要 1-2 分鐘)..."):
+                            result = ai_engine.analyze_document_structure(images)
+                            st.session_state.vision_analysis = result
+                            st.session_state.vision_cache_key = cache_key
+                    else:
+                        result = st.session_state.vision_analysis
+                        st.success("✅ 使用快取的 Vision AI 分析結果")
+                    
+                    if result.get('error'):
+                        st.error(f"❌ Vision AI 分析失敗: {result['error']}")
+                    else:
+                        # 顯示頁面識別結果
+                        col_v1, col_v2 = st.columns([1, 1])
+                        
+                        with col_v1:
+                            st.markdown("#### 1. 頁面識別結果")
+                            page_map_df = pd.DataFrame([
+                                {'頁碼': k, '文件類型': v} 
+                                for k, v in result['page_map'].items()
+                            ])
+                            st.dataframe(page_map_df, use_container_width=True, hide_index=True)
+                            
+                            if result['toc_page']:
+                                st.success(f"✅ 已識別目錄頁: 第 {result['toc_page']} 頁")
+                                st.write("**目錄勾選項目:**")
+                                if result['required_items']:
+                                    for item in result['required_items']:
+                                        st.markdown(f"- {item}")
+                                else:
+                                    st.info("未檢測到勾選項目")
+                        
+                        with col_v2:
+                            st.markdown("#### 2. 完整性驗證報告")
+                            if result['validation_report'] is not None and not result['validation_report'].empty:
+                                st.dataframe(
+                                    result['validation_report'],
+                                    use_container_width=True,
+                                    hide_index=True
+                                )
+                                
+                                # 統計
+                                missing = result['validation_report']['狀態'].str.contains('缺件').sum()
+                                if missing == 0:
+                                    st.success("🎉 文件完整！所有勾選項目皆已檢附。")
+                                else:
+                                    st.error(f"⚠️ 發現 {missing} 項缺件")
+                            else:
+                                st.info("目錄頁未勾選任何項目")
+                
+            except ImportError:
+                st.error("❌ ai_engine 模組載入失敗")
+            except Exception as e:
+                st.error(f"❌ Vision AI 執行錯誤: {e}")
+        
+        # === 傳統 OCR 模式 ===
+        else:
+            pages_info = st.session_state.ocr_cache['pages_info']
+            
+            col_check_1, col_check_2 = st.columns([1, 1])
+            
+            with col_check_1:
+                st.markdown("#### 1. 目錄解析")
+                # Find TOC
+                toc_page = next((p for p in pages_info if p['type'] == '目錄'), None)
+                
+                if toc_page:
+                    st.success(f"✅ 已識別目錄頁 (第 {toc_page['page_num']} 頁)")
+                    toc_img = images[toc_page['page_num']-1]
+                    st.image(toc_img, caption="目錄頁預覽", use_container_width=True)
+                    
+                    # Parse TOC (Lazy load)
+                    if 'detected_reqs' not in st.session_state or st.session_state.get('last_file_key') != st.session_state.ocr_cache.get('file_key'):
+                        with st.spinner("🔍 正在分析目錄勾選項目..."):
+                            st.session_state.detected_reqs = doc_integrity.parse_toc_requirements(toc_img, toc_page['text'])
+                            st.session_state.last_file_key = st.session_state.ocr_cache.get('file_key')
+                    
+                    # Full list of possible documents
+                    all_docs = [
+                        "消防安全設備檢修申報表", "消防安全設備檢修報告書", "消防安全設備改善計畫書", "消防安全設備種類及數量表",
+                        "滅火器檢查表", "室內消防栓設備檢查表", "自動撒水設備檢查表", "泡沫滅火設備檢查表", 
+                        "火警自動警報設備檢查表", "緊急廣播設備檢查表", "標示設備檢查表", "避難設備檢查表",
+                        "緊急照明設備檢查表", "連結送水管檢查表", "排煙設備檢查表", "無線電通信輔助設備檢查表",
+                        "建築物使用執照影本", "營利事業登記證影本", "專業機構合格證書影本", 
+                        "消防設備師(士)證書影本", "管理權人身分證影本"
+                    ]
+                    
+                    # UI for manual correction
+                    selected_reqs = st.multiselect(
+                        "目錄勾選項目 (系統自動偵測，可手動修正)", 
+                        options=all_docs,
+                        default=[d for d in st.session_state.detected_reqs if d in all_docs]
+                    )
+                    
+                else:
+                    st.warning("⚠️ 未自動識別出目錄頁")
+                    st.info("請確認上傳文件包含目錄，或 OCR 辨識是否清晰。")
+                    selected_reqs = []
+
+        with col_check_2:
+            st.markdown("#### 2. 完整性分析報告")
+            
+            if not selected_reqs:
+                st.info("👈 請先確認左側目錄勾選項目")
+            else:
+                # Analysis Logic
+                report_data = []
+                
+                # Get all identified page types
+                found_types = set(p['type'] for p in pages_info)
+                
+                # 1. Check Required Docs
+                for req in selected_reqs:
+                    status = "❌ 缺漏"
+                    note = ""
+                    
+                    # Fuzzy match logic
+                    # If req is in found_types (exact match)
+                    if req in found_types:
+                        status = "✅ 已檢附"
+                    else:
+                        # Fuzzy check
+                        # e.g. "滅火器檢查表" vs "滅火器" (from identify_page_type)
+                        # Our identify_page_type returns standardized names, so exact match should work if keywords align.
+                        # Let's check if any found type contains core keywords of req
+                        core_key = req[:4]
+                        for ft in found_types:
+                            if core_key in ft:
+                                status = "✅ 已檢附"
+                                note = f"(對應: {ft})"
+                                break
+                    
+                    report_data.append({
+                        "項目": req,
+                        "狀態": status,
+                        "備註": note
+                    })
+                
+                # Display Table
+                st.dataframe(
+                    pd.DataFrame(report_data),
+                    column_config={
+                        "狀態": st.column_config.TextColumn("狀態", width="small"),
+                    },
+                    use_container_width=True,
+                    hide_index=True
+                )
+                
+                # Summary
+                missing_count = sum(1 for r in report_data if "缺漏" in r['狀態'])
+                if missing_count == 0:
+                    st.success("🎉 文件完整！所有目錄勾選項目皆已檢附。")
+                else:
+                    st.error(f"⚠️ 發現 {missing_count} 項缺漏文件，請檢查。")
+                    
+            st.divider()
+            with st.expander("查看所有識別頁面"):
+                st.dataframe(
+                    pd.DataFrame(pages_info)[['page_num', 'type', 'first_30']],
+                    column_config={
+                        "page_num": "頁碼",
+                        "type": "識別類型",
+                        "first_30": "頁首文字 (前30字)"
+                    },
+                    hide_index=True,
+                    use_container_width=True
+                )
+
+    else:
+        st.info("請先在「申報書比對」分頁上傳並解析文件。")

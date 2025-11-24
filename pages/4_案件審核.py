@@ -16,6 +16,7 @@ utils.load_custom_css()
 
 # --- Session State Initialization & Auto-Login ---
 auth_session.initialize_auth_state()
+auth_session.process_pending_cookie_save()
 
 # Check for auto-login via cookies
 if not st.session_state.logged_in:

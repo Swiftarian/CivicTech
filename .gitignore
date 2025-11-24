@@ -3,21 +3,64 @@ __pycache__/
 *.py[cod]
 *.pyo
 *.pyd
+*$py.class
+*.so
+.Python
+build/
+dist/
+*.egg-info/
+.installed.cfg
+*.egg
+
 # Virtual environment
 venv/
 .env
+ENV/
+env/
+
 # IDE
 .idea/
 .vscode/
+*.swp
+*.swo
+*~
+
 # OS files
 .DS_Store
 Thumbs.db
-# Streamlit cache
+desktop.ini
+
+# Streamlit cache & config
 .st_cache/
+.streamlit/secrets.toml
+
 # Logs
 *.log
-# Other
+
+# Database files
 *.sqlite3
 *.db
+cases.db
+
+# Temporary OCR files
+temp_*.png
+temp_*.jpg
+temp_*.pdf
+temp_ocr_image.png
+temp_page_*.png
+temp_toc.png
+
+# Backups & uploads
 backups/
 uploads/
+
+# Testing
+.pytest_cache/
+.coverage
+htmlcov/
+
+# Jupyter
+.ipynb_checkpoints/
+
+# mypy
+.mypy_cache/
