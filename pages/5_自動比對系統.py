@@ -664,10 +664,15 @@ with col1:
             # 顯示圖片與 OCR 結果 (這是 Rerun 後或 Cache Hit 會看到的)
             for i, img in enumerate(cached_images):
                 st.image(img, caption=f"第 {i+1} 頁", use_container_width=True)
-                with st.expander(f"第 {i+1} 頁 OCR 文字內容 (除錯用)", expanded=False):
-                    if i == 0: st.text(page_one_text)
-                    elif i == 1: st.text(page_two_text)
-                    else: st.text("(其他頁面內容請見總覽)")
+                with st.expander(f"第 {i+1} 頁 OCR 文字內容 (除錯用)", expanded=False):
+                    # 顯示每一頁的前30個字和完整內容
+                    if i < len(pages_text):
+                        page_text = pages_text[i]
+                        preview_text = page_text[:30] if len(page_text) > 30 else page_text
+                        st.text(f"前30字: {preview_text}")
+                        st.text(f"\n完整內容:\n{page_text}")
+                    else:
+                        st.text("(無法取得此頁內容)")
                     
                     if "Error" in all_ocr_text:
                             st.error("OCR 執行失敗，請檢查側邊欄的 Tesseract 設定。")
