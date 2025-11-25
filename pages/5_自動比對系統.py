@@ -285,18 +285,20 @@ def extract_info_from_ocr(text, pages_text_list=None):
         # 關鍵字: "目錄", "附表", "二、消防安全設備檢查表"
         toc_keywords = ["目錄", "附表", "二、消防安全設備檢查表", "消防安全設備檢修申報書目錄"]
         
-        for page_text in pages_text_list:
+        for i, page_text in enumerate(pages_text_list):
             clean_text = page_text.replace(" ", "").replace("　", "").strip()
             
             # 檢查是否包含任一關鍵字
             if any(kw.replace(" ", "") in clean_text for kw in toc_keywords):
                 target_page_text = page_text
-                # print(f"DEBUG: Found TOC page with keyword") # Debug use
+                info['toc_page_num'] = i + 1 # 紀錄頁碼
+                # print(f"DEBUG: Found TOC page with keyword at page {i+1}") # Debug use
                 break
         
         # 4. 最後回退：使用第二頁 (Index 1)
         if not target_page_text and len(pages_text_list) > 1:
             target_page_text = pages_text_list[1]
+            info['toc_page_num'] = 2
             
         if target_page_text:
             # 策略：
@@ -369,6 +371,8 @@ print(f"DEBUG: Check Tesseract Path: [{st.session_state.get('tesseract_exe_path'
 print(f"DEBUG: Check Excel Path: [{st.session_state.get('system_excel_path')}]", flush=True)
 print("-" * 50, flush=True)
 # -----------------------------
+
+use_vision_ai = False # 初始化全域變數，避免 NameError
 
 tesseract_is_ok = os.path.exists(st.session_state["tesseract_exe_path"])
 excel_is_loaded = False
@@ -582,6 +586,12 @@ with col1:
                 # 更新 last_engine
                 st.session_state.ocr_cache['last_engine'] = ocr_engine
                 
+                # 清除 AI 快取，確保重新分析
+                if 'ai_result' in st.session_state.ocr_cache:
+                    del st.session_state.ocr_cache['ai_result']
+                if 'last_text_model' in st.session_state.ocr_cache:
+                    del st.session_state.ocr_cache['last_text_model']
+                
                 # 1. 先轉換並顯示圖片 (讓使用者先看到預覽)
                 images = []
                 try:
@@ -672,71 +682,79 @@ with col1:
             page_two_text = st.session_state.ocr_cache.get('page_two_text', "")
             pages_text = st.session_state.ocr_cache.get('pages_text', [])
             cached_images = st.session_state.ocr_cache.get('images', [])
-            
             # 提取資料 (邏輯分流)
             if use_ai_mode:
                 import ai_engine
                 if ai_engine.is_ollama_available():
-                    with st.spinner("🤖 AI 正在分析文件內容..."):
-                        # 這裡我們傳入 pages_text 讓 AI 分析
-                        # 注意：為了保持與原有 extracted_data 格式相容，我們可能需要做一些轉換
-                        # 目前先示範取得 AI 結果，並嘗試映射到原有欄位
-                        ai_result = ai_engine.analyze_document(pages_text, model=text_model)
+                    # --- AI Result Caching Logic ---
+                    cached_ai_result = st.session_state.ocr_cache.get('ai_result')
+                    cached_model = st.session_state.ocr_cache.get('last_text_model')
+                    
+                    # Check if cache is valid (exists and model hasn't changed)
+                    if cached_ai_result and cached_model == text_model:
+                        ai_result = cached_ai_result
+                        st.caption(f"⚡ 使用 AI 分析快取資料 (Model: {text_model})")
+                    else:
+                        with st.spinner(f"🤖 AI ({text_model}) 正在分析文件內容..."):
+                            # 這裡我們傳入 pages_text 讓 AI 分析
+                            ai_result = ai_engine.analyze_document(pages_text, model=text_model)
+                            
+                            # Update Cache
+                            st.session_state.ocr_cache['ai_result'] = ai_result
+                            st.session_state.ocr_cache['last_text_model'] = text_model
+                    
+                    if "error" in ai_result:
+                        st.error(f"AI 分析錯誤: {ai_result['error']}")
+                        extracted_data = extract_info_from_ocr(page_one_text, pages_text)
+                    else:
+                        # 定義清洗函式
+                        def clean_ai_value(val):
+                            if isinstance(val, dict):
+                                return str(list(val.values())[0]).replace(" ", "")
+                            if isinstance(val, list):
+                                return "、".join([str(v) for v in val])
+                            if val is None:
+                                return ""
+                            if isinstance(val, str):
+                                return val.replace(" ", "")
+                            return str(val).replace(" ", "")
+
+                        # Helper function to process equipment list
+                        def process_equipment_list(eq_list):
+                            if not eq_list: return ""
+                            processed = []
+                            for item in eq_list:
+                                clean_item = clean_ai_value(item)
+                                if clean_item:
+                                    processed.append(clean_item)
+                            return "、".join(processed)
+
+                        # 嘗試映射欄位
+                        extracted_data = {
+                            '場所名稱': clean_ai_value(ai_result.get('place_name')),
+                            '場所地址': clean_ai_value(ai_result.get('address')),
+                            '管理權人': clean_ai_value(ai_result.get('management_person')),
+                            '消防設備種類': process_equipment_list(ai_result.get('equipment_list', []))
+                        }
                         
-                        if "error" in ai_result:
-                            st.error(f"AI 分析失敗: {ai_result['error']}")
-                            extracted_data = extract_info_from_ocr(page_one_text, pages_text) # Fallback
-                        else:
-                            # Helper function to clean AI values (remove spaces, handle dicts)
-                            def clean_ai_value(val):
-                                if not val: return ""
-                                if isinstance(val, dict):
-                                    # 如果 AI 回傳了字典 (例如 {'city': '...'})，嘗試取值
-                                    return str(list(val.values())[0]).replace(" ", "") if val.values() else ""
-                                if isinstance(val, str):
-                                    return val.replace(" ", "")
-                                return str(val).replace(" ", "")
-
-                            # Helper function to process equipment list
-                            def process_equipment_list(eq_list):
-                                if not eq_list: return ""
-                                processed = []
-                                for item in eq_list:
-                                    # 遞迴清洗每個項目
-                                    clean_item = clean_ai_value(item)
-                                    if clean_item:
-                                        processed.append(clean_item)
-                                return "、".join(processed)
-
-                            # 嘗試映射欄位
-                            extracted_data = {
-                                '場所名稱': clean_ai_value(ai_result.get('place_name')),
-                                '場所地址': clean_ai_value(ai_result.get('address')),
-                                '管理權人': clean_ai_value(ai_result.get('management_person')),
-                                '消防設備種類': process_equipment_list(ai_result.get('equipment_list', []))
-                            }
-                            
-                            # --- Fallback 機制 ---
-                            # 如果 AI 沒抓到場所名稱，嘗試用傳統規則補救
-                            if not extracted_data.get('場所名稱'):
-                                st.warning("⚠️ AI 未能識別場所名稱，嘗試使用規則提取補救...")
-                                
-                                # Debug: 顯示 OCR 原始文字，確認是否有字
-                                with st.expander("🔍 查看 OCR 原始文字 (前 200 字)", expanded=True):
-                                    st.text(page_one_text[:200] if page_one_text else "⚠️ OCR 文字為空！")
-                                
-                                fallback_data = extract_info_from_ocr(page_one_text, pages_text)
-                                
-                                # 合併資料 (若 AI 為空則使用 Fallback)
-                                for key, val in fallback_data.items():
-                                    if not extracted_data.get(key):
-                                        extracted_data[key] = val
-                            
-                            st.toast("已完成 AI 智慧分析", icon="🤖")
-                            
-                            # Debug: 顯示 AI 原始回傳 (開發階段用，可隨時移除)
-                            with st.expander("🔍 查看 AI 原始分析結果", expanded=False):
-                                st.json(ai_result)
+                        # --- 強制獲取目錄頁碼 (TOC Page Number) ---
+                        ocr_info_for_toc = extract_info_from_ocr(page_one_text, pages_text)
+                        if 'toc_page_num' in ocr_info_for_toc:
+                            extracted_data['toc_page_num'] = ocr_info_for_toc['toc_page_num']
+                        
+                        # --- Fallback 機制 ---
+                        if not extracted_data.get('場所名稱'):
+                            st.warning("⚠️ AI 未能識別場所名稱，嘗試使用規則提取補救...")
+                            fallback_data = extract_info_from_ocr(page_one_text, pages_text)
+                            for key, val in fallback_data.items():
+                                if not extracted_data.get(key):
+                                    extracted_data[key] = val
+                        
+                        if not cached_ai_result or cached_model != text_model:
+                             st.toast("已完成 AI 智慧分析", icon="🤖")
+                        
+                        with st.expander("🔍 查看 AI 原始分析結果", expanded=False):
+                            st.json(ai_result)
                 else:
                     st.warning("⚠️ 偵測不到 Ollama 服務，已自動切換回傳統 OCR 規則模式")
                     extracted_data = extract_info_from_ocr(page_one_text, pages_text)
@@ -921,8 +939,9 @@ with col2:
             # 顯示鎖定資訊
             if page_one_text:
                 st.caption("ℹ️ 已鎖定使用第 1 頁內容進行自動填入 (基本資料)")
-            if page_two_text:
-                st.caption("ℹ️ 已鎖定使用第 2 頁內容進行自動填入 (消防設備種類)")
+            
+            toc_page_num = extracted_data.get('toc_page_num', 2)
+            st.caption(f"ℹ️ 已鎖定使用第 {toc_page_num} 頁內容進行自動填入 (消防設備種類)")
         else:
             st.caption("ℹ️ 等待上傳申報檔案以進行自動填入...")
         
@@ -1347,6 +1366,19 @@ with tab_check:
                 st.markdown("#### 1. 目錄解析")
                 # Find TOC
                 toc_page = next((p for p in pages_info if p['type'] == '目錄'), None)
+                
+                # Fallback: Search by keywords if not found (針對 OCR 雜訊處理)
+                if not toc_page:
+                    toc_keywords = ["目錄", "附表", "消防安全設備檢修申報書目錄"]
+                    for p in pages_info:
+                        # 取前 200 字並清洗 (去除空格、豎線、全形空格)
+                        clean_text = p['text'][:200].replace(" ", "").replace("|", "").replace("　", "")
+                        
+                        # 檢查關鍵字
+                        if any(kw in clean_text for kw in toc_keywords):
+                            toc_page = p
+                            p['type'] = '目錄' # 更新類型以便後續顯示
+                            break
                 
                 if toc_page:
                     st.success(f"✅ 已識別目錄頁 (第 {toc_page['page_num']} 頁)")
