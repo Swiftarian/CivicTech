@@ -284,7 +284,6 @@ def analyze_document_structure(pdf_images_or_path, model=DEFAULT_VISION_MODEL):
         print(f"❌ 分析過程發生錯誤: {e}")
         return result
 
-# === 舊版文字分析函式 (保留向後兼容) ===
 def analyze_page_with_ai(text_content, model=DEFAULT_TEXT_MODEL):
     """
     使用 AI 分析單頁內容 (基於文字的 OCR 結果)
@@ -309,8 +308,10 @@ def analyze_page_with_ai(text_content, model=DEFAULT_TEXT_MODEL):
     請提取以下欄位並以 JSON 格式回傳。
     
     ⚠️ 重要規則：
+    0. **強制使用繁體中文**：所有輸出必須使用台灣繁體中文，嚴禁使用簡體字（例如：「台東」而非「台东」、「綱」而非「纲」）。
     1. **去除所有空格**：所有輸出的值都必須去除所有空格 (例如 "鳳 仙" -> "鳳仙")。
     2. **單一字串**：地址和管理權人必須是單一字串，嚴禁使用巢狀 JSON (例如不要回傳 {{'city': ...}})。
+    3. **OCR 容錯**：OCR 可能有錯字、缺字、多字或空格問題，請使用模糊比對，相似度 80% 以上即可接受。
     
     欄位說明：
     1. document_type: 文件類型
@@ -318,6 +319,50 @@ def analyze_page_with_ai(text_content, model=DEFAULT_TEXT_MODEL):
     3. address: 地址 (完整地址字串，去除空格)
     4. management_person: 管理權人 (姓名字串，去除空格)
     5. equipment_list: 消防設備列表 (Array，每個項目也要去除空格)
+
+    📋 **標準設備清單** (請優先從以下清單中比對，使用模糊比對):
+    - 滅火器
+    - 室內消防栓設備
+    - 室外消防栓設備
+    - 自動撒水設備
+    - 水霧滅火設備
+    - 泡沫滅火設備
+    - 二氧化碳滅火設備
+    - 乾粉滅火設備
+    - 海龍滅火設備(含海龍替代品)
+    - 火警自動警報設備
+    - 瓦斯漏氣火警自動警報設備
+    - 緊急廣播設備
+    - 標示設備
+    - 避難器具
+    - 緊急照明設備
+    - 連結送水管
+    - 消防專用蓄水池
+    - 排煙設備
+    - 無線電通信輔助設備
+    
+    🔍 **模糊比對規則**：
+    - OCR 可能將「內」識別為「内」、「栓」識別為「拴」
+    - 可能有多餘空格：「室 內 消 防 栓」-> 「室內消防栓設備」
+    - 可能缺少「設備」二字：「室內消防栓」-> 「室內消防栓設備」
+    - 簡體轉繁體：「灭火器」-> 「滅火器」
+    - 全形轉半形：「(含海龍替代品)」-> 「(含海龍替代品)」
+    
+    ⚠️ **重要：勾選符號識別規則**：
+    - 在目錄頁（「消防安全設備檢修申報書目錄」）中，只有**方框內打勾（✓、☑、√、✔）的項目**才是實際申報的設備
+    - **未打勾（☐）或空白方框的項目不應提取**
+    - equipment_list 只應包含有勾選符號的設備項目
+    
+    💡 **範例**：
+    OCR 輸入: "✓滅火器檢查表 \n ☐室外消防栓檢查表 \n ✓火警自動警報設備檢查表"
+    正確輸出 equipment_list: ["滅火器", "火警自動警報設備"]
+    錯誤輸出: ["滅火器", "室外消防栓設備", "火警自動警報設備"]  ← 不應包含「室外消防栓設備」
+    
+    OCR 輸入: "室 内 消 防 拴"
+    正確輸出: "室內消防栓設備"
+    
+    OCR 輸入: "火警自動警報"
+    正確輸出: "火警自動警報設備"
 
     如果找不到欄位，請填 null。只回傳 JSON，不要有其他文字。
     """
@@ -336,11 +381,17 @@ def analyze_page_with_ai(text_content, model=DEFAULT_TEXT_MODEL):
             
             # 嘗試使用 Regex 提取 JSON (處理 Markdown 標記)
             json_match = re.search(r'\{.*\}', response_text, re.DOTALL)
-            if json_match:
-                return json.loads(json_match.group(0))
-            else:
-                # 如果 Regex 失敗，嘗試直接解析
-                return json.loads(response_text)
+            
+            try:
+                if json_match:
+                    return json.loads(json_match.group(0))
+                else:
+                    # 如果 Regex 失敗，嘗試直接解析
+                    return json.loads(response_text)
+            except json.JSONDecodeError as je:
+                # JSON 解析失敗，回傳原始文字供除錯
+                return {"error": f"JSON Parse Error: {je}", "raw_response": response_text}
+                
         else:
             return {"error": f"API Error: {response.status_code}"}
     except Exception as e:

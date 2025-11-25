@@ -12,6 +12,7 @@ from email.mime.text import MIMEText
 from email.mime.multipart import MIMEMultipart
 import urllib.request
 import subprocess
+import utils
 
 # 設定頁面配置
 st.set_page_config(layout="wide", page_title=f"{cfg.AGENCY_NAME}檢修申報書檢核比對系統")
@@ -447,6 +448,21 @@ with st.sidebar:
             st.warning("⚠️ 缺少繁體中文語言包")
             if st.button("📥 下載中文語言包 (必要)"):
                 download_lang_data()
+        
+        st.divider()
+        
+        # Excel 資料來源設定
+        st.markdown("#### 系統資料來源設定")
+        st.text_input("系統列管資料表 Excel 路徑", key="system_excel_path")
+        
+        if not os.path.exists(st.session_state["system_excel_path"]):
+            st.error(f"❌ 找不到檔案：{st.session_state['system_excel_path']}")
+        else:
+            st.success("✅ Excel 檔案讀取成功")
+            if st.button("🔄 重新讀取 Excel"):
+                utils.load_system_data.clear()
+                st.cache_data.clear()
+                st.rerun()
     # 3. 除錯用：顯示欄位名稱
     if df_system is not None:
         with st.expander("3. 🔍 查看 Excel 欄位名稱 (除錯用)"):
@@ -538,6 +554,9 @@ with col1:
                 )
                 use_paddle = (ocr_engine == "PaddleOCR")
                 
+                # 快速模式選項
+                use_fast_mode = st.checkbox("⚡ 快速模式 (壓縮圖片)", value=False, help="降低圖片解析度 (150 DPI) 以加快 OCR 速度，但可能影響小字辨識率。")
+                
                 # 檢查 PaddleOCR 可用性
                 if use_paddle:
                     try:
@@ -550,8 +569,7 @@ with col1:
             with col_ai:
                 # AI 設定
                 use_ai_mode = st.checkbox("啟用 AI 智慧分析 (Ollama)", value=True)
-                # use_vision_ai = st.checkbox("啟用 Vision AI", value=False) # 暫時隱藏 Vision AI 以簡化介面
-                use_vision_ai = False # 預設關閉，避免 NameError
+                use_vision_ai = st.checkbox("啟用 Vision AI (實驗性)", value=False, help="使用多模態模型 (Llama 3.2 Vision) 直接分析圖片，可更準確識別目錄與表格結構，但速度較慢。")
                 
                 # 模型選擇 (下拉式選單)
                 if use_ai_mode:
@@ -592,16 +610,48 @@ with col1:
                 if 'last_text_model' in st.session_state.ocr_cache:
                     del st.session_state.ocr_cache['last_text_model']
                 
+                # 清除 Vision AI 快取
+                if 'vision_analysis' in st.session_state:
+                    del st.session_state['vision_analysis']
+                if 'vision_cache_key' in st.session_state:
+                    del st.session_state['vision_cache_key']
+                
                 # 1. 先轉換並顯示圖片 (讓使用者先看到預覽)
                 images = []
+                target_dpi = 150 if use_fast_mode else 300
+                
                 try:
-                    if uploaded_file_path.lower().endswith(".pdf"):
+                    ext = os.path.splitext(uploaded_file_path)[1].lower()
+                    if ext == ".pdf":
                         # 顯示轉換訊息
-                        with st.spinner("📄 正在將 PDF 轉換為圖片..."):
+                        with st.spinner(f"📄 正在將 PDF 轉換為圖片 (DPI: {target_dpi})..."):
                             with open(uploaded_file_path, "rb") as f:
-                                images = pdf_to_images(f)
+                                images = utils.pdf_to_images(f, dpi=target_dpi)
+                    elif ext in [".doc", ".docx"]:
+                         with st.spinner("📄 正在將 Word 文件轉換為 PDF (需安裝 Microsoft Word)..."):
+                            temp_pdf_path = None
+                            try:
+                                temp_pdf_path = utils.convert_doc_to_pdf(uploaded_file_path)
+                                with open(temp_pdf_path, "rb") as f:
+                                    images = utils.pdf_to_images(f, dpi=target_dpi)
+                            except Exception as e:
+                                st.error(f"❌ Word 轉換失敗: {e}")
+                                images = []
+                            finally:
+                                # Clean up temp PDF
+                                if temp_pdf_path and os.path.exists(temp_pdf_path):
+                                    try: os.remove(temp_pdf_path)
+                                    except: pass
+                    elif ext in [".jpg", ".jpeg", ".png", ".bmp", ".tiff"]:
+                        img = Image.open(uploaded_file_path)
+                        if use_fast_mode and img.width > 1500:
+                            ratio = 1500 / img.width
+                            new_height = int(img.height * ratio)
+                            img = img.resize((1500, new_height), Image.Resampling.LANCZOS)
+                        images = [img]
                     else:
-                        images = [Image.open(uploaded_file_path)]
+                        st.error(f"❌ 不支援的檔案格式：{ext}。請上傳 PDF、Word 或圖片檔。")
+                        images = []
                 except Exception as e:
                     st.error(f"無法讀取檔案: {e}")
                     images = []
@@ -695,17 +745,24 @@ with col1:
                         ai_result = cached_ai_result
                         st.caption(f"⚡ 使用 AI 分析快取資料 (Model: {text_model})")
                     else:
+                        # 執行 AI 分析
                         with st.spinner(f"🤖 AI ({text_model}) 正在分析文件內容..."):
-                            # 這裡我們傳入 pages_text 讓 AI 分析
                             ai_result = ai_engine.analyze_document(pages_text, model=text_model)
                             
-                            # Update Cache
+                            # 立即應用簡繁轉換
+                            ai_result = utils.convert_to_traditional(ai_result)
+                            
+                            # Save to cache
                             st.session_state.ocr_cache['ai_result'] = ai_result
                             st.session_state.ocr_cache['last_text_model'] = text_model
+                            st.toast("已完成 AI 智慧分析", icon="🤖")
                     
+                    # 處理 AI 結果
                     if "error" in ai_result:
                         st.error(f"AI 分析錯誤: {ai_result['error']}")
                         extracted_data = extract_info_from_ocr(page_one_text, pages_text)
+                        # 應用簡繁轉換
+                        extracted_data = utils.convert_to_traditional(extracted_data)
                     else:
                         # 定義清洗函式
                         def clean_ai_value(val):
@@ -750,17 +807,18 @@ with col1:
                                 if not extracted_data.get(key):
                                     extracted_data[key] = val
                         
-                        if not cached_ai_result or cached_model != text_model:
-                             st.toast("已完成 AI 智慧分析", icon="🤖")
-                        
                         with st.expander("🔍 查看 AI 原始分析結果", expanded=False):
                             st.json(ai_result)
                 else:
                     st.warning("⚠️ 偵測不到 Ollama 服務，已自動切換回傳統 OCR 規則模式")
                     extracted_data = extract_info_from_ocr(page_one_text, pages_text)
+                    # 應用簡繁轉換
+                    extracted_data = utils.convert_to_traditional(extracted_data)
             else:
                 # 傳統 OCR 規則模式
                 extracted_data = extract_info_from_ocr(page_one_text, pages_text)
+                # 應用簡繁轉換
+                extracted_data = utils.convert_to_traditional(extracted_data)
                 
             ocr_place_name = extracted_data.get('場所名稱', '')
 

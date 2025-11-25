@@ -11,6 +11,15 @@ import subprocess
 import re
 import config_loader as cfg
 
+# 簡繁轉換工具
+try:
+    from opencc import OpenCC
+    _opencc_converter = OpenCC('s2tw')  # Simplified to Traditional (Taiwan)
+    _opencc_available = True
+except ImportError:
+    _opencc_converter = None
+    _opencc_available = False
+
 # ==========================================
 # UI 樣式函式
 # ==========================================
@@ -214,16 +223,68 @@ def load_custom_css():
 LOCAL_TESSDATA_DIR = os.path.join(os.getcwd(), "tessdata")
 
 # 定義標準設備清單 (依長度排序，優先比對長字串)
+# 根據消防安全設備檢修申報書目錄標準項目
 VALID_EQUIPMENT_LIST = sorted([
-    "滅火器", "自動撒水設備", "惰性氣體滅火設備", "簡易自動滅火設備", "警報設備", 
-    "火警自動警報設備", "一一九火災通報裝置", "避難逃生設備", "標示設備", 
-    "消防搶救上之必要設備", "連結送水管", "無線電通信輔助設備", "其他", 
-    "冷卻撒水設備", "室內消防栓設備", "水霧滅火設備", "乾粉滅火設備", 
-    "鹵化煙滅火設備", "瓦斯漏氣火警自動警報設備", "避難器具", "消防專用蓄水池", 
-    "緊急電源插座", "室外消防栓設備", "泡沫滅火設備", "海龍滅火設備", 
-    "緊急廣播設備", "緊急照明設備", "排煙設備", "防災監控系統綜合操作裝置", 
-    "射水設備", "配線"
+    "滅火器",
+    "室內消防栓設備",
+    "室外消防栓設備",
+    "自動撒水設備",
+    "水霧滅火設備",
+    "泡沫滅火設備",
+    "二氧化碳滅火設備",
+    "乾粉滅火設備",
+    "海龍滅火設備(含海龍替代品)",
+    "火警自動警報設備",
+    "瓦斯漏氣火警自動警報設備",
+    "緊急廣播設備",
+    "標示設備",
+    "避難器具",
+    "緊急照明設備",
+    "連結送水管",
+    "消防專用蓄水池",
+    "排煙設備",
+    "無線電通信輔助設備"
 ], key=len, reverse=True)
+
+# ==========================================
+# 簡繁轉換函式
+# ==========================================
+
+def convert_to_traditional(text):
+    """
+    將簡體中文轉換為繁體中文（台灣用法）
+    
+    Args:
+        text: 可以是字串、字典或列表
+        
+    Returns:
+        轉換後的內容（保持原始資料類型）
+    """
+    if not _opencc_available or _opencc_converter is None:
+        # 如果 OpenCC 不可用，直接返回原文
+        return text
+    
+    if text is None:
+        return None
+    
+    # 處理字串
+    if isinstance(text, str):
+        try:
+            return _opencc_converter.convert(text)
+        except:
+            return text
+    
+    # 處理字典（遞迴轉換所有值）
+    elif isinstance(text, dict):
+        return {key: convert_to_traditional(value) for key, value in text.items()}
+    
+    # 處理列表（遞迴轉換所有元素）
+    elif isinstance(text, list):
+        return [convert_to_traditional(item) for item in text]
+    
+    # 其他類型直接返回
+    else:
+        return text
 
 # ==========================================
 # 函式區
@@ -452,7 +513,7 @@ def load_system_data(excel_path):
             except:
                 pass # 刪除失敗不影響流程
 
-def pdf_to_images(pdf_file):
+def pdf_to_images(pdf_file, dpi=300):
     """將 PDF 轉為圖片列表 (每一頁一張圖)"""
     # 如果是 bytes (從 DB 或 upload 讀取)，直接用
     # 如果是 file-like object，用 .read()
@@ -470,7 +531,7 @@ def pdf_to_images(pdf_file):
     images = []
     for page_num in range(len(doc)):
         page = doc.load_page(page_num)
-        pix = page.get_pixmap(dpi=300) # 高解析度以利 OCR
+        pix = page.get_pixmap(dpi=dpi) # 高解析度以利 OCR
         img = Image.frombytes("RGB", [pix.width, pix.height], pix.samples)
         images.append(img)
     return images
@@ -612,22 +673,35 @@ def extract_info_from_ocr(text, pages_text_list=None):
             target_page_text = pages_text_list[1]
             
         if target_page_text:
-            clean_page_text = target_page_text.replace(" ", "").replace("　", "")
-            if "消防安全設備檢查表" in clean_page_text:
-                relevant_text = clean_page_text.split("消防安全設備檢查表", 1)[1]
-                normalized_eq = normalize_equipment_str(relevant_text)
-                if normalized_eq:
-                    info['消防設備種類'] = normalized_eq
-                 
+            # 解析有勾選的設備項目
+            checked_equipment = []
+            
+            # 將文字按行分割
+            lines = target_page_text.split('\n')
+            
+            for line in lines:
+                # 檢查是否包含勾選符號（✓、☑、v、√、✔)
+                if any(marker in line for marker in ['✓', '☑', 'v', '√', '✔', '☒']):
+                    # 去除空格和特殊符號後提取設備名稱
+                    clean_line = line.replace(" ", "").replace("　", "")
+                    
+                    # 使用 normalize_equipment_str 從這一行提取標準設備名稱
+                    for equipment in VALID_EQUIPMENT_LIST:
+                        if equipment in clean_line or equipment.replace("設備", "") in clean_line:
+                            if equipment not in checked_equipment:
+                                checked_equipment.append(equipment)
+                                break
+            
+            # 轉換為字串格式
+            if checked_equipment:
+                info['消防設備種類'] = "、".join(checked_equipment)
+                  
     return info
 
 def save_delivery_photo(uploaded_file, task_id):
     """
     儲存送餐照片
     
-    Args:
-        uploaded_file: Streamlit UploadedFile object
-        task_id: 任務 ID
         
     Returns:
         str: 儲存的檔案相對路徑 (用於存入資料庫)
@@ -708,3 +782,148 @@ def save_proof_photo(file_buffer, task_id):
         with open(file_path, "wb") as f:
             f.write(file_buffer.getbuffer())
         return file_path
+    except Exception as e:
+        # 如果失敗，嘗試清理
+        if os.path.exists(pdf_path):
+            try: os.remove(pdf_path)
+            except: pass
+        raise e
+
+def get_libreoffice_path():
+    """自動偵測 LibreOffice 執行檔路徑"""
+    possible_paths = [
+        r"C:\Program Files\LibreOffice\program\soffice.exe",
+        r"C:\Program Files (x86)\LibreOffice\program\soffice.exe",
+        r"D:\Program Files\LibreOffice\program\soffice.exe",
+        r"D:\Program Files (x86)\LibreOffice\program\soffice.exe"
+    ]
+    
+    # 也可以嘗試從環境變數或 where 指令找 (這裡先簡單實作)
+    for path in possible_paths:
+        if os.path.exists(path):
+            return path
+    return None
+
+def convert_doc_to_pdf_libreoffice(doc_path, libreoffice_path):
+    """使用 LibreOffice 將 Word 轉 PDF (Headless 模式，不開啟視窗)"""
+    import subprocess
+    import os
+    
+    doc_path = os.path.abspath(doc_path)
+    output_dir = os.path.dirname(doc_path)
+    
+    # LibreOffice 的 --convert-to pdf 會將檔案輸出到 --outdir 指定的目錄
+    # 檔名會自動變成 [原檔名].pdf
+    
+    cmd = [
+        libreoffice_path,
+        "--headless",
+        "--convert-to", "pdf",
+        "--outdir", output_dir,
+        doc_path
+    ]
+    
+    try:
+        # 執行轉換
+        subprocess.run(cmd, check=True, capture_output=True, timeout=120)
+        
+        # 預期產生的 PDF 路徑
+        pdf_path = os.path.splitext(doc_path)[0] + ".pdf"
+        
+        if os.path.exists(pdf_path):
+            return pdf_path
+        else:
+            raise Exception("LibreOffice 轉換失敗：未產生 PDF 檔案")
+            
+    except subprocess.CalledProcessError as e:
+        raise Exception(f"LibreOffice 執行錯誤: {e.stderr.decode('utf-8', errors='ignore')}")
+    except Exception as e:
+        raise Exception(f"LibreOffice 轉換發生例外: {str(e)}")
+
+def convert_doc_to_pdf(doc_path):
+    """
+    將 .doc/.docx 轉換為 PDF
+    優先嘗試 LibreOffice (不開視窗)，若無則使用 Word COM (可能開視窗)
+    """
+    # 1. 嘗試使用 LibreOffice
+    lo_path = get_libreoffice_path()
+    if lo_path:
+        try:
+            return convert_doc_to_pdf_libreoffice(doc_path, lo_path)
+        except Exception as e:
+            print(f"LibreOffice 轉換失敗，嘗試切換回 Word COM: {e}")
+            # 失敗後繼續往下執行 Word COM 邏輯
+    
+    # 2. 使用 Word COM (原有的實作)
+    import subprocess
+    import os
+    
+    doc_path = os.path.abspath(doc_path)
+    # 產生暫存 PDF 路徑 (同目錄下，避免檔名衝突)
+    pdf_path = os.path.splitext(doc_path)[0] + f"_temp_{uuid.uuid4().hex[:8]}.pdf"
+    
+    # 處理路徑中的特殊字符 (PowerShell Escape)
+    ps_doc_path = doc_path.replace("'", "''")
+    ps_pdf_path = pdf_path.replace("'", "''")
+    
+    # PowerShell Script
+    # wdFormatPDF = 17
+    ps_script = f"""
+    $ErrorActionPreference = 'Stop'
+    try {{
+        $word = New-Object -ComObject Word.Application
+        $word.Visible = $false
+        $word.DisplayAlerts = 0 # wdAlertsNone
+        
+        $doc = $word.Documents.Open('{ps_doc_path}')
+        $doc.SaveAs([ref] '{ps_pdf_path}', [ref] 17)
+        $doc.Close()
+    }} catch {{
+        Write-Error $_.Exception.Message
+        exit 1
+    }} finally {{
+        if ($word) {{
+            $word.Quit()
+            [System.Runtime.Interopservices.Marshal]::ReleaseComObject($word) | Out-Null
+        }}
+    }}
+    """
+    
+    # 執行 PowerShell
+    try:
+        cmd = ["powershell", "-NoProfile", "-ExecutionPolicy", "Bypass", "-Command", ps_script]
+        # 設定 startupinfo 隱藏視窗 (Windows only)
+        startupinfo = subprocess.STARTUPINFO()
+        startupinfo.dwFlags |= subprocess.STARTF_USESHOWWINDOW
+        
+        # 添加 60 秒超時限制
+        result = subprocess.run(
+            cmd, 
+            capture_output=True, 
+            text=True, 
+            startupinfo=startupinfo,
+            timeout=60  # 60 秒超時
+        )
+        
+        if result.returncode != 0:
+            raise Exception(f"PowerShell Error: {result.stderr}")
+            
+        if not os.path.exists(pdf_path):
+            raise Exception("PDF conversion failed (file not created)")
+            
+        return pdf_path
+    
+    except subprocess.TimeoutExpired:
+        # 超時錯誤
+        if os.path.exists(pdf_path):
+            try: os.remove(pdf_path)
+            except: pass
+        raise Exception("Word 轉換超時 (>60秒)，請檢查文件大小或嘗試直接上傳 PDF")
+        
+    except Exception as e:
+        # 如果失敗，嘗試清理
+        if os.path.exists(pdf_path):
+            try: os.remove(pdf_path)
+            except: pass
+        raise e
+
