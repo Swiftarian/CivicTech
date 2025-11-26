@@ -620,7 +620,8 @@ with col1:
                 
                 # 1. 先轉換並顯示圖片 (讓使用者先看到預覽)
                 images = []
-                target_dpi = 150 if use_fast_mode else 300
+                # target_dpi = 150 if use_fast_mode else 300
+                target_dpi = 300 # 強制使用 300 DPI 以提升 OCR 對勾選框的辨識率 (User Request)
                 
                 try:
                     ext = os.path.splitext(uploaded_file_path)[1].lower()
@@ -749,7 +750,29 @@ with col1:
                     else:
                         # 執行 AI 分析
                         with st.spinner(f"🤖 AI ({text_model}) 正在分析文件內容..."):
-                            ai_result = ai_engine.analyze_document(pages_text, model=text_model)
+                            if use_vision_ai:
+                                # === Vision AI 混合模式 ===
+                                st.info("👁️ 正在使用 Vision AI 進行視覺化分析 (Llama 3.2 Vision)...")
+                                
+                                # 1. 使用 Vision AI 分析文件結構與勾選項目 (針對圖片)
+                                # 注意: 這裡假設使用者已安裝 llama3.2-vision
+                                vision_result = ai_engine.analyze_document_structure(cached_images, model="llama3.2-vision")
+                                
+                                # 2. 使用 Text AI 分析基本資料 (針對第一頁 OCR 文字)
+                                # Vision 模型有時對密集文字的提取不如純文字模型穩定，因此混合使用
+                                text_result = ai_engine.analyze_page_with_ai(page_one_text, model=text_model)
+                                
+                                # 3. 合併結果
+                                ai_result = text_result
+                                if vision_result.get('required_items'):
+                                    ai_result['equipment_list'] = vision_result['required_items']
+                                    st.toast(f"Vision AI 成功提取 {len(ai_result['equipment_list'])} 項設備", icon="👁️")
+                                else:
+                                    st.warning("Vision AI 未能提取到設備清單，將使用 OCR 文字分析結果作為備案。")
+                                
+                            else:
+                                # === 純文字模式 ===
+                                ai_result = ai_engine.analyze_document(pages_text, model=text_model)
                             
                             # 立即應用簡繁轉換
                             ai_result = utils.convert_to_traditional(ai_result)

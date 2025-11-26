@@ -104,9 +104,16 @@ def extract_checked_items_with_vision(image_path, model=DEFAULT_VISION_MODEL):
         img_base64 = image_to_base64(image_path)
         
         # 強制結構化輸出的 prompt
+        # 強制結構化輸出的 prompt
         prompt = """這是一張檢修項目清單。請仔細觀察每一項前面的方框 (□)。
 
-列出所有【方框內有打勾 (✓, v)】或【被塗黑】的項目名稱。
+請列出所有【方框內有打勾 (✓, v)】、【被塗黑】或【有任何手寫標記】的項目名稱。
+
+規則：
+1. 只要方框內不是空白的，就視為已勾選。
+2. 如果方框被塗滿黑色，視為已勾選。
+3. 如果方框內有打勾或打叉，視為已勾選。
+4. 忽略完全空白的方框。
 
 IMPORTANT: Do NOT output any markdown, explanations, or code blocks. Only output a valid JSON array of strings.
 
@@ -309,34 +316,32 @@ def analyze_page_with_ai(text_content, model=DEFAULT_TEXT_MODEL):
     
     ⚠️ **勾選符號識別規則（這是最重要的規則！）**：
     1. 在目錄頁（「消防安全設備檢修申報書目錄」）中，每個設備前面都有方框
-    2. **只有方框內有打勾（✓、☑、√、✔、■、●）的項目才是實際申報的設備**
-    3. **空白方框（☐、□）的項目絕對不要提取**
-    4. **沒有任何符號的項目絕對不要提取**
-    5. equipment_list **只應包含有明確勾選符號的設備項目**
+    2. **主要判斷依據：方框內有打勾（✓、☑、√、✔、■、●）的項目**
+    3. **💡 上下文推斷 (Context Inference) - 容錯機制**：
+       - 如果 OCR 沒有辨識出方框或勾選符號，但該項目後面**有填寫數量、頁碼或備註** (例如 "滅火器.....7" 或 "避難器具...3具")，**請視為已勾選**。
+       - 這是因為 OCR 常會漏掉方框，但後面的數字通常代表該設備有實際檢修。
     
     ✅ **正確範例**（應該提取）：
-    - "☑ 滅火器" → 提取 "滅火器"
-    - "✓ 火警自動警報設備" → 提取 "火警自動警報設備"
-    - "■ 室內消防栓設備" → 提取 "室內消防栓設備"
-    - "● 緊急照明設備" → 提取 "緊急照明設備"
+    - "☑ 滅火器" → 提取 "滅火器" (有勾選)
+    - "✓ 火警自動警報設備" → 提取 "火警自動警報設備" (有勾選)
+    - "滅火器 .......... 3" → 提取 "滅火器" (雖無勾選，但有頁碼/數量)
+    - "避難器具 5 具" → 提取 "避難器具" (雖無勾選，但有數量)
     
     ❌ **錯誤範例**（絕對不要提取）：
-    - "☐ 室外消防栓設備" → **不提取**（空白方框，未勾選）
-    - "□ 排煙設備" → **不提取**（空白方框，未勾選）
-    - "  避難器具" → **不提取**（無任何符號）
-    - "連結送水管" → **不提取**（無勾選符號）
+    - "☐ 室外消防栓設備" → **不提取**（明確的空白方框）
+    - "□ 排煙設備" → **不提取**（明確的空白方框）
+    - "連結送水管" → **不提取**（無勾選，且後面無任何數字或內容）
     
     💡 **實際案例**：
     如果 OCR 文字顯示：
     ```
     ☑ 滅火器 _____ 3
     ☐ 室外消防栓設備 _____ 4
-    ✓ 火警自動警報設備 _____ 7
+    火警自動警報設備 ..... 7  <-- (OCR 漏了勾勾，但有頁碼 7)
     □ 排煙設備 _____ 17
-    ● 緊急照明設備 _____ 18
     ```
-    正確的 equipment_list 應該是：["滅火器", "火警自動警報設備", "緊急照明設備"]
-    錯誤的輸出：["滅火器", "室外消防栓設備", "火警自動警報設備", "排煙設備", "緊急照明設備"]
+    正確的 equipment_list 應該是：["滅火器", "火警自動警報設備"]
+    (室外消防栓和排煙設備明確未勾選，所以不提取)
     
     ---
     
@@ -404,6 +409,9 @@ def analyze_page_with_ai(text_content, model=DEFAULT_TEXT_MODEL):
             result = response.json()
             response_text = result['response']
             
+            if not response_text or not response_text.strip():
+                return {"error": "AI returned empty response"}
+
             # 嘗試使用 Regex 提取 JSON (處理 Markdown 標記)
             json_match = re.search(r'\{.*\}', response_text, re.DOTALL)
             
@@ -415,6 +423,12 @@ def analyze_page_with_ai(text_content, model=DEFAULT_TEXT_MODEL):
                     return json.loads(response_text)
             except json.JSONDecodeError as je:
                 # JSON 解析失敗，回傳原始文字供除錯
+                # 嘗試修復常見的 JSON 錯誤 (例如單引號)
+                try:
+                    import ast
+                    return ast.literal_eval(response_text)
+                except:
+                    pass
                 return {"error": f"JSON Parse Error: {je}", "raw_response": response_text}
                 
         else:
