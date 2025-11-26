@@ -676,12 +676,21 @@ def extract_info_from_ocr(text, pages_text_list=None):
             # 解析有勾選的設備項目
             checked_equipment = []
             
+            # 擴充的勾選符號清單（包含各種可能的打勾標記）
+            checked_markers = ['✓', '☑', 'v', 'V', '√', '✔', '☒', '▣', '■', '●', '✅']
+            # 空白方框符號（這些代表未勾選，應該排除）
+            unchecked_markers = ['☐', '□', '▢', '▫', '▪']
+            
             # 將文字按行分割
             lines = target_page_text.split('\n')
             
             for line in lines:
-                # 檢查是否包含勾選符號（✓、☑、v、√、✔)
-                if any(marker in line for marker in ['✓', '☑', 'v', '√', '✔', '☒']):
+                # 【重要】先檢查是否包含空白方框 - 如果有，跳過這一行
+                if any(unchecked in line for unchecked in unchecked_markers):
+                    continue
+                
+                # 檢查是否包含勾選符號
+                if any(marker in line for marker in checked_markers):
                     # 去除空格和特殊符號後提取設備名稱
                     clean_line = line.replace(" ", "").replace("　", "")
                     
