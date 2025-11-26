@@ -525,6 +525,54 @@ with col1:
     with col_header:
         st.subheader("📄 民眾申報資料")
     
+    # 建立三欄佈局：按鈕 | OCR 引擎 | AI 設定
+    col_btn, col_engine, col_ai = st.columns([1, 2, 2])
+    
+    with col_btn:
+        force_reocr = st.button("🔄 強制重新辨識", help="如果覺得辨識結果有誤，可點此重新執行 OCR")
+    
+    with col_engine:
+        # OCR 引擎選擇
+        ocr_engine = st.radio(
+            "OCR 引擎",
+            options=["Tesseract", "PaddleOCR"],
+            index=1, # 預設 PaddleOCR
+            horizontal=True,
+            label_visibility="collapsed" # 隱藏標題，節省空間
+        )
+        use_paddle = (ocr_engine == "PaddleOCR")
+        
+        # 快速模式選項
+        use_fast_mode = st.checkbox("⚡ 快速模式 (壓縮圖片)", value=True, help="降低圖片解析度 (150 DPI) 以加快 OCR 速度，但可能影響小字辨識率。")
+        
+        # 檢查 PaddleOCR 可用性
+        if use_paddle:
+            try:
+                import paddle_ocr
+                if not paddle_ocr.is_paddle_available():
+                    st.caption("⚠️ PaddleOCR 未安裝")
+            except:
+                st.caption("⚠️ PaddleOCR 未安裝")
+
+    with col_ai:
+        # AI 設定
+        # use_ai_mode = st.checkbox("啟用 AI 智慧分析 (Ollama)", value=True) # 移除 Checkbox，改為常駐
+        use_ai_mode = True # 強制啟用
+        st.caption("✅ 已啟用 AI 智慧分析 (Ollama)")
+        
+        use_vision_ai = st.checkbox("啟用 Vision AI (實驗性)", value=False, help="使用多模態模型 (Llama 3.2 Vision) 直接分析圖片，可更準確識別目錄與表格結構，但速度較慢。")
+        
+        # 模型選擇 (下拉式選單)
+        if use_ai_mode:
+            text_model = st.selectbox(
+                "選擇模型",
+                options=["llama3", "gemma2", "mistral", "qwen2.5:7b"],
+                index=0,
+                label_visibility="collapsed" # 隱藏標題，節省空間
+            )
+        else:
+            text_model = "llama3"
+
     if target_case and uploaded_file_path:
         if not os.path.exists(uploaded_file_path):
              st.error(f"❌ 找不到檔案：{uploaded_file_path}")
@@ -535,55 +583,6 @@ with col1:
             # 檢查 Session State 是否已有此檔案的 OCR 結果
             if 'ocr_cache' not in st.session_state:
                 st.session_state.ocr_cache = {}
-            
-            # Force Re-OCR Button & Settings Area
-            # 建立三欄佈局：按鈕 | OCR 引擎 | AI 設定
-            col_btn, col_engine, col_ai = st.columns([1, 2, 2])
-            
-            with col_btn:
-                force_reocr = st.button("🔄 強制重新辨識", help="如果覺得辨識結果有誤，可點此重新執行 OCR")
-            
-            with col_engine:
-                # OCR 引擎選擇
-                ocr_engine = st.radio(
-                    "OCR 引擎",
-                    options=["Tesseract", "PaddleOCR"],
-                    index=1, # 預設 PaddleOCR
-                    horizontal=True,
-                    label_visibility="collapsed" # 隱藏標題，節省空間
-                )
-                use_paddle = (ocr_engine == "PaddleOCR")
-                
-                # 快速模式選項
-                use_fast_mode = st.checkbox("⚡ 快速模式 (壓縮圖片)", value=True, help="降低圖片解析度 (150 DPI) 以加快 OCR 速度，但可能影響小字辨識率。")
-                
-                # 檢查 PaddleOCR 可用性
-                if use_paddle:
-                    try:
-                        import paddle_ocr
-                        if not paddle_ocr.is_paddle_available():
-                            st.caption("⚠️ PaddleOCR 未安裝")
-                    except:
-                        st.caption("⚠️ PaddleOCR 未安裝")
-
-            with col_ai:
-                # AI 設定
-                # use_ai_mode = st.checkbox("啟用 AI 智慧分析 (Ollama)", value=True) # 移除 Checkbox，改為常駐
-                use_ai_mode = True # 強制啟用
-                st.caption("✅ 已啟用 AI 智慧分析 (Ollama)")
-                
-                use_vision_ai = st.checkbox("啟用 Vision AI (實驗性)", value=False, help="使用多模態模型 (Llama 3.2 Vision) 直接分析圖片，可更準確識別目錄與表格結構，但速度較慢。")
-                
-                # 模型選擇 (下拉式選單)
-                if use_ai_mode:
-                    text_model = st.selectbox(
-                        "選擇模型",
-                        options=["llama3", "gemma2", "mistral", "qwen2.5:7b"],
-                        index=0,
-                        label_visibility="collapsed" # 隱藏標題，節省空間
-                    )
-                else:
-                    text_model = "llama3"
             
             # 判斷是否需要執行 OCR
             # 條件：
