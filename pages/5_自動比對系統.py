@@ -521,7 +521,7 @@ with col1:
     # st.subheader("📄 民眾申報資料 (OCR 辨識)") # 移除舊標題
     
     # 使用 Columns 將標題與狀態訊息排在同一列
-    col_header, col_status_msg = st.columns([2, 3])
+    col_header, col_status_msg = st.columns([3, 2]) # 調整比例以避免標題換行
     with col_header:
         st.subheader("📄 民眾申報資料")
     
@@ -555,7 +555,7 @@ with col1:
                 use_paddle = (ocr_engine == "PaddleOCR")
                 
                 # 快速模式選項
-                use_fast_mode = st.checkbox("⚡ 快速模式 (壓縮圖片)", value=False, help="降低圖片解析度 (150 DPI) 以加快 OCR 速度，但可能影響小字辨識率。")
+                use_fast_mode = st.checkbox("⚡ 快速模式 (壓縮圖片)", value=True, help="降低圖片解析度 (150 DPI) 以加快 OCR 速度，但可能影響小字辨識率。")
                 
                 # 檢查 PaddleOCR 可用性
                 if use_paddle:
@@ -568,7 +568,10 @@ with col1:
 
             with col_ai:
                 # AI 設定
-                use_ai_mode = st.checkbox("啟用 AI 智慧分析 (Ollama)", value=True)
+                # use_ai_mode = st.checkbox("啟用 AI 智慧分析 (Ollama)", value=True) # 移除 Checkbox，改為常駐
+                use_ai_mode = True # 強制啟用
+                st.caption("✅ 已啟用 AI 智慧分析 (Ollama)")
+                
                 use_vision_ai = st.checkbox("啟用 Vision AI (實驗性)", value=False, help="使用多模態模型 (Llama 3.2 Vision) 直接分析圖片，可更準確識別目錄與表格結構，但速度較慢。")
                 
                 # 模型選擇 (下拉式選單)

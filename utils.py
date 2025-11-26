@@ -866,13 +866,20 @@ def convert_doc_to_pdf(doc_path):
     # 2. 使用 Word COM (原有的實作)
     import subprocess
     import os
+    import shutil
     
     doc_path = os.path.abspath(doc_path)
     # 產生暫存 PDF 路徑 (同目錄下，避免檔名衝突)
     pdf_path = os.path.splitext(doc_path)[0] + f"_temp_{uuid.uuid4().hex[:8]}.pdf"
     
+    # --- FIX: 解決 Word "上次開啟造成嚴重錯誤" 的對話框 ---
+    # 策略：將原始檔案複製一份到暫存檔 (使用隨機檔名)，讓 Word 認為是新檔案
+    temp_doc_path = os.path.join(os.path.dirname(doc_path), f"temp_word_{uuid.uuid4().hex[:8]}{os.path.splitext(doc_path)[1]}")
+    shutil.copy2(doc_path, temp_doc_path)
+    # ---------------------------------------------------
+    
     # 處理路徑中的特殊字符 (PowerShell Escape)
-    ps_doc_path = doc_path.replace("'", "''")
+    ps_doc_path = temp_doc_path.replace("'", "''") # 使用暫存檔路徑
     ps_pdf_path = pdf_path.replace("'", "''")
     
     # PowerShell Script
@@ -935,4 +942,9 @@ def convert_doc_to_pdf(doc_path):
             try: os.remove(pdf_path)
             except: pass
         raise e
+    finally:
+        # 清理暫存的 Word 檔案
+        if os.path.exists(temp_doc_path):
+            try: os.remove(temp_doc_path)
+            except: pass
 
