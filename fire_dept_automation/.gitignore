@@ -3,6 +3,7 @@
 # 1. Secrets (Critical)
 .streamlit/secrets.toml
 *.env
+!.env.example
 
 # 2. Database & Data
 *.db

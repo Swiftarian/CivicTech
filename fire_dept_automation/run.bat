@@ -9,30 +9,24 @@ echo.
 REM 進入專案目錄
 cd /d "%~dp0"
 
-REM 檢查並啟用虛擬環境
-if exist ".venv\Scripts\activate.bat" (
-    echo [INFO] 偵測到虛擬環境，正在啟用...
-    call .venv\Scripts\activate.bat
-) else (
-    echo [WARNING] 未偵測到虛擬環境 (.venv)
-    echo [INFO] 建議執行: python -m venv .venv
-    echo.
-)
-
-REM 檢查 Python 是否可用
-python --version >nul 2>&1
+REM 檢查 uv 是否可用
+uv --version >nul 2>&1
 if errorlevel 1 (
-    echo [ERROR] Python 未安裝或未加入 PATH
-    echo [INFO] 請先安裝 Python 3.9 或以上版本
+    echo [ERROR] uv 未安裝或未加入 PATH
+    echo [INFO] 請先安裝 uv（現代化的 Python 套件管理工具）
+    echo [INFO] 執行: powershell -c "irm https://astral.sh/uv/install.ps1 | iex"
+    echo [INFO] 或訪問: https://docs.astral.sh/uv/
     pause
     exit /b 1
 )
 
-REM 檢查並安裝依賴
-echo [INFO] 檢查依賴套件...
-pip install -r requirements.txt
+echo [INFO] 偵測到 uv 套件管理工具
+
+REM 同步依賴
+echo [INFO] 同步依賴套件...
+uv sync
 if errorlevel 1 (
-    echo [ERROR] 套件安裝失敗
+    echo [ERROR] 套件同步失敗
     pause
     exit /b 1
 )
@@ -44,7 +38,7 @@ echo [INFO] 系統將在瀏覽器自動開啟（預設 http://localhost:8501）
 echo [INFO] 按 Ctrl+C 可停止系統
 echo.
 
-streamlit run 首頁.py
+uv run streamlit run home.py
 
 REM 如果 Streamlit 異常結束
 if errorlevel 1 (
