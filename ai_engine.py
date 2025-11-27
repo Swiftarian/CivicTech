@@ -412,6 +412,9 @@ def analyze_page_with_ai(text_content, model=DEFAULT_TEXT_MODEL):
             if not response_text or not response_text.strip():
                 return {"error": "AI returned empty response"}
 
+            # Debug: Print raw response
+            print(f"🤖 AI Raw Response: {response_text}")
+
             # 嘗試使用 Regex 提取 JSON (處理 Markdown 標記)
             json_match = re.search(r'\{.*\}', response_text, re.DOTALL)
             
@@ -419,8 +422,11 @@ def analyze_page_with_ai(text_content, model=DEFAULT_TEXT_MODEL):
                 if json_match:
                     return json.loads(json_match.group(0))
                 else:
-                    # 如果 Regex 失敗，嘗試直接解析
-                    return json.loads(response_text)
+                    # 如果 Regex 失敗，檢查是否像 JSON
+                    clean_text = response_text.strip()
+                    if not clean_text.startswith("{"):
+                        return {"error": "No JSON object found in AI response", "raw_response": response_text}
+                    return json.loads(clean_text)
             except json.JSONDecodeError as je:
                 # JSON 解析失敗，回傳原始文字供除錯
                 # 嘗試修復常見的 JSON 錯誤 (例如單引號)

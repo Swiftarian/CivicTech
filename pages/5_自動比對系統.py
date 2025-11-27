@@ -785,6 +785,10 @@ with col1:
                     # 處理 AI 結果
                     if "error" in ai_result:
                         st.error(f"AI 分析錯誤: {ai_result['error']}")
+                        if "raw_response" in ai_result:
+                            with st.expander("🔍 查看 AI 原始回應 (除錯用)"):
+                                st.code(ai_result["raw_response"])
+                        
                         extracted_data = extract_info_from_ocr(page_one_text, pages_text)
                         # 應用簡繁轉換
                         extracted_data = utils.convert_to_traditional(extracted_data)
@@ -832,7 +836,7 @@ with col1:
                                 if not extracted_data.get(key):
                                     extracted_data[key] = val
                         
-                        with st.expander("🔍 查看 AI 原始分析結果", expanded=False):
+                        with st.expander("🤖 查看 AI 完整分析結果 (JSON)", expanded=False):
                             st.json(ai_result)
                 else:
                     st.warning("⚠️ 偵測不到 Ollama 服務，已自動切換回傳統 OCR 規則模式")
@@ -1098,7 +1102,7 @@ with col2:
                 column_config={
                     "欄位": st.column_config.TextColumn("比對項目", width="medium"),
                     "系統資料": st.column_config.TextColumn("系統列管資料", width="medium"),
-                    "申報資料 (OCR/人工)": st.column_config.TextColumn("申報書資料", width="medium"),
+                    "申報資料 (OCR/人工)": st.column_config.TextColumn("申報書資料 (AI/OCR)", width="medium"),
                 },
                 use_container_width=True,
                 hide_index=True
