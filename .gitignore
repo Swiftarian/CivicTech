@@ -61,3 +61,4 @@ htmlcov/
 backend/.env
 /backend/app/static/uploads/pdfs
 /backend/uploads
+.manus
