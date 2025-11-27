@@ -52,8 +52,12 @@ desktop.ini
 .pytest_cache/
 .coverage
 htmlcov/
+test_output*.txt
+*_output.txt
+health_check*.txt
 
 # Temporary Files
 temp_*.png
 temp_*.jpg
 temp_*.pdf
+patch_*.py
