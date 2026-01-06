@@ -1,0 +1,31 @@
+[project]
+name = "fire-dept-automation"
+version = "0.1.0"
+description = "Fire Safety Equipment Inspection Automation System for Taitung County Fire Department"
+authors = [
+    {name = "Unknown"},
+]
+requires-python = ">=3.9"
+dependencies = [
+    "streamlit==1.37.0",
+    "pandas==2.1.4",
+    "Pillow==10.3.0",
+    "PyMuPDF==1.23.8",
+    "pytesseract==0.3.10",
+    "bcrypt==4.1.2",
+    "secure-smtplib==0.1.1",
+    "line-bot-sdk==3.9.0",
+    "tomli==2.0.1",
+    "openpyxl==3.1.2",
+    "xlrd==2.0.1",
+    "python-dateutil==2.8.2",
+    "pytz==2024.1",
+    "streamlit-calendar",
+    "extra-streamlit-components",
+]
+
+[project.optional-dependencies]
+ocr-enhanced = [
+    "paddlepaddle>=2.6.0",
+    "paddleocr>=2.8.0",
+]
