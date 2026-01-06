@@ -23,7 +23,7 @@ st.set_page_config(layout="wide", page_title=f"{cfg.AGENCY_NAME}檢修申報書�
 if "logged_in" not in st.session_state or not st.session_state.logged_in:
     st.warning("⚠️ 此頁面僅限消防局同仁使用，請先進行管理者登入。")
     st.info("正在將您導向至登入頁面...")
-    st.page_link("pages/4_案件審核.py", label="🔐 前往登入頁面", icon="🔐")
+    st.page_link("pages/4_case_review.py", label="前往登入頁面", icon="🔐")
     st.stop()  # 阻止下方程式碼執行
 
 # 顯示登入使用者資訊
@@ -976,19 +976,15 @@ with col2:
     with review_col2:
         st.write("審核結果通知：")
         
-        # 狀態選擇 UI (已移除，改由下方按鈕直接觸發)
-        # current_status = target_case['status'] if target_case else "待分案"
-        # status_options = ["待分案", "審核中", "可領件", "已退件", "待補件"]
-        # ...
-        
-        b1, b2, b3 = st.columns(3)
-        
-        # 取得 Email 設定
-        sender_email = st.secrets["email"].get("sender_email", "") if "email" in st.secrets else ""
-        sender_password = st.secrets["email"].get("sender_password", "") if "email" in st.secrets else ""
-        
-        # 定義發送邏輯
-        def handle_review(status, subject_prefix, msg_template):
+    # 審核按鈕（移出 columns 避免嵌套超過一層）
+    b1, b2, b3 = st.columns(3)
+    
+    # 取得 Email 設定
+    sender_email = st.secrets["email"].get("sender_email", "") if "email" in st.secrets else ""
+    sender_password = st.secrets["email"].get("sender_password", "") if "email" in st.secrets else ""
+    
+    # 定義發送邏輯
+    def handle_review(status, subject_prefix, msg_template):
             if not applicant_email:
                 st.warning("請先輸入申請人信箱")
                 return
@@ -1046,19 +1042,22 @@ with col2:
             else:
                 st.info("💡 提示：若需發送真實郵件，請至側邊欄設定寄件者資訊。")
 
-        if b1.button("✅ 合格"):
+    with b1:
+        if st.button("✅ 合格", use_container_width=True):
             db_manager.update_case_status(target_case['id'], "可領件")
             st.cache_data.clear()
             handle_review("success", "合格", "恭喜您，案件已審核通過。")
             st.rerun()
-        
-        if b2.button("⚠️ 補件"):
+    
+    with b2:
+        if st.button("⚠️ 補件", use_container_width=True):
             db_manager.update_case_status(target_case['id'], "待補件")
             st.cache_data.clear()
             handle_review("warning", "補件", "請儘速補齊相關文件。")
             st.rerun()
 
-        if b3.button("🚫 退件"):
+    with b3:
+        if st.button("🚫 退件", use_container_width=True):
             db_manager.update_case_status(target_case['id'], "已退件")
             st.cache_data.clear()
             handle_review("error", "退件", "案件已被退回，請修正後重新申報。")

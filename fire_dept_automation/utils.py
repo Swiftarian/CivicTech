@@ -514,7 +514,7 @@ def render_equipment_diff(sys_set, ocr_set):
 @st.cache_data
 def load_system_data(excel_path):
     """讀取系統列管資料 Excel (使用複製策略以避免檔案鎖定)"""
-    if not os.path.exists(excel_path):
+    if excel_path is None or not os.path.exists(excel_path):
         return None
         
     temp_path = f"temp_system_data_{uuid.uuid4().hex[:8]}.xls"
