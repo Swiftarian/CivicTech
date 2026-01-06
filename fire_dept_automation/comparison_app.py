@@ -74,16 +74,26 @@ def download_lang_data():
             pass # 英文非必要，失敗就算了
 
 @st.cache_data
-def load_system_data(excel_path):
-    """讀取系統列管資料 Excel"""
-    if not os.path.exists(excel_path):
+def load_system_data(excel_source):
+    """
+    讀取系統列管資料 Excel (修正版)
+    Args:
+        excel_source: 檔案路徑 (str) 或 檔案物件 (UploadedFile)
+    """
+    if excel_source is None:
         return None
     try:
-        # 嘗試讀取 (支援 .xls 和 .xlsx)
-        if excel_path.endswith('.xls'):
-            df = pd.read_excel(excel_path, header=1, engine='xlrd')
+        # 如果是字串路徑，先檢查存在性
+        if isinstance(excel_source, str):
+            if not os.path.exists(excel_source):
+                return None
+            engine = 'xlrd' if excel_source.endswith('.xls') else None
+            df = pd.read_excel(excel_source, header=1, engine=engine)
         else:
-            df = pd.read_excel(excel_path, header=1)
+            # 如果是檔案物件，直接讀取
+            filename = getattr(excel_source, 'name', '')
+            engine = 'xlrd' if filename.endswith('.xls') else None
+            df = pd.read_excel(excel_source, header=1, engine=engine)
             
         # 清理欄位名稱 (去除前後空白、換行符號)
         df.columns = df.columns.astype(str).str.strip().str.replace('\n', '').str.replace('\r', '')
@@ -373,9 +383,25 @@ with st.sidebar:
             st.warning("⚠️ 缺少繁體中文語言包")
             if st.button("📥 下載中文語言包 (必要)"):
                 download_lang_data()
-    # 1. 系統資料
-    system_file_path = st.text_input("系統 Excel 路徑", value=r"d:\下載\downloads\00. 列管場所資料.xls")
-    df_system = load_system_data(system_file_path)
+    # 1. 系統資料 (使用設定檔預設值或上傳檔案)
+    
+    # 讀取預設路徑 (從設定檔)
+    default_excel_path = config_loader.CONFIG.get("ocr", {}).get("default_excel_path")
+    
+    # 提供檔案上傳選項 (優先於預設路徑)
+    uploaded_system_file = st.file_uploader("上傳系統列管資料 (Excel)", type=["xls", "xlsx"])
+    
+    system_source = None
+    if uploaded_system_file:
+        system_source = uploaded_system_file
+        st.info("📂 使用上傳的系統資料")
+    elif default_excel_path and os.path.exists(default_excel_path):
+        system_source = default_excel_path
+        st.caption(f"📂 使用預設系統資料來源: {os.path.basename(default_excel_path)}")
+    else:
+        st.warning("⚠️ 未設定系統資料來源，請上傳檔案或檢查 config.toml 設定。")
+
+    df_system = load_system_data(system_source)
     
     selected_place = None
     

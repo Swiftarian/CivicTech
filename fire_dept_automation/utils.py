@@ -480,22 +480,38 @@ def render_equipment_diff(sys_set, ocr_set):
     return html
 
 @st.cache_data
-def load_system_data(excel_path):
-    """讀取系統列管資料 Excel (使用複製策略以避免檔案鎖定)"""
-    if not os.path.exists(excel_path):
+def load_system_data(excel_source):
+    """
+    讀取系統列管資料 Excel
+    Args:
+        excel_source: 檔案路徑 (str) 或 檔案物件 (UploadedFile)
+    """
+    if excel_source is None:
         return None
         
-    temp_path = f"temp_system_data_{uuid.uuid4().hex[:8]}.xls"
+    temp_path = None
     
     try:
-        # 1. 複製檔案到暫存檔
-        shutil.copy2(excel_path, temp_path)
-        
-        # 2. 讀取暫存檔
-        if excel_path.endswith('.xls'):
-            df = pd.read_excel(temp_path, header=1, engine='xlrd')
+        # 如果是字串路徑，先檢查存在性並複製到暫存檔
+        if isinstance(excel_source, str):
+            if not os.path.exists(excel_source):
+                return None
+            
+            temp_path = f"temp_system_data_{uuid.uuid4().hex[:8]}.xls"
+            shutil.copy2(excel_source, temp_path)
+            file_to_read = temp_path
+            
+            # 判斷引擎
+            engine = 'xlrd' if excel_source.endswith('.xls') else None
         else:
-            df = pd.read_excel(temp_path, header=1)
+            # 如果是檔案物件，直接讀取
+            file_to_read = excel_source
+            # 嘗試從 name 判斷格式，或是讓 pandas 自動偵測
+            filename = getattr(excel_source, 'name', '')
+            engine = 'xlrd' if filename.endswith('.xls') else None
+
+        # 讀取 Excel
+        df = pd.read_excel(file_to_read, header=1, engine=engine)
             
         # 清理欄位名稱 (去除前後空白、換行符號)
         df.columns = df.columns.astype(str).str.strip().str.replace('\n', '').str.replace('\r', '')
@@ -506,8 +522,8 @@ def load_system_data(excel_path):
         return None
         
     finally:
-        # 3. 刪除暫存檔
-        if os.path.exists(temp_path):
+        # 刪除暫存檔 (只有在我們建立暫存檔時才刪除)
+        if temp_path and os.path.exists(temp_path):
             try:
                 os.remove(temp_path)
             except:
