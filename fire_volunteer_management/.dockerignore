@@ -1,0 +1,38 @@
+# Docker specific files
+*.log
+logs/
+uploads/
+node_modules/
+dist/
+*.sqlite
+*.db
+
+# Environment files
+.env
+.env.local
+.env.*.local
+
+# IDE
+.vscode/
+.idea/
+
+# OS
+.DS_Store
+Thumbs.db
+
+# Git
+.git/
+.gitignore
+
+# Testing
+coverage/
+.nyc_output/
+
+# Build artifacts
+*.tgz
+
+# Development files
+*.md
+!README.md
+.prettierrc
+.prettierignore

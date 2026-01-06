@@ -1,0 +1,68 @@
+version: '3.8'
+
+services:
+  # MySQL Database
+  mysql:
+    image: mysql:8.0
+    container_name: volunteer_mysql
+    restart: unless-stopped
+    environment:
+      MYSQL_ROOT_PASSWORD: ${MYSQL_ROOT_PASSWORD:-rootpassword}
+      MYSQL_DATABASE: ${MYSQL_DATABASE:-volunteer_management}
+      MYSQL_USER: ${MYSQL_USER:-volunteer_user}
+      MYSQL_PASSWORD: ${MYSQL_PASSWORD:-volunteer_pass}
+    ports:
+      - "${MYSQL_PORT:-3306}:3306"
+    volumes:
+      - mysql_data:/var/lib/mysql
+      - ./drizzle/migrations:/docker-entrypoint-initdb.d:ro
+    networks:
+      - volunteer_network
+    healthcheck:
+      test: ["CMD", "mysqladmin", "ping", "-h", "localhost", "-u", "root", "-p${MYSQL_ROOT_PASSWORD:-rootpassword}"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+
+  # Fire Volunteer Management Application
+  app:
+    build:
+      context: .
+      dockerfile: Dockerfile
+      target: production
+    container_name: volunteer_app
+    restart: unless-stopped
+    ports:
+      - "${PORT:-3000}:3000"
+    environment:
+      - NODE_ENV=production
+      - PORT=3000
+      - DATABASE_URL=mysql://${MYSQL_USER:-volunteer_user}:${MYSQL_PASSWORD:-volunteer_pass}@mysql:3306/${MYSQL_DATABASE:-volunteer_management}
+      - JWT_SECRET=${JWT_SECRET:-change_this_secret_in_production}
+      - VITE_APP_TITLE=${VITE_APP_TITLE:-臺東縣消防局志工管理平台}
+      - VITE_OAUTH_PORTAL_URL=${VITE_OAUTH_PORTAL_URL:-http://localhost:3000}
+      - OAUTH_SERVER_URL=${OAUTH_SERVER_URL:-http://localhost:3000}
+      - VITE_FIRE_DEPT_APP_URL=${VITE_FIRE_DEPT_APP_URL:-http://localhost:8501}
+      - OWNER_OPEN_ID=${OWNER_OPEN_ID:-}
+    volumes:
+      - ./uploads:/app/uploads
+      - ./logs:/app/logs
+    depends_on:
+      mysql:
+        condition: service_healthy
+    networks:
+      - volunteer_network
+    healthcheck:
+      test: ["CMD", "node", "-e", "require('http').get('http://localhost:3000/api/health', (r) => {process.exit(r.statusCode === 200 ? 0 : 1)})"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 40s
+
+networks:
+  volunteer_network:
+    driver: bridge
+
+volumes:
+  mysql_data:
+    driver: local
