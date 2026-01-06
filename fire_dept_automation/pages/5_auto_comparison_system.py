@@ -359,9 +359,15 @@ st.markdown("""
 if "tesseract_exe_path" not in st.session_state or not st.session_state["tesseract_exe_path"]:
     st.session_state["tesseract_exe_path"] = utils.get_default_tesseract_path()
 
-# Excel 路徑初始化
-if "system_excel_path" not in st.session_state or not st.session_state["system_excel_path"]:
-    st.session_state["system_excel_path"] = utils.get_default_excel_path()
+# Excel 路徑初始化 (從 config 讀取預設值)
+system_source = None
+default_excel_path = cfg.CONFIG.get("ocr", {}).get("default_excel_path")
+
+if "system_excel_source" not in st.session_state:
+    if default_excel_path and os.path.exists(default_excel_path):
+         st.session_state["system_excel_source"] = default_excel_path
+    else:
+         st.session_state["system_excel_source"] = None
 
 # 檢查狀態以決定 Expander 是否展開
 # 使用 Session State 的值進行檢查，確保穩定性
@@ -369,7 +375,7 @@ if "system_excel_path" not in st.session_state or not st.session_state["system_e
 # --- DEBUG: 輸出路徑檢查資訊 ---
 print("-" * 50, flush=True)
 print(f"DEBUG: Check Tesseract Path: [{st.session_state.get('tesseract_exe_path')}]", flush=True)
-print(f"DEBUG: Check Excel Path: [{st.session_state.get('system_excel_path')}]", flush=True)
+print(f"DEBUG: Check Excel Source: [{st.session_state.get('system_excel_source')}]", flush=True)
 print("-" * 50, flush=True)
 # -----------------------------
 
@@ -378,9 +384,19 @@ use_vision_ai = False # 初始化全域變數，避免 NameError
 tesseract_is_ok = os.path.exists(st.session_state["tesseract_exe_path"])
 excel_is_loaded = False
 
-if os.path.exists(st.session_state["system_excel_path"]):
+# 檢查 Excel 來源是否有效 (字串路徑需檢查存在，物件則假設有效)
+source_valid = False
+current_source = st.session_state.get("system_excel_source")
+if current_source:
+    if isinstance(current_source, str):
+        if os.path.exists(current_source):
+            source_valid = True
+    else:
+        source_valid = True
+
+if source_valid:
     # 嘗試預載入檢查 (利用 cache)
-    df_check = utils.load_system_data(st.session_state["system_excel_path"])
+    df_check = utils.load_system_data(st.session_state["system_excel_source"])
     if df_check is not None and not df_check.empty:
         excel_is_loaded = True
 
@@ -389,7 +405,7 @@ expand_config = not (tesseract_is_ok and excel_is_loaded)
 # --- 側邊欄：資料載入 ---
 with st.sidebar:
     # 載入資料 (使用 Session State 的值)
-    df_system = utils.load_system_data(st.session_state["system_excel_path"])
+    df_system = utils.load_system_data(st.session_state["system_excel_source"])
     
     selected_place = None
     
@@ -471,16 +487,37 @@ with st.sidebar:
         
         # Excel 資料來源設定
         st.markdown("#### 系統資料來源設定")
-        st.text_input("系統列管資料表 Excel 路徑", key="system_excel_path")
         
-        if not os.path.exists(st.session_state["system_excel_path"]):
-            st.error(f"❌ 找不到檔案：{st.session_state['system_excel_path']}")
+        # 1. 顯示目前使用的來源
+        curr_src = st.session_state.get("system_excel_source")
+        if curr_src:
+            if isinstance(curr_src, str):
+                 st.info(f"📂 目前使用預設資料: {os.path.basename(curr_src)}")
+            else:
+                 st.info(f"📂 目前使用上傳檔案: {curr_src.name}")
         else:
-            st.success("✅ Excel 檔案讀取成功")
-            if st.button("🔄 重新讀取 Excel"):
-                utils.load_system_data.clear()
-                st.cache_data.clear()
-                st.rerun()
+            st.warning("⚠️ 尚未設定資料來源")
+            
+        # 2. 提供上傳選項
+        uploaded_excel = st.file_uploader("更換系統資料 (Excel)", type=["xls", "xlsx"], key="uploader_system_excel")
+        
+        if uploaded_excel:
+            # 更新 session state
+            st.session_state["system_excel_source"] = uploaded_excel
+            st.success("✅ 已切換至上傳的檔案")
+            # 觸發重新整理以應用變更
+            st.rerun()
+            
+        # 3. 提供重置回預設值的按鈕
+        if default_excel_path and os.path.exists(default_excel_path):
+             if st.button("🔄 重置為系統預設資料"):
+                 st.session_state["system_excel_source"] = default_excel_path
+                 st.rerun()
+
+        if st.button("🔄 重新讀取資料"):
+            utils.load_system_data.clear()
+            st.cache_data.clear()
+            st.rerun()
     # 3. 除錯用：顯示欄位名稱
     if df_system is not None:
         with st.expander("3. 🔍 查看 Excel 欄位名稱 (除錯用)"):
