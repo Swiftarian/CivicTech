@@ -144,6 +144,9 @@ def login():
                     else:
                         st.error("❌ 帳號或密碼錯誤")
                         db_manager.add_log("unknown", "登入失敗", f"嘗試帳號: {username}")
+                except st.runtime.scriptrunner.script_runner.RerunException:
+                    # 允許 Streamlit 的 rerun 異常通過
+                    raise
                 except Exception as e:
                     st.error(f"❌ 登入失敗！請聯繫管理員。系統錯誤碼: {type(e).__name__}")
                     st.code(str(e))
@@ -580,6 +583,8 @@ if page == "案件審核":
                             db_manager.update_case_status(selected_case_id, new_status, review_notes)
                             st.success("✅ 案件狀態已更新！")
                             st.rerun()
+                        except st.runtime.scriptrunner.script_runner.RerunException:
+                            raise
                         except Exception as e:
                             st.error(f"更新失敗: {e}")
             
