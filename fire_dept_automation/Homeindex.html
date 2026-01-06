@@ -1,0 +1,476 @@
+<!DOCTYPE html>
+<html lang="zh-Hant">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>臺東服務媒合+ (Plus) | 智慧服務平台</title>
+
+    <!-- Google Fonts - Noto Sans TC -->
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Noto+Sans+TC:wght@400;500;700&display=swap" rel="stylesheet">
+
+    <!-- Font Awesome for Icons -->
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+
+    <style>
+        /* CSS 變數 - 輕鬆更換主題顏色 */
+        :root {
+            --primary-blue: #005A8D;
+            /* 臺東的深藍海洋 */
+            --accent-orange: #FF6700;
+            /* 溫暖的陽光橘 */
+            --light-gray: #f8f9fa;
+            --dark-gray: #343a40;
+            --white: #ffffff;
+            --shadow: 0 4px 15px rgba(0, 0, 0, 0.1);
+        }
+
+        /* 全局樣式 */
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        html {
+            scroll-behavior: smooth;
+        }
+
+        body {
+            font-family: 'Noto Sans TC', sans-serif;
+            line-height: 1.7;
+            color: var(--dark-gray);
+            background-color: var(--white);
+        }
+
+        .container {
+            max-width: 1100px;
+            margin: 0 auto;
+            padding: 0 2rem;
+        }
+
+        /* 動畫效果 */
+        .fade-in {
+            opacity: 0;
+            transform: translateY(30px);
+            transition: opacity 0.6s ease-out, transform 0.6s ease-out;
+        }
+
+        .fade-in.visible {
+            opacity: 1;
+            transform: translateY(0);
+        }
+
+        /* 導航列 */
+        .navbar {
+            position: fixed;
+            width: 100%;
+            top: 0;
+            left: 0;
+            background: rgba(255, 255, 255, 0.9);
+            backdrop-filter: blur(10px);
+            padding: 1rem 0;
+            z-index: 1000;
+            transition: box-shadow 0.3s ease;
+        }
+
+        .navbar.scrolled {
+            box-shadow: var(--shadow);
+        }
+
+        .navbar .container {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+
+        .navbar .logo {
+            font-size: 1.5rem;
+            font-weight: 700;
+            color: var(--primary-blue);
+        }
+
+        .navbar .nav-links {
+            display: flex;
+            list-style: none;
+        }
+
+        .navbar .nav-links li {
+            margin-left: 2rem;
+        }
+
+        .navbar a {
+            text-decoration: none;
+            color: var(--dark-gray);
+            font-weight: 500;
+            position: relative;
+            padding-bottom: 0.25rem;
+            transition: color 0.3s ease;
+        }
+
+        .navbar a:hover {
+            color: var(--accent-orange);
+        }
+
+        .navbar a::after {
+            content: '';
+            position: absolute;
+            width: 0;
+            height: 2px;
+            bottom: 0;
+            left: 50%;
+            background-color: var(--accent-orange);
+            transition: all 0.3s ease;
+        }
+
+        .navbar a:hover::after {
+            width: 100%;
+            left: 0;
+        }
+
+        /* 首頁橫幅 (Hero Section) */
+        .hero {
+            height: 100vh;
+            background: linear-gradient(rgba(0, 90, 141, 0.7), rgba(0, 0, 0, 0.4)), url('https://images.unsplash.com/photo-1593593394331-294158807355?q=80&w=2070') no-repeat center center/cover;
+            color: var(--white);
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            text-align: center;
+            padding: 0 1rem;
+        }
+
+        .hero-content h1 {
+            font-size: 3.5rem;
+            margin-bottom: 1rem;
+            font-weight: 700;
+        }
+
+        .hero-content p {
+            font-size: 1.25rem;
+            max-width: 600px;
+            margin: 0 auto 2rem auto;
+            font-weight: 400;
+        }
+
+        .btn {
+            display: inline-block;
+            padding: 0.8rem 2rem;
+            border-radius: 50px;
+            text-decoration: none;
+            font-weight: 700;
+            transition: all 0.3s ease;
+        }
+
+        .btn-primary {
+            background: var(--accent-orange);
+            color: var(--white);
+            border: 2px solid var(--accent-orange);
+        }
+
+        .btn-primary:hover {
+            background: transparent;
+            color: var(--accent-orange);
+        }
+
+        /* 內容區塊通用樣式 */
+        section {
+            padding: 6rem 0;
+        }
+
+        .section-title {
+            text-align: center;
+            margin-bottom: 4rem;
+        }
+
+        .section-title h2 {
+            font-size: 2.5rem;
+            margin-bottom: 1rem;
+            color: var(--primary-blue);
+        }
+
+        .section-title .subtitle {
+            font-size: 1.1rem;
+            color: #6c757d;
+        }
+
+        /* 關於我們 (How it works) */
+        #about {
+            background: var(--light-gray);
+        }
+
+        .about-content {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 4rem;
+            align-items: center;
+        }
+
+        .about-text h3 {
+            font-size: 1.8rem;
+            color: var(--accent-orange);
+            margin-bottom: 1rem;
+        }
+
+        .about-diagram {
+            text-align: center;
+            padding: 2rem;
+            background: var(--white);
+            border-radius: 15px;
+            box-shadow: var(--shadow);
+        }
+
+        .diagram-item {
+            font-size: 1.2rem;
+            font-weight: 500;
+            margin: 1rem 0;
+        }
+
+        .diagram-icon {
+            font-size: 2rem;
+            color: var(--primary-blue);
+            margin: 0.5rem 0;
+        }
+
+        /* 服務項目 */
+        .services-grid {
+            display: grid;
+            grid-template-columns: repeat(3, 1fr);
+            gap: 2rem;
+        }
+
+        .service-card {
+            display: block;
+            text-decoration: none;
+            color: inherit;
+            background: var(--white);
+            padding: 2.5rem 2rem;
+            text-align: center;
+            border-radius: 15px;
+            box-shadow: var(--shadow);
+            transition: transform 0.3s ease, box-shadow 0.3s ease;
+            cursor: pointer;
+        }
+
+        .service-card:hover {
+            transform: translateY(-10px);
+            box-shadow: 0 10px 25px rgba(0, 0, 0, 0.15);
+        }
+
+        .service-card .icon {
+            font-size: 3.5rem;
+            color: var(--accent-orange);
+            margin-bottom: 1.5rem;
+        }
+
+        .service-card h3 {
+            font-size: 1.5rem;
+            margin-bottom: 1rem;
+            color: var(--primary-blue);
+        }
+
+        /* 行動呼籲 (Call to Action) */
+        #cta {
+            background: var(--primary-blue);
+            color: var(--white);
+            text-align: center;
+        }
+
+        #cta .section-title h2 {
+            color: var(--white);
+        }
+
+        #cta .section-title .subtitle {
+            color: rgba(255, 255, 255, 0.8);
+        }
+
+        .cta-buttons {
+            display: flex;
+            justify-content: center;
+            gap: 1.5rem;
+            flex-wrap: wrap;
+        }
+
+        .btn-light {
+            background: var(--white);
+            color: var(--primary-blue);
+            border: 2px solid var(--white);
+        }
+
+        .btn-light:hover {
+            background: transparent;
+            color: var(--white);
+        }
+
+        /* 頁尾 */
+        footer {
+            background: var(--dark-gray);
+            color: var(--light-gray);
+            text-align: center;
+            padding: 2rem 0;
+        }
+
+        /* 響應式設計 */
+        @media (max-width: 768px) {
+            .hero-content h1 {
+                font-size: 2.5rem;
+            }
+
+            .section-title h2 {
+                font-size: 2rem;
+            }
+
+            .about-content,
+            .services-grid {
+                grid-template-columns: 1fr;
+            }
+
+            .navbar .nav-links {
+                display: none;
+                /* 在手機版隱藏導覽列，或改為漢堡選單 */
+            }
+        }
+    </style>
+</head>
+
+<body>
+
+    <!-- 導航列 -->
+    <header class="navbar">
+        <div class="container">
+            <div class="logo">臺東服務媒合+</div>
+            <ul class="nav-links">
+                <li><a href="#hero">首頁</a></li>
+                <li><a href="#about">運作方式</a></li>
+                <li><a href="#services">核心服務</a></li>
+                <li><a href="#cta">登入平台</a></li>
+            </ul>
+        </div>
+    </header>
+
+    <main>
+        <!-- 首頁橫幅 -->
+        <section id="hero">
+            <div class="hero-content fade-in">
+                <h1>臺東服務媒合+ (Plus)</h1>
+                <p>一個強大的智慧管理平台，串連所有服務；一條熟悉的 LINE，傳遞所有溫暖。整合照護、防災與教育，打造最高效的服務生態系。</p>
+                <a href="#services" class="btn btn-primary">探索我們的服務</a>
+            </div>
+        </section>
+
+        <!-- 運作方式 -->
+        <section id="about">
+            <div class="container">
+                <div class="section-title fade-in">
+                    <h2>平台為本，LINE為用</h2>
+                    <p class="subtitle">我們打造了一個分工明確、高效協作的雙軌服務模式。</p>
+                </div>
+                <div class="about-content">
+                    <div class="about-text fade-in" style="transition-delay: 0.2s;">
+                        <h3>強大的管理中樞</h3>
+                        <p>所有複雜的服務流程、人力媒合、案件管理與數據分析，都在「服務媒合+」網站平台上完成。這是我們服務的大腦，確保所有流程都有條不紊、紀錄完整。</p>
+                        <br>
+                        <h3>輕量化的溝通渠道</h3>
+                        <p>所有重要的任務通知、進度更新、預約提醒，都會透過您最熟悉的LINE即時傳遞。點擊訊息中的連結，即可無縫接軌至平台進行操作。這是我們服務的神經網路，確保訊息不漏接。</p>
+                    </div>
+                    <div class="about-diagram fade-in" style="transition-delay: 0.4s;">
+                        <div class="diagram-item">Web平台 (管理與操作)</div>
+                        <div class="diagram-icon"><i class="fas fa-arrows-alt-v"></i></div>
+                        <div class="diagram-item">LINE (即時通知與溝通)</div>
+                    </div>
+                </div>
+            </div>
+        </section>
+
+        <!-- 核心服務 -->
+        <section id="services">
+            <div class="container">
+                <div class="section-title fade-in">
+                    <h2>三大核心服務</h2>
+                    <p class="subtitle">率先整合社區最重要的三大服務，建立可複製的成功模式。</p>
+                </div>
+                <div class="services-grid">
+                    <a href="https://1859516f3de3.ngrok-free.app/community_meal_delivery" class="service-card fade-in"
+                        style="transition-delay: 0.1s;">
+                        <div class="icon"><i class="fas fa-hands-helping"></i></div>
+                        <h3>社區互助送餐</h3>
+                        <p>媒合社區志工與在地車隊，將溫暖的餐點準時送達每個需要的角落。系統化管理，讓愛心傳遞更有效率。</p>
+                    </a>
+                    <a href="https://1859516f3de3.ngrok-free.app/public_application_and_inquiry"
+                        class="service-card fade-in" style="transition-delay: 0.3s;">
+                        <div class="icon"><i class="fas fa-fire-extinguisher"></i></div>
+                        <h3>簡易消防自主申報</h3>
+                        <p>消防安全設備檢修線上申報系統，民眾可快速上傳申報書並追蹤案件進度，數位化管理讓審核更有效率。</p>
+                    </a>
+                    <a href="https://1859516f3de3.ngrok-free.app/disaster_prevention_museum_booking"
+                        class="service-card fade-in" style="transition-delay: 0.5s;">
+                        <div class="icon"><i class="fas fa-school"></i></div>
+                        <h3>防災館智慧導覽</h3>
+                        <p>民眾線上預約參訪，平台自動媒合有空的導覽員。從預約、派案到提醒，一條龍服務，確保每場導覽順利進行。</p>
+                    </a>
+                </div>
+            </div>
+        </section>
+
+        <!-- 行動呼籲 -->
+        <section id="cta">
+            <div class="container">
+                <div class="section-title fade-in">
+                    <h2>加入我們，共創美好臺東</h2>
+                    <p class="subtitle">無論您是需要服務的民眾、熱心的志工，或是縣府夥伴，都歡迎登入平台。</p>
+                </div>
+                <div class="cta-buttons fade-in" style="transition-delay: 0.2s;">
+                    <a href="#" class="btn btn-light">我是民眾 / 預約者</a>
+                    <a href="#" class="btn btn-light">我是志工 / 服務提供者</a>
+                    <a href="#" class="btn btn-light">我是管理者</a>
+                </div>
+            </div>
+        </section>
+    </main>
+
+    <!-- 頁尾 -->
+    <footer>
+        <div class="container">
+            <p>© 2024 臺東縣政府 | 臺東服務媒合+ (Plus) 專案</p>
+        </div>
+    </footer>
+
+    <script>
+        // JavaScript for Navbar Scroll Effect
+        const navbar = document.querySelector('.navbar');
+        window.addEventListener('scroll', () => {
+            if (window.scrollY > 50) {
+                navbar.classList.add('scrolled');
+            } else {
+                navbar.classList.remove('scrolled');
+            }
+        });
+
+        // JavaScript for Fade-in Animation on Scroll
+        const faders = document.querySelectorAll('.fade-in');
+        const appearOptions = {
+            threshold: 0.2, // 元素進入可視區域 20% 時觸發
+            rootMargin: "0px 0px -50px 0px" // 向上偏移50px
+        };
+
+        const appearOnScroll = new IntersectionObserver(function (entries, appearOnScroll) {
+            entries.forEach(entry => {
+                if (!entry.isIntersecting) {
+                    return;
+                } else {
+                    entry.target.classList.add('visible');
+                    appearOnScroll.unobserve(entry.target);
+                }
+            });
+        }, appearOptions);
+
+        faders.forEach(fader => {
+            appearOnScroll.observe(fader);
+        });
+
+    </script>
+</body>
+
+</html>

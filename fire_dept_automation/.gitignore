@@ -3,7 +3,6 @@
 # 1. Secrets (Critical)
 .streamlit/secrets.toml
 *.env
-!.env.example
 
 # 2. Database & Data
 *.db
@@ -43,8 +42,10 @@ ENV/
 Thumbs.db
 desktop.ini
 
-# Logs
+# Logs & Test Outputs
 *.log
+*_output.txt
+*_result.txt
 
 # Streamlit
 .st_cache/
@@ -53,12 +54,17 @@ desktop.ini
 .pytest_cache/
 .coverage
 htmlcov/
-test_output*.txt
-*_output.txt
-health_check*.txt
 
 # Temporary Files
 temp_*.png
 temp_*.jpg
 temp_*.pdf
-patch_*.py
+
+# Backup Files
+*.bak
+*.backup
+*~
+
+# Archive folders (old code)
+_archive/
+.archive_*

@@ -356,7 +356,6 @@ feat: 實作強制拍照驗證功能
 ## 👥 貢獻者
 
 - **PM/開發**：臺東縣消防局預防調查科
-- **技術支援**：Google Deepmind (Antigravity AI)
 - **框架**：Streamlit
 
 ---

@@ -17,13 +17,17 @@ import utils
 # 設定頁面配置
 st.set_page_config(layout="wide", page_title=f"{cfg.AGENCY_NAME}檢修申報書檢核比對系統")
 
+# 載入中文側邊欄
+import sidebar_nav
+sidebar_nav.render_chinese_sidebar()
+
 # ==========================================
 # 🔐 登入門禁檢查 (CRITICAL: 必須在所有其他操作之前)
 # ==========================================
 if "logged_in" not in st.session_state or not st.session_state.logged_in:
     st.warning("⚠️ 此頁面僅限消防局同仁使用，請先進行管理者登入。")
     st.info("正在將您導向至登入頁面...")
-    st.page_link("pages/4_案件審核.py", label="🔐 前往登入頁面", icon="🔐")
+    st.page_link("pages/4_case_review.py", label="🔐 前往登入頁面", icon="🔐")
     st.stop()  # 阻止下方程式碼執行
 
 # 顯示登入使用者資訊
@@ -184,22 +188,65 @@ VALID_EQUIPMENT_LIST = sorted([
 def normalize_equipment_str(text):
     """
     將輸入的文字 (OCR 或 系統資料) 進行模糊比對，
-    只保留標準設備清單中的項目，並以頓號分隔。
+    只保留標準設備清單中**已勾選**的項目，並以頓號分隔。
+    
+    判斷邏輯：
+    1. 如果設備名稱附近有頁碼（如 "2-1", "2-2"），視為已勾選
+    2. 如果設備名稱前有勾選符號（☑, ✓, ■, √），視為已勾選
+    3. 如果設備名稱後有數字（表示數量或頁碼），視為已勾選
     """
     if not text or not isinstance(text, str):
         return ""
     
     found_items = []
-    # 為了避免重複匹配 (例如 "火警自動警報設備" 包含 "警報設備")
-    # 我們已經將列表按長度排序。
-    # 但這裡我們採取簡單策略：只要字串中有出現該設備名稱，就列入。
-    # 為了避免重複 (例如同一個詞出現兩次)，使用 set 或檢查是否存在
     
     # 先移除常見干擾字元，方便比對
-    clean_text = text.replace(" ", "").replace("　", "").replace("\n", "")
+    clean_text = text.replace(" ", "").replace("　", "")
+    
+    # 將文字按行分割，方便逐行分析
+    lines = clean_text.split("\n")
+    
+    # 定義勾選符號
+    check_symbols = ['☑', '✓', '■', '√', '✔', '●', '☐']  # 注意：☐ 是空方框，也可能被 OCR 誤讀
     
     for item in VALID_EQUIPMENT_LIST:
-        if item in clean_text:
+        item_found = False
+        
+        # 策略 1: 逐行掃描，檢查設備名稱後是否有頁碼
+        for line in lines:
+            if item in line or item.replace("設備", "") in line:
+                # 檢查這行是否有頁碼格式 (如 "2-1", "2-2", "2-13" 等)
+                # 頁碼通常是 "數字-數字" 的格式
+                if re.search(r'\d+-\d+', line):
+                    item_found = True
+                    break
+                # 也檢查純數字 (如 "___7" 表示第 7 頁)
+                if re.search(r'[._]{2,}\s*\d+', line):
+                    item_found = True
+                    break
+                # 檢查是否有勾選符號在項目前面
+                for symbol in check_symbols:
+                    if symbol in line and line.find(symbol) < line.find(item) if item in line else False:
+                        item_found = True
+                        break
+                if item_found:
+                    break
+        
+        # 策略 2: 如果還沒找到，做整體文字搜尋
+        if not item_found:
+            # 使用正則表達式搜尋 "設備名稱 + 任意字元 + 頁碼"
+            pattern = re.escape(item) + r'.*?(\d+-\d+)'
+            if re.search(pattern, clean_text):
+                item_found = True
+            
+            # 也檢查 "設備檢查表" 格式 (如 "滅火器檢查表 2-1")
+            table_name = item.replace("設備", "") + "檢查表"
+            if table_name in clean_text:
+                pattern2 = re.escape(table_name) + r'.*?(\d+-\d+)'
+                if re.search(pattern2, clean_text):
+                    item_found = True
+        
+        if item_found and item not in found_items:
             found_items.append(item)
             
     return "、".join(found_items)
@@ -359,15 +406,9 @@ st.markdown("""
 if "tesseract_exe_path" not in st.session_state or not st.session_state["tesseract_exe_path"]:
     st.session_state["tesseract_exe_path"] = utils.get_default_tesseract_path()
 
-# Excel 路徑初始化 (從 config 讀取預設值)
-system_source = None
-default_excel_path = cfg.CONFIG.get("ocr", {}).get("default_excel_path")
-
-if "system_excel_source" not in st.session_state:
-    if default_excel_path and os.path.exists(default_excel_path):
-         st.session_state["system_excel_source"] = default_excel_path
-    else:
-         st.session_state["system_excel_source"] = None
+# Excel 路徑初始化
+if "system_excel_path" not in st.session_state or not st.session_state["system_excel_path"]:
+    st.session_state["system_excel_path"] = utils.get_default_excel_path()
 
 # 檢查狀態以決定 Expander 是否展開
 # 使用 Session State 的值進行檢查，確保穩定性
@@ -375,7 +416,7 @@ if "system_excel_source" not in st.session_state:
 # --- DEBUG: 輸出路徑檢查資訊 ---
 print("-" * 50, flush=True)
 print(f"DEBUG: Check Tesseract Path: [{st.session_state.get('tesseract_exe_path')}]", flush=True)
-print(f"DEBUG: Check Excel Source: [{st.session_state.get('system_excel_source')}]", flush=True)
+print(f"DEBUG: Check Excel Path: [{st.session_state.get('system_excel_path')}]", flush=True)
 print("-" * 50, flush=True)
 # -----------------------------
 
@@ -384,19 +425,9 @@ use_vision_ai = False # 初始化全域變數，避免 NameError
 tesseract_is_ok = os.path.exists(st.session_state["tesseract_exe_path"])
 excel_is_loaded = False
 
-# 檢查 Excel 來源是否有效 (字串路徑需檢查存在，物件則假設有效)
-source_valid = False
-current_source = st.session_state.get("system_excel_source")
-if current_source:
-    if isinstance(current_source, str):
-        if os.path.exists(current_source):
-            source_valid = True
-    else:
-        source_valid = True
-
-if source_valid:
+if os.path.exists(st.session_state["system_excel_path"]):
     # 嘗試預載入檢查 (利用 cache)
-    df_check = utils.load_system_data(st.session_state["system_excel_source"])
+    df_check = utils.load_system_data(st.session_state["system_excel_path"])
     if df_check is not None and not df_check.empty:
         excel_is_loaded = True
 
@@ -405,7 +436,7 @@ expand_config = not (tesseract_is_ok and excel_is_loaded)
 # --- 側邊欄：資料載入 ---
 with st.sidebar:
     # 載入資料 (使用 Session State 的值)
-    df_system = utils.load_system_data(st.session_state["system_excel_source"])
+    df_system = utils.load_system_data(st.session_state["system_excel_path"])
     
     selected_place = None
     
@@ -444,39 +475,21 @@ with st.sidebar:
     
     # 2. 設定與資料來源 (使用 Expander 包覆)
     with st.expander("2. 設定與資料來源", expanded=expand_config):
-        # Tesseract 設定 (移除使用者輸入，改為自動偵測與設定檔讀取)
+        # Tesseract 設定
         st.markdown("#### OCR 辨識引擎設定")
+        user_input_path = st.text_input("Tesseract 執行檔路徑", key="tesseract_exe_path")
         
-        tesseract_path = None
-        
-        # 1. 嘗試從設定檔讀取
-        config_path = cfg.CONFIG.get("ocr", {}).get("default_tesseract_path")
-        if config_path and os.path.exists(config_path):
-            tesseract_path = config_path
+        # 智慧修正路徑
+        tesseract_path = user_input_path
+        if os.path.isdir(user_input_path):
+            tesseract_path = os.path.join(user_input_path, "tesseract.exe")
+            st.info(f"💡 已自動修正路徑為：{tesseract_path}")
             
-        # 2. 如果設定檔的路徑不存在，嘗試自動偵測
-        if not tesseract_path:
-            possible_paths = [
-                r"C:\Program Files\Tesseract-OCR\tesseract.exe",
-                r"D:\Program Files\Tesseract-OCR\tesseract.exe",
-                r"E:\Program Files\Tesseract-OCR\tesseract.exe",
-                r"C:\Program Files (x86)\Tesseract-OCR\tesseract.exe",
-                r"D:\Program Files (x86)\Tesseract-OCR\tesseract.exe"
-            ]
-            for p in possible_paths:
-                if os.path.exists(p):
-                    tesseract_path = p
-                    break
-        
-        if tesseract_path and os.path.exists(tesseract_path):
-             st.success(f"✅ 已偵測到 Tesseract: {tesseract_path}")
-             # 更新 session state 以供後續使用
-             st.session_state["tesseract_exe_path"] = tesseract_path
+        if not os.path.exists(tesseract_path):
+            st.error(f"❌ 找不到檔案：{tesseract_path}")
         else:
-             st.error("❌ 找不到 Tesseract 執行檔！\n請安裝 Tesseract-OCR 或在 config.toml 中設定正確路徑。")
-             # Fallback
-             st.session_state["tesseract_exe_path"] = "tesseract.exe"
-
+            st.success("✅ Tesseract 路徑正確")
+            
         # 檢查語言包
         if not os.path.exists(os.path.join(LOCAL_TESSDATA_DIR, "chi_tra.traineddata")):
             st.warning("⚠️ 缺少繁體中文語言包")
@@ -487,37 +500,16 @@ with st.sidebar:
         
         # Excel 資料來源設定
         st.markdown("#### 系統資料來源設定")
+        st.text_input("系統列管資料表 Excel 路徑", key="system_excel_path")
         
-        # 1. 顯示目前使用的來源
-        curr_src = st.session_state.get("system_excel_source")
-        if curr_src:
-            if isinstance(curr_src, str):
-                 st.info(f"📂 目前使用預設資料: {os.path.basename(curr_src)}")
-            else:
-                 st.info(f"📂 目前使用上傳檔案: {curr_src.name}")
+        if not os.path.exists(st.session_state["system_excel_path"]):
+            st.error(f"❌ 找不到檔案：{st.session_state['system_excel_path']}")
         else:
-            st.warning("⚠️ 尚未設定資料來源")
-            
-        # 2. 提供上傳選項
-        uploaded_excel = st.file_uploader("更換系統資料 (Excel)", type=["xls", "xlsx"], key="uploader_system_excel")
-        
-        if uploaded_excel:
-            # 更新 session state
-            st.session_state["system_excel_source"] = uploaded_excel
-            st.success("✅ 已切換至上傳的檔案")
-            # 觸發重新整理以應用變更
-            st.rerun()
-            
-        # 3. 提供重置回預設值的按鈕
-        if default_excel_path and os.path.exists(default_excel_path):
-             if st.button("🔄 重置為系統預設資料"):
-                 st.session_state["system_excel_source"] = default_excel_path
-                 st.rerun()
-
-        if st.button("🔄 重新讀取資料"):
-            utils.load_system_data.clear()
-            st.cache_data.clear()
-            st.rerun()
+            st.success("✅ Excel 檔案讀取成功")
+            if st.button("🔄 重新讀取 Excel"):
+                utils.load_system_data.clear()
+                st.cache_data.clear()
+                st.rerun()
     # 3. 除錯用：顯示欄位名稱
     if df_system is not None:
         with st.expander("3. 🔍 查看 Excel 欄位名稱 (除錯用)"):
@@ -717,7 +709,7 @@ with col1:
                 if images:
                     # 先顯示圖片預覽
                     for i, img in enumerate(images):
-                        st.image(img, caption=f"第 {i+1} 頁 (預覽)", use_container_width=True)
+                        st.image(img, caption=f"第 {i+1} 頁 (預覽)", use_column_width=True)
                     
                     # 2. 執行 OCR
                     with st.spinner("🔍 正在進行 OCR 辨識中 (請稍候)..."):
@@ -875,6 +867,7 @@ with col1:
                             '場所名稱': clean_ai_value(ai_result.get('place_name')),
                             '場所地址': clean_ai_value(ai_result.get('address')),
                             '管理權人': clean_ai_value(ai_result.get('management_person')),
+                            '場所電話': clean_ai_value(ai_result.get('phone_number')),
                             '消防設備種類': process_equipment_list(ai_result.get('equipment_list', []))
                         }
                         
@@ -884,8 +877,18 @@ with col1:
                             extracted_data['toc_page_num'] = ocr_info_for_toc['toc_page_num']
                         
                         # --- Fallback 機制 ---
-                        if not extracted_data.get('場所名稱'):
-                            st.warning("⚠️ AI 未能識別場所名稱，嘗試使用規則提取補救...")
+                        # 如果 AI 未能識別場所名稱或消防設備種類，使用 OCR 規則提取補救
+                        needs_fallback = (
+                            not extracted_data.get('場所名稱') or 
+                            not extracted_data.get('消防設備種類')
+                        )
+                        
+                        if needs_fallback:
+                            if not extracted_data.get('場所名稱'):
+                                st.warning("⚠️ AI 未能識別場所名稱，嘗試使用規則提取補救...")
+                            if not extracted_data.get('消防設備種類'):
+                                st.warning("⚠️ AI 未能識別消防設備種類，嘗試使用 OCR 規則提取補救...")
+                            
                             fallback_data = extract_info_from_ocr(page_one_text, pages_text)
                             for key, val in fallback_data.items():
                                 if not extracted_data.get(key):
@@ -908,7 +911,7 @@ with col1:
 
             # 顯示圖片與 OCR 結果 (這是 Rerun 後或 Cache Hit 會看到的)
             for i, img in enumerate(cached_images):
-                st.image(img, caption=f"第 {i+1} 頁", use_container_width=True)
+                st.image(img, caption=f"第 {i+1} 頁", use_column_width=True)
                 with st.expander(f"第 {i+1} 頁 OCR 文字內容 (除錯用)", expanded=False):
 
                     # 顯示每一頁的前30個字和完整內容
@@ -940,129 +943,161 @@ with col1:
 
 auto_matched_place = None
 if df_system is not None and ocr_place_name:
-    # 嘗試自動搜尋
-    # 1. 完全符合
-    match = df_system[df_system['場所名稱'] == ocr_place_name]
+    # === 改進：先清理 OCR 場所名稱中的空格 ===
+    clean_ocr_place = ocr_place_name.replace(" ", "").replace("　", "").replace("台", "臺")
+    
+    print(f"🔍 DEBUG: Attempting auto-match. OCR place name: [{ocr_place_name}] -> cleaned: [{clean_ocr_place}]")
+    print(f"🔍 DEBUG: df_system has {len(df_system)} rows")
+    
+    # 1. 嘗試完全符合（先使用清理後的名稱）
+    # 為系統資料建立清理後的比對欄位
+    df_system['_clean_name'] = df_system['場所名稱'].astype(str).str.replace(" ", "").str.replace("　", "").str.replace("台", "臺")
+    
+    match = df_system[df_system['_clean_name'] == clean_ocr_place]
     if not match.empty:
-        auto_matched_place = ocr_place_name
+        auto_matched_place = match.iloc[0]['場所名稱']  # 使用原始名稱
         target_row = match.iloc[0]
+        print(f"✅ DEBUG: Exact match found! place: [{auto_matched_place}], equipment: [{target_row.get('消防安全設備', 'N/A')}]")
     else:
-        # 2. 模糊/包含搜尋 (去除台/臺差異)
-        clean_ocr = ocr_place_name.replace("台", "臺").replace(" ", "")
-        
-        # 搜尋系統資料中是否有包含此名稱的
-        # 這裡做一個簡單的遍歷搜尋
+        # 2. 模糊/包含搜尋
         for idx, row in df_system.iterrows():
             sys_name = str(row['場所名稱'])
-            clean_sys = sys_name.replace("台", "臺").replace(" ", "")
+            clean_sys = row['_clean_name']
             
-            if clean_ocr and (clean_ocr in clean_sys or clean_sys in clean_ocr):
+            if clean_ocr_place and (clean_ocr_place in clean_sys or clean_sys in clean_ocr_place):
                 auto_matched_place = sys_name
                 target_row = row
+                print(f"✅ DEBUG: Fuzzy match found! place: [{auto_matched_place}], equipment: [{target_row.get('消防安全設備', 'N/A')}]")
                 break
+    
+    # 清理臨時欄位
+    if '_clean_name' in df_system.columns:
+        df_system.drop('_clean_name', axis=1, inplace=True)
 
 # 如果沒有自動比對到，則使用手動選擇的
 if target_row is None and selected_place and df_system is not None:
-    target_row = df_system[df_system['場所名稱'] == selected_place].iloc[0]
+    match = df_system[df_system['場所名稱'] == selected_place]
+    if not match.empty:
+        target_row = match.iloc[0]
+
+# 即使自動比對成功,若手動選擇了不同場所,優先使用手動選擇
+if selected_place and df_system is not None and auto_matched_place != selected_place:
+    match = df_system[df_system['場所名稱'] == selected_place]
+    if not match.empty:
+        target_row = match.iloc[0]
 
 # 右欄：系統列管資料
 with col2:
     # --- 審核區塊 (置頂) ---
     st.markdown("### 👮 案件審核")
-    review_col1, review_col2 = st.columns([2, 3])
-    with review_col1:
-        default_email = target_case['applicant_email'] if target_case else ""
-        applicant_email = st.text_input("申請人信箱", value=default_email, placeholder="example@email.com")
-    with review_col2:
-        st.write("審核結果通知：")
+    
+    # 申請人信箱
+    default_email = target_case['applicant_email'] if target_case else ""
+    applicant_email = st.text_input("申請人信箱", value=default_email, placeholder="example@email.com")
+    
+    # 審核結果通知
+    st.write("審核結果通知：")
+    
+    # 自訂訊息輸入框
+    custom_message = st.text_area(
+        "給申請人的訊息",
+        placeholder="請在此輸入要附加給申請人的訊息（選填）...",
+        height=100,
+        help="此訊息將會附加在通知郵件中發送給申請人"
+    )
+    
+    # 取得 Email 設定
+    sender_email = st.secrets["email"].get("sender_email", "") if "email" in st.secrets else ""
+    sender_password = st.secrets["email"].get("sender_password", "") if "email" in st.secrets else ""
+    
+    # 定義發送邏輯
+    def handle_review(status, subject_prefix, msg_template, custom_msg=""):
+        if not applicant_email:
+            st.warning("請先輸入申請人信箱")
+            return
         
-        # 狀態選擇 UI (已移除，改由下方按鈕直接觸發)
-        # current_status = target_case['status'] if target_case else "待分案"
-        # status_options = ["待分案", "審核中", "可領件", "已退件", "待補件"]
-        # ...
-        
-        b1, b2, b3 = st.columns(3)
-        
-        # 取得 Email 設定
-        sender_email = st.secrets["email"].get("sender_email", "") if "email" in st.secrets else ""
-        sender_password = st.secrets["email"].get("sender_password", "") if "email" in st.secrets else ""
-        
-        # 定義發送邏輯
-        def handle_review(status, subject_prefix, msg_template):
-            if not applicant_email:
-                st.warning("請先輸入申請人信箱")
-                return
+        # 顯示 UI 訊息 (模擬)
+        if status == "success":
+            st.success(f"已產生【{subject_prefix}】通知")
+            color_theme = "#38a169" # Green
+        elif status == "warning":
+            st.warning(f"已產生【{subject_prefix}】通知")
+            color_theme = "#d97706" # Yellow/Orange
+        else:
+            st.error(f"已產生【{subject_prefix}】通知")
+            color_theme = "#e53e3e" # Red
             
-            # 顯示 UI 訊息 (模擬)
-            if status == "success":
-                st.success(f"已產生【{subject_prefix}】通知")
-                color_theme = "#38a169" # Green
-            elif status == "warning":
-                st.warning(f"已產生【{subject_prefix}】通知")
-                color_theme = "#d97706" # Yellow/Orange
-            else:
-                st.error(f"已產生【{subject_prefix}】通知")
-                color_theme = "#e53e3e" # Red
+        # 嘗試發送真實郵件
+        if sender_email and sender_password:
+            with st.spinner("📧 正在發送郵件..."):
+                subject = f"【消防局通知】案件審核結果：{subject_prefix}"
                 
-            # 嘗試發送真實郵件
-            if sender_email and sender_password:
-                with st.spinner("📧 正在發送郵件..."):
-                    subject = f"【消防局通知】案件審核結果：{subject_prefix}"
-                    
-                    # 使用 HTML 模板生成內容
-                    content_html = f"""
-                    <p>您的消防安全設備檢修申報案件審核結果為：<strong>{subject_prefix}</strong>。</p>
-                    <p>{msg_template}</p>
-                    <p>若有任何疑問，請聯繫本局預防調查科。</p>
+                # 組合自訂訊息
+                custom_msg_html = ""
+                if custom_msg and custom_msg.strip():
+                    # 將換行轉為 HTML 換行
+                    formatted_msg = custom_msg.strip().replace("\n", "<br>")
+                    custom_msg_html = f"""
+                    <div style="background-color: #f5f5f5; border-left: 4px solid #4a90d9; padding: 15px; margin: 15px 0;">
+                        <p style="margin: 0; font-weight: bold; color: #333;">📝 承辦人備註：</p>
+                        <p style="margin: 10px 0 0 0; color: #555;">{formatted_msg}</p>
+                    </div>
                     """
-                    
-                    # 呼叫 utils.generate_email_html 生成完整 HTML
-                    # 假設申請人姓名為 "申請人" (若有真實姓名可替換)
-                    # sqlite3.Row 物件沒有 .get() 方法，需轉換為 dict 或使用 key 存取
-                    case_dict = dict(target_case) if target_case else {}
-                    recipient_name = case_dict.get('applicant_name', '申請人')
-                    
-                    full_html_body = utils.generate_email_html(
-                        title=subject,
-                        recipient_name=recipient_name,
-                        content_html=content_html,
-                        color_theme=color_theme
-                    )
-                    
-                    # 發送郵件 (注意：send_email 需支援 HTML)
-                    # 這裡假設 utils.send_email 或本檔案的 send_email 已更新支援 HTML
-                    # 由於本檔案上方有定義 send_email，我們需要確認它是否支援 HTML
-                    # 根據之前的觀察，本檔案的 send_email 使用 MIMEText(body, 'plain')，需要修改為 'html'
-                    
-                    # 為了確保使用 HTML，我們直接呼叫 utils.send_email (如果有的話) 或是修改本檔案的 send_email
-                    # 這裡我們選擇呼叫 utils.send_email，因為 utils.py 中已經有支援 HTML 的版本
-                    
-                    success, msg = utils.send_email(sender_email, sender_password, applicant_email, subject, full_html_body)
-                    
-                    if success:
-                        st.toast(f"✅ 郵件已成功發送至 {applicant_email}")
-                    else:
-                        st.error(msg)
-            else:
-                st.info("💡 提示：若需發送真實郵件，請至側邊欄設定寄件者資訊。")
+                
+                # 使用 HTML 模板生成內容
+                content_html = f"""
+                <p>您的消防安全設備檢修申報案件審核結果為：<strong>{subject_prefix}</strong>。</p>
+                <p>{msg_template}</p>
+                {custom_msg_html}
+                <p>若有任何疑問，請聯繫本局預防調查科。</p>
+                """
+                
+                # 呼叫 utils.generate_email_html 生成完整 HTML
+                case_dict = dict(target_case) if target_case else {}
+                recipient_name = case_dict.get('applicant_name', '申請人')
+                
+                full_html_body = utils.generate_email_html(
+                    title=subject,
+                    recipient_name=recipient_name,
+                    content_html=content_html,
+                    color_theme=color_theme
+                )
+                
+                success, msg = utils.send_email(sender_email, sender_password, applicant_email, subject, full_html_body)
+                
+                if success:
+                    st.toast(f"✅ 郵件已成功發送至 {applicant_email}")
+                else:
+                    st.error(msg)
+        else:
+            st.info("💡 提示：若需發送真實郵件，請至側邊欄設定寄件者資訊。")
 
-        if b1.button("✅ 合格"):
-            db_manager.update_case_status(target_case['id'], "可領件")
-            st.cache_data.clear()
-            handle_review("success", "合格", "恭喜您，案件已審核通過。")
-            st.rerun()
-        
-        if b2.button("⚠️ 補件"):
-            db_manager.update_case_status(target_case['id'], "待補件")
-            st.cache_data.clear()
-            handle_review("warning", "補件", "請儘速補齊相關文件。")
-            st.rerun()
+    # 按鈕區 (移出巢狀 columns)
+    b1, b2, b3 = st.columns(3)
+    
+    with b1:
+        if st.button("✅ 合格", use_container_width=True):
+            if target_case:
+                db_manager.update_case_status(target_case['id'], "可領件")
+                st.cache_data.clear()
+                handle_review("success", "合格", "恭喜您，案件已審核通過。", custom_message)
+                st.rerun()
+    
+    with b2:
+        if st.button("⚠️ 補件", use_container_width=True):
+            if target_case:
+                db_manager.update_case_status(target_case['id'], "待補件")
+                st.cache_data.clear()
+                handle_review("warning", "補件", "請儘速補齊相關文件。", custom_message)
+                st.rerun()
 
-        if b3.button("🚫 退件"):
-            db_manager.update_case_status(target_case['id'], "已退件")
-            st.cache_data.clear()
-            handle_review("error", "退件", "案件已被退回，請修正後重新申報。")
-            st.rerun()
+    with b3:
+        if st.button("🚫 退件", use_container_width=True):
+            if target_case:
+                db_manager.update_case_status(target_case['id'], "已退件")
+                st.cache_data.clear()
+                handle_review("error", "退件", "案件已被退回，請修正後重新申報。", custom_message)
+                st.rerun()
     
     st.divider()
     
@@ -1097,20 +1132,17 @@ with col2:
         }
 
         # 檢查場所名稱是否一致 (如果是手動選擇才需要警告，自動對應通常就是一致的)
-        # 預設不顯示系統資料，直到有上傳檔案且比對狀態允許
-        show_system_data = False
+        # 只要有選擇場所且有對應的系統資料,就顯示系統資料
+        # 不需要等到上傳檔案或選擇案件
+        show_system_data = target_row is not None
         
-        if target_case and uploaded_file_path:
-            show_system_data = True
+        # 如果 OCR 場所名稱與手動選擇的場所不符,顯示警告但仍顯示資料
+        if show_system_data and not auto_matched_place and ocr_place_name and selected_place:
+            clean_ocr = ocr_place_name.replace("台", "臺").replace(" ", "")
+            clean_sys = selected_place.replace("台", "臺").replace(" ", "")
             
-            if not auto_matched_place and ocr_place_name and selected_place:
-                clean_ocr = ocr_place_name.replace("台", "臺").replace(" ", "")
-                clean_sys = selected_place.replace("台", "臺").replace(" ", "")
-                
-                if clean_sys not in clean_ocr and clean_ocr not in clean_sys:
-                     st.error(f"⚠️ 警告：OCR 辨識到的場所名稱「{ocr_place_name}」與您選擇的系統場所「{selected_place}」不符！")
-                     # 如果比對不成功，且是手動選擇的不一致，則不顯示系統資料，避免誤導
-                     show_system_data = False
+            if clean_sys not in clean_ocr and clean_ocr not in clean_sys:
+                 st.warning(f"⚠️ 注意：OCR 辨識到的場所名稱「{ocr_place_name}」與您選擇的系統場所「{selected_place}」不符,請確認是否正確。")
 
         # 建立比對表格資料
         comparison_data = []
@@ -1380,29 +1412,102 @@ with col2:
             ]
         }
         
-        # 嘗試從系統資料中找出所有可能的設備字串
-        # 將整列資料轉為字串，方便搜尋
+        # === 改進：使用 OCR 識別的設備 + 系統資料雙重判斷 ===
+        # 將 OCR 設備字串轉為集合
+        ocr_equip_str = equip_ocr_val if 'equip_ocr_val' in dir() and equip_ocr_val else ""
+        ocr_equip_set = set(ocr_equip_str.split("、")) if ocr_equip_str else set()
+        ocr_equip_set.discard("")
+        
+        # 系統資料字串
         system_row_str = target_row.to_string() if target_row is not None else ""
+        
+        # 用來收集已勾選的設備 (用於同步到編輯清單)
+        checkbox_detected_items = []
         
         # 顯示 Checkbox
         for category, items in equipment_categories.items():
             st.write(f"**{category}**")
             cols = st.columns(3) # 分三欄顯示比較整齊
             for i, item in enumerate(items):
-                # 判斷是否要打勾 (如果系統資料裡面有出現這個詞)
-                is_checked = item in system_row_str
+                # 判斷是否要打勾：
+                # 1. OCR 識別的設備中有該項目
+                # 2. 或系統資料中有該項目 (作為備案)
+                is_in_ocr = any(item in eq or eq in item for eq in ocr_equip_set if eq)
+                is_in_system = item in system_row_str
+                is_checked = is_in_ocr or is_in_system
+                
+                # 收集已勾選的設備
+                if is_checked:
+                    checkbox_detected_items.append(item)
                 
                 # 使用 columns 排版
                 with cols[i % 3]:
-                    st.checkbox(item, value=is_checked, key=f"chk_{item}", disabled=True)
+                    # 如果是 OCR 偵測到的，顯示綠色；如果只在系統有則顯示藍色
+                    if is_in_ocr:
+                        st.checkbox(f"✅ {item}", value=True, key=f"chk_{item}", disabled=True)
+                    elif is_in_system:
+                        st.checkbox(f"📋 {item}", value=True, key=f"chk_{item}", disabled=True, help="系統列管項目")
+                    else:
+                        st.checkbox(item, value=False, key=f"chk_{item}", disabled=True)
+        
+        # === 同步到編輯設備清單 ===
+        # 如果 OCR 沒有偵測到任何設備，但 checkbox 區塊有偵測到，則同步
+        if not equip_ocr_val and checkbox_detected_items:
+            # 更新 session state
+            synced_equip = "、".join(checkbox_detected_items)
+            if st.session_state.get('modified_equip_ocr') != synced_equip:
+                st.session_state.modified_equip_ocr = synced_equip
+                st.session_state.last_equip_ocr_val = synced_equip
+                st.info(f"ℹ️ 已從檢查項目同步 {len(checkbox_detected_items)} 項設備到編輯清單")
     
     else:
-        if df_system is None:
-             st.warning("請先在左側載入系統 Excel 資料。")
-        elif not selected_place:
-             st.info("👈 請先從左側選單選擇一個場所，以開始進行比對。")
+        # 即使沒有比對成功,也要顯示已分析的申報資料
+        if 'extracted_data' in dir() and extracted_data:
+            # 顯示更具體的提示訊息
+            if ocr_place_name and df_system is not None:
+                st.warning(f"⚠️ 系統無法自動對應 OCR 辨識到的場所「{ocr_place_name}」到系統列管資料。")
+                st.caption("💡 可能原因：場所名稱不在系統資料中，或名稱有些微差異。請嘗試在左側手動選擇正確的場所名稱。")
+                
+                # 嘗試提供相似名稱建議
+                if df_system is not None and '場所名稱' in df_system.columns:
+                    clean_ocr = ocr_place_name.replace("台", "臺").replace(" ", "")
+                    similar_places = []
+                    for place in df_system['場所名稱'].astype(str).unique():
+                        clean_place = place.replace("台", "臺").replace(" ", "")
+                        # 檢查是否有部分匹配
+                        if any(char in clean_place for char in clean_ocr if char):
+                            similar_places.append(place)
+                    
+                    if similar_places and len(similar_places) <= 10:
+                        with st.expander("🔍 可能相似的場所名稱", expanded=True):
+                            for sp in similar_places[:5]:
+                                st.write(f"• {sp}")
+            elif df_system is None:
+                st.error("❌ 尚未載入系統 Excel 資料，無法進行比對。")
+                st.info("👈 請在左側「設定與資料來源」區塊設定 Excel 路徑。")
+            else:
+                st.info("⚠️ 尚未選擇系統場所進行比對,但以下是 OCR/AI 分析結果：")
+            
+            # 顯示分析結果
+            st.markdown("#### 📄 申報資料 (OCR/AI 分析)")
+            
+            display_fields = ['場所名稱', '場所地址', '管理權人', '場所電話']
+            for field in display_fields:
+                val = extracted_data.get(field, '')
+                if val:
+                    st.text_input(f"{field}", value=val, disabled=True, key=f"display_{field}")
+            
+            # 顯示消防設備
+            equip_val = extracted_data.get('消防設備種類', '')
+            if equip_val:
+                st.text_area("消防設備種類", value=equip_val.replace("、", "\n") if equip_val else "", height=150, disabled=True, key="display_equip")
         else:
-             st.info("👈 請在上方選擇案件以開始比對。")
+            if df_system is None:
+                 st.warning("請先在左側載入系統 Excel 資料。")
+            elif not selected_place:
+                 st.info("👈 請先從左側選單選擇一個場所，以開始進行比對。")
+            else:
+                 st.info("👈 請在上方選擇案件以開始比對。")
 
 # ==========================================
 # Tab 2: 文件完整性檢查
@@ -1525,7 +1630,7 @@ with tab_check:
                 if toc_page:
                     st.success(f"✅ 已識別目錄頁 (第 {toc_page['page_num']} 頁)")
                     toc_img = images[toc_page['page_num']-1]
-                    st.image(toc_img, caption="目錄頁預覽", use_container_width=True)
+                    st.image(toc_img, caption="目錄頁預覽", use_column_width=True)
                     
                     # Parse TOC (Lazy load)
                     if 'detected_reqs' not in st.session_state or st.session_state.get('last_file_key') != st.session_state.ocr_cache.get('file_key'):

@@ -213,6 +213,38 @@ def load_custom_css():
             transform: translateY(-2px) !important;
             box-shadow: 0 10px 25px rgba(102, 126, 234, 0.4) !important;
         }
+        
+        /* 9. 檔案上傳元件中文化 */
+        /* 隱藏原始 "Browse files" 按鈕文字並替換 */
+        [data-testid="stFileUploader"] button[kind="secondary"]::after {
+            content: "從資料夾上傳";
+        }
+        [data-testid="stFileUploader"] button[kind="secondary"] span {
+            visibility: hidden;
+            position: relative;
+        }
+        [data-testid="stFileUploader"] button[kind="secondary"] span::after {
+            content: "從資料夾上傳";
+            visibility: visible;
+            position: absolute;
+            left: 0;
+            top: 0;
+            white-space: nowrap;
+        }
+        
+        /* 隱藏 "Drag and drop file here" 並替換 */
+        [data-testid="stFileUploader"] [data-testid="stFileUploaderDropzone"] > div:first-child > div:first-child > small:first-of-type {
+            visibility: hidden;
+            position: relative;
+        }
+        [data-testid="stFileUploader"] [data-testid="stFileUploaderDropzone"] > div:first-child > div:first-child > small:first-of-type::after {
+            content: "或者拖拉檔案於此";
+            visibility: visible;
+            position: absolute;
+            left: 0;
+            top: 0;
+            white-space: nowrap;
+        }
     </style>
     """, unsafe_allow_html=True)
 
@@ -480,38 +512,22 @@ def render_equipment_diff(sys_set, ocr_set):
     return html
 
 @st.cache_data
-def load_system_data(excel_source):
-    """
-    讀取系統列管資料 Excel
-    Args:
-        excel_source: 檔案路徑 (str) 或 檔案物件 (UploadedFile)
-    """
-    if excel_source is None:
+def load_system_data(excel_path):
+    """讀取系統列管資料 Excel (使用複製策略以避免檔案鎖定)"""
+    if not os.path.exists(excel_path):
         return None
         
-    temp_path = None
+    temp_path = f"temp_system_data_{uuid.uuid4().hex[:8]}.xls"
     
     try:
-        # 如果是字串路徑，先檢查存在性並複製到暫存檔
-        if isinstance(excel_source, str):
-            if not os.path.exists(excel_source):
-                return None
-            
-            temp_path = f"temp_system_data_{uuid.uuid4().hex[:8]}.xls"
-            shutil.copy2(excel_source, temp_path)
-            file_to_read = temp_path
-            
-            # 判斷引擎
-            engine = 'xlrd' if excel_source.endswith('.xls') else None
+        # 1. 複製檔案到暫存檔
+        shutil.copy2(excel_path, temp_path)
+        
+        # 2. 讀取暫存檔
+        if excel_path.endswith('.xls'):
+            df = pd.read_excel(temp_path, header=1, engine='xlrd')
         else:
-            # 如果是檔案物件，直接讀取
-            file_to_read = excel_source
-            # 嘗試從 name 判斷格式，或是讓 pandas 自動偵測
-            filename = getattr(excel_source, 'name', '')
-            engine = 'xlrd' if filename.endswith('.xls') else None
-
-        # 讀取 Excel
-        df = pd.read_excel(file_to_read, header=1, engine=engine)
+            df = pd.read_excel(temp_path, header=1)
             
         # 清理欄位名稱 (去除前後空白、換行符號)
         df.columns = df.columns.astype(str).str.strip().str.replace('\n', '').str.replace('\r', '')
@@ -522,8 +538,8 @@ def load_system_data(excel_source):
         return None
         
     finally:
-        # 刪除暫存檔 (只有在我們建立暫存檔時才刪除)
-        if temp_path and os.path.exists(temp_path):
+        # 3. 刪除暫存檔
+        if os.path.exists(temp_path):
             try:
                 os.remove(temp_path)
             except:

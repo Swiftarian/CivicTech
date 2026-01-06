@@ -203,9 +203,8 @@ def main():
     print("✅ 所有測試完成！")
     print("=" * 60)
     print(f"\n已生成 {len(files)} 個 HTML 預覽檔案：")
-    for idx, _file in enumerate(files, start=1):
-        # 為避免在日誌中輸出可能包含敏感資訊的檔案路徑，僅顯示索引資訊
-        print(f"  • 預覽檔案 #{idx}")
+    for file in files:
+        print(f"  • {file}")
     
     print("\n📌 請使用瀏覽器開啟這些檔案檢查顯示效果。")
     print("📌 建議同時測試：")
@@ -218,7 +217,7 @@ def main():
         try:
             import webbrowser
             webbrowser.open(files[0])
-            print("\n🌐 已在瀏覽器中開啟第一個預覽檔案。")
+            print(f"\n🌐 已在瀏覽器中開啟: {files[0]}")
         except:
             pass
 

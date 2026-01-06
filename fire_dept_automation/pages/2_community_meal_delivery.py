@@ -13,6 +13,10 @@ st.set_page_config(page_title="社區互助送餐", page_icon="🍱", layout="wi
 # 載入自定義 CSS
 utils.load_custom_css()
 
+# 載入中文側邊欄
+import sidebar_nav
+sidebar_nav.render_chinese_sidebar()
+
 # --- Initialize Auth State & Auto-Login ---
 auth_session.initialize_auth_state()
 auth_session.process_pending_cookie_save()
@@ -38,28 +42,43 @@ def get_google_maps_url(address):
 # --- Main Page ---
 
 # --- Dialog Function ---
-@st.dialog("📅 任務管理")
-def task_management_dialog(task_id, route_name, current_vol, event_date, username):
-    st.write(f"**日期**：{event_date}")
-    st.write(f"**路線**：{route_name}")
-    st.write(f"**目前志工**：{current_vol if current_vol else '無 (缺人)'}")
-    
-    if not current_vol:
-        st.warning("⚠️ 此路線目前缺人配送！")
-        if st.button("🙋‍♂️ 我要認領", key=f"claim_dlg_{task_id}"):
-            db.update_task_volunteer(task_id, username)
-            st.toast("✅ 認領成功！感謝您的付出", icon="🎉")
-            time.sleep(1) # Give time for toast
-            st.rerun()
-    elif current_vol == username:
-        st.success("這是您的任務")
-        if st.button("🚫 請假 / 釋出任務", key=f"leave_dlg_{task_id}"):
-            db.update_task_volunteer(task_id, None)
-            st.toast("✅ 已取消認領", icon="👋")
-            time.sleep(1)
-            st.rerun()
-    else:
-        st.info("此任務已有其他志工負責。")
+
+# --- Dialog Replacement Function ---
+def render_task_management_ui(task_id, route_name, current_vol, event_date_str, username):
+    """
+    Renders task management UI inline (compatible with Streamlit < 1.34)
+    """
+    st.markdown("---")
+    with st.container():
+        st.subheader(f"📅 任務管理 - {event_date_str}")
+        
+        col1, col2 = st.columns(2)
+        with col1:
+             st.info(f"📍 **路線**：{route_name}")
+        with col2:
+             st.info(f"👤 **目前志工**：{current_vol if current_vol else '無 (缺人)'}")
+        
+        col_actions = st.columns(2)
+        
+        with col_actions[0]:
+            if not current_vol:
+                st.warning("⚠️ 此路線目前缺人配送！")
+                if st.button("🙋‍♂️ 我要認領", key=f"claim_tn_{task_id}", use_container_width=True):
+                    db.update_task_volunteer(task_id, username)
+                    st.toast("✅ 認領成功！感謝您的付出", icon="🎉")
+                    time.sleep(1)
+                    st.rerun()
+            elif current_vol == username:
+                st.success("✅ 這是您的任務")
+                if st.button("🚫 請假 / 釋出任務", key=f"leave_tn_{task_id}", use_container_width=True):
+                    db.update_task_volunteer(task_id, None)
+                    st.toast("✅ 已取消認領", icon="👋")
+                    time.sleep(1)
+                    st.rerun()
+            else:
+                st.info("此任務已有其他志工負責。")
+    st.markdown("---")
+
 
 # --- Main Page ---
 
@@ -263,7 +282,8 @@ def main():
             route_name = props["routeName"]
             
             # 呼叫 Dialog
-            task_management_dialog(task_id, route_name, current_vol, event["start"], username)
+            # 呼叫替代 UI (因 st.dialog 版本限制)
+            render_task_management_ui(task_id, route_name, current_vol, event["start"], username)
                     
         # 6. 新增任務按鈕 (如果某天沒有任務)
         # 這裡可以做一個簡單的介面來新增特定日期的任務

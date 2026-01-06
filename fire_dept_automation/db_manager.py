@@ -433,13 +433,21 @@ def init_admin_user():
     c.execute('SELECT count(*) FROM users')
     if c.fetchone()[0] == 0:
         import auth
-        salt, pwd_hash = auth.hash_password("admin123")
+        # 從環境變數讀取預設密碼，若無則使用隨機生成的臨時密碼
+        default_password = os.environ.get("ADMIN_DEFAULT_PASSWORD")
+        if not default_password:
+            # 生成隨機臨時密碼
+            import secrets
+            default_password = secrets.token_urlsafe(12)
+            print(f"⚠️ 警告：已生成臨時管理員密碼，請立即更改！")
+            print(f"⚠️ 臨時密碼: {default_password}")
+        salt, pwd_hash = auth.hash_password(default_password)
         c.execute('''
             INSERT INTO users (username, password_salt, password_hash, role, email)
             VALUES (?, ?, ?, ?, ?)
         ''', ("admin", salt, pwd_hash, "admin", "admin@example.com"))
         conn.commit()
-        print("Default admin user created: admin / admin123")
+        print("✅ Default admin user created. Please change password immediately!")
     conn.close()
 
 # --- User Management ---
@@ -560,6 +568,21 @@ def get_cases_by_email(email):
     conn = get_connection()
     c = conn.cursor()
     c.execute('SELECT * FROM cases WHERE applicant_email = ? ORDER BY submission_date DESC', (email,))
+    cases = c.fetchall()
+    conn.close()
+    return cases
+
+def get_cases_by_phone(phone):
+    """依電話查詢案件"""
+    conn = get_connection()
+    c = conn.cursor()
+    # 移除電話中的符號以便模糊比對
+    clean_phone = phone.replace("-", "").replace(" ", "").replace("(", "").replace(")", "")
+    c.execute('''
+        SELECT * FROM cases 
+        WHERE REPLACE(REPLACE(REPLACE(REPLACE(applicant_phone, '-', ''), ' ', ''), '(', ''), ')', '') LIKE ? 
+        ORDER BY submission_date DESC
+    ''', (f'%{clean_phone}%',))
     cases = c.fetchall()
     conn.close()
     return cases
@@ -719,12 +742,23 @@ def update_elderly_profile_fields(profile_id, updates):
     """
     if not updates:
         return
+    
+    # 白名單驗證欄位名稱，防止 SQL 注入
+    ALLOWED_FIELDS = ['name', 'address', 'phone', 'gps_lat', 'gps_lon', 
+                      'diet_type', 'special_notes', 'route_id', 'sequence', 'status']
+    
+    # 過濾掉不在白名單中的欄位
+    safe_updates = {k: v for k, v in updates.items() if k in ALLOWED_FIELDS}
+    
+    if not safe_updates:
+        print("Warning: No valid fields to update")
+        return
         
     conn = get_connection()
     c = conn.cursor()
     
-    set_clause = ", ".join([f"{k} = ?" for k in updates.keys()])
-    values = list(updates.values())
+    set_clause = ", ".join([f"{k} = ?" for k in safe_updates.keys()])
+    values = list(safe_updates.values())
     values.append(profile_id)
     
     try:
@@ -1069,8 +1103,10 @@ def reset_meal_data():
         print("🗑️ 正在清除送餐系統資料...")
         
         # 刪除所有送餐相關表格資料（保留表結構）
-        tables = ['delivery_records', 'daily_tasks', 'elderly_profiles', 'delivery_routes']
-        for table in tables:
+        # 使用白名單驗證 table 名稱，防止 SQL 注入
+        ALLOWED_TABLES = ['delivery_records', 'daily_tasks', 'elderly_profiles', 'delivery_routes']
+        for table in ALLOWED_TABLES:
+            # 直接使用白名單中的值，無需額外驗證
             c.execute(f"DELETE FROM {table}")
             print(f"  ✅ 已清空 {table}")
         
