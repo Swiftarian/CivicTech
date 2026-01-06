@@ -39,6 +39,84 @@ def image_to_base64(image_path):
     with open(image_path, 'rb') as img_file:
         return base64.b64encode(img_file.read()).decode('utf-8')
 
+def compress_image_for_vision(image_path, max_width=1024, quality=85):
+    """
+    壓縮圖片以加速 Vision AI 分析
+    
+    Args:
+        image_path: 原始圖片路徑
+        max_width: 最大寬度 (預設 1024px)
+        quality: JPEG 品質 (0-100，預設 85)
+        
+    Returns:
+        str: 壓縮後圖片的 base64 編碼
+    """
+    from PIL import Image
+    import io
+    
+    try:
+        with Image.open(image_path) as img:
+            # 計算縮放比例
+            if img.width > max_width:
+                ratio = max_width / img.width
+                new_height = int(img.height * ratio)
+                img = img.resize((max_width, new_height), Image.Resampling.LANCZOS)
+            
+            # 轉換為 RGB (移除透明通道)
+            if img.mode in ('RGBA', 'P'):
+                img = img.convert('RGB')
+            
+            # 壓縮為 JPEG
+            buffer = io.BytesIO()
+            img.save(buffer, format='JPEG', quality=quality, optimize=True)
+            buffer.seek(0)
+            
+            return base64.b64encode(buffer.read()).decode('utf-8')
+    except Exception as e:
+        print(f"圖片壓縮失敗: {e}，使用原始圖片")
+        return image_to_base64(image_path)
+
+def compress_pil_image_for_vision(pil_image, max_width=1024, quality=85):
+    """
+    壓縮 PIL Image 物件以加速 Vision AI 分析
+    
+    Args:
+        pil_image: PIL Image 物件
+        max_width: 最大寬度 (預設 1024px)
+        quality: JPEG 品質 (0-100，預設 85)
+        
+    Returns:
+        str: 壓縮後圖片的 base64 編碼
+    """
+    import io
+    
+    try:
+        img = pil_image.copy()
+        
+        # 計算縮放比例
+        if img.width > max_width:
+            ratio = max_width / img.width
+            new_height = int(img.height * ratio)
+            img = img.resize((max_width, new_height), Image.Resampling.LANCZOS)
+        
+        # 轉換為 RGB (移除透明通道)
+        if img.mode in ('RGBA', 'P'):
+            img = img.convert('RGB')
+        
+        # 壓縮為 JPEG
+        buffer = io.BytesIO()
+        img.save(buffer, format='JPEG', quality=quality, optimize=True)
+        buffer.seek(0)
+        
+        return base64.b64encode(buffer.read()).decode('utf-8')
+    except Exception as e:
+        print(f"PIL 圖片壓縮失敗: {e}")
+        # Fallback: 直接轉 base64
+        buffer = io.BytesIO()
+        pil_image.save(buffer, format='PNG')
+        buffer.seek(0)
+        return base64.b64encode(buffer.read()).decode('utf-8')
+
 def classify_page_with_vision(image_path, model=DEFAULT_VISION_MODEL):
     """
     使用 Vision AI 辨識頁面類型
@@ -317,31 +395,44 @@ def analyze_page_with_ai(text_content, model=DEFAULT_TEXT_MODEL):
     ⚠️ **勾選符號識別規則（這是最重要的規則！）**：
     1. 在目錄頁（「消防安全設備檢修申報書目錄」）中，每個設備前面都有方框
     2. **主要判斷依據：方框內有打勾（✓、☑、√、✔、■、●）的項目**
-    3. **💡 上下文推斷 (Context Inference) - 容錯機制**：
-       - 如果 OCR 沒有辨識出方框或勾選符號，但該項目後面**有填寫數量、頁碼或備註** (例如 "滅火器.....7" 或 "避難器具...3具")，**請視為已勾選**。
-       - 這是因為 OCR 常會漏掉方框，但後面的數字通常代表該設備有實際檢修。
+    3. **💡 頁碼判斷法 (最準確的方法！)**：
+       - 在目錄頁中，每個設備項目後面會有頁碼（如 "2-1", "2-13", "2-24"）
+       - **如果設備名稱後面有頁碼，就表示該設備已勾選並有相應的檢查表**
+       - 例如：「滅火器檢查表 2-1」→ 滅火器已勾選
+       - 例如：「室內消防栓設備檢查表 2-2」→ 室內消防栓設備已勾選
+       - **如果設備名稱後面沒有頁碼，表示該設備未勾選**
     
     ✅ **正確範例**（應該提取）：
-    - "☑ 滅火器" → 提取 "滅火器" (有勾選)
-    - "✓ 火警自動警報設備" → 提取 "火警自動警報設備" (有勾選)
-    - "滅火器 .......... 3" → 提取 "滅火器" (雖無勾選，但有頁碼/數量)
-    - "避難器具 5 具" → 提取 "避難器具" (雖無勾選，但有數量)
+    - "☑ 滅火器檢查表 2-1" → 提取 "滅火器"
+    - "室內消防栓設備檢查表 2-2" → 提取 "室內消防栓設備" (有頁碼)
+    - "火警自動警報設備檢查表 2-13" → 提取 "火警自動警報設備"
+    - "緊急廣播設備檢查表 2-14" → 提取 "緊急廣播設備"
+    - "標示設備檢查表 2-17" → 提取 "標示設備"
+    - "避難器具檢查表 2-18" → 提取 "避難器具"
+    - "緊急照明設備檢查表 2-19" → 提取 "緊急照明設備"
+    - "配線檢查表 2-24" → 提取 "配線"
     
     ❌ **錯誤範例**（絕對不要提取）：
     - "☐ 室外消防栓設備" → **不提取**（明確的空白方框）
-    - "□ 排煙設備" → **不提取**（明確的空白方框）
-    - "連結送水管" → **不提取**（無勾選，且後面無任何數字或內容）
+    - "□ 排煙設備" → **不提取**（無頁碼）
+    - "連結送水管" → **不提取**（無頁碼，無勾選）
     
     💡 **實際案例**：
     如果 OCR 文字顯示：
     ```
-    ☑ 滅火器 _____ 3
-    ☐ 室外消防栓設備 _____ 4
-    火警自動警報設備 ..... 7  <-- (OCR 漏了勾勾，但有頁碼 7)
-    □ 排煙設備 _____ 17
+    滅火器檢查表 2-1
+    室內消防栓設備檢查表 2-2
+    □ 室外消防栓設備
+    火警自動警報設備檢查表 2-13
+    緊急廣播設備檢查表 2-14
+    □ 排煙設備
+    標示設備檢查表 2-17
+    避難器具檢查表 2-18
+    緊急照明設備檢查表 2-19
+    配線檢查表 2-24
     ```
-    正確的 equipment_list 應該是：["滅火器", "火警自動警報設備"]
-    (室外消防栓和排煙設備明確未勾選，所以不提取)
+    正確的 equipment_list 應該是：["滅火器", "室內消防栓設備", "火警自動警報設備", "緊急廣播設備", "標示設備", "避難器具", "緊急照明設備", "配線"]
+    (室外消防栓和排煙設備沒有頁碼，所以不提取)
     
     ---
     
@@ -358,7 +449,8 @@ def analyze_page_with_ai(text_content, model=DEFAULT_TEXT_MODEL):
     2. place_name: 場所名稱 (去除空格)
     3. address: 地址 (完整地址字串，去除空格)
     4. management_person: 管理權人 (姓名字串，去除空格)
-    5. equipment_list: 消防設備列表 (Array，每個項目也要去除空格)
+    5. phone_number: 電話號碼 (去除空格，保留區碼和分機，例如：「(089)322112」→「089-322112」，「(089)3221123#457」→「089-3221123#457」)
+    6. equipment_list: 消防設備列表 (Array，每個項目也要去除空格)
 
     📋 **標準設備清單** (請優先從以下清單中比對，使用模糊比對):
     - 滅火器
@@ -404,41 +496,95 @@ def analyze_page_with_ai(text_content, model=DEFAULT_TEXT_MODEL):
     }
     
     try:
-        response = requests.post(OLLAMA_GENERATE_URL, json=payload, timeout=30)
+        response = requests.post(OLLAMA_GENERATE_URL, json=payload, timeout=60)  # Extended timeout
         if response.status_code == 200:
             result = response.json()
-            response_text = result['response']
+            response_text = result.get('response', '')
             
             if not response_text or not response_text.strip():
                 return {"error": "AI returned empty response"}
 
-            # Debug: Print raw response
-            print(f"🤖 AI Raw Response: {response_text}")
+            # Debug: Print raw response (truncated for readability)
+            print(f"🤖 AI Raw Response (first 500 chars): {response_text[:500]}")
 
-            # 嘗試使用 Regex 提取 JSON (處理 Markdown 標記)
-            json_match = re.search(r'\{.*\}', response_text, re.DOTALL)
+            # Multi-step JSON extraction with fallbacks
+            extracted_json = None
             
-            try:
+            # Step 1: Try to extract JSON from markdown code block (```json ... ```)
+            markdown_match = re.search(r'```(?:json)?\s*(\{[\s\S]*?\})\s*```', response_text, re.DOTALL)
+            if markdown_match:
+                try:
+                    extracted_json = json.loads(markdown_match.group(1))
+                    print("✅ Extracted JSON from markdown code block")
+                except json.JSONDecodeError:
+                    pass
+            
+            # Step 2: Try direct JSON object extraction (greedy match for nested objects)
+            if not extracted_json:
+                # Use a more sophisticated regex that handles nested braces
+                json_match = re.search(r'\{[^{}]*(?:\{[^{}]*\}[^{}]*)*\}', response_text, re.DOTALL)
                 if json_match:
-                    return json.loads(json_match.group(0))
-                else:
-                    # 如果 Regex 失敗，檢查是否像 JSON
-                    clean_text = response_text.strip()
-                    if not clean_text.startswith("{"):
-                        return {"error": "No JSON object found in AI response", "raw_response": response_text}
-                    return json.loads(clean_text)
-            except json.JSONDecodeError as je:
-                # JSON 解析失敗，回傳原始文字供除錯
-                # 嘗試修復常見的 JSON 錯誤 (例如單引號)
+                    try:
+                        extracted_json = json.loads(json_match.group(0))
+                        print("✅ Extracted JSON with regex")
+                    except json.JSONDecodeError:
+                        pass
+            
+            # Step 3: Try finding JSON with balanced braces
+            if not extracted_json:
+                start_idx = response_text.find('{')
+                if start_idx != -1:
+                    brace_count = 0
+                    end_idx = start_idx
+                    for i, char in enumerate(response_text[start_idx:], start_idx):
+                        if char == '{':
+                            brace_count += 1
+                        elif char == '}':
+                            brace_count -= 1
+                            if brace_count == 0:
+                                end_idx = i + 1
+                                break
+                    
+                    if end_idx > start_idx:
+                        json_str = response_text[start_idx:end_idx]
+                        try:
+                            extracted_json = json.loads(json_str)
+                            print("✅ Extracted JSON with brace balancing")
+                        except json.JSONDecodeError:
+                            pass
+            
+            # Step 4: Try ast.literal_eval for Python dict-like strings
+            if not extracted_json:
                 try:
                     import ast
-                    return ast.literal_eval(response_text)
+                    # Find dict-like structure
+                    dict_match = re.search(r'\{.*\}', response_text, re.DOTALL)
+                    if dict_match:
+                        extracted_json = ast.literal_eval(dict_match.group(0))
+                        print("✅ Extracted using ast.literal_eval")
                 except:
                     pass
-                return {"error": f"JSON Parse Error: {je}", "raw_response": response_text}
+            
+            # If extraction successful, return the JSON
+            if extracted_json and isinstance(extracted_json, dict):
+                return extracted_json
+            
+            # If all extraction methods fail, return error with raw response
+            print(f"⚠️ All JSON extraction methods failed")
+            return {
+                "error": "No JSON object found in AI response",
+                "raw_response": response_text[:1000],  # Truncate for display
+                "document_type": None,
+                "place_name": None,
+                "address": None,
+                "management_person": None,
+                "equipment_list": []
+            }
                 
         else:
             return {"error": f"API Error: {response.status_code}"}
+    except requests.Timeout:
+        return {"error": "AI request timed out (60s). The model may be loading or overloaded."}
     except Exception as e:
         return {"error": str(e)}
 

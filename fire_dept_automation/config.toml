@@ -11,9 +11,9 @@ department = "預防調查科"
 full_name = "臺東縣消防局預防調查科"
 
 # 聯絡資訊
-phone = "089-322112"
-address = "臺東縣臺東市..."
-email = "fire@taitung.gov.tw"
+phone = "089-XXXXXX"
+address = "臺東縣臺東市XXX路XXX號"
+email = "example@example.gov.tw"
 
 [system]
 # 系統名稱

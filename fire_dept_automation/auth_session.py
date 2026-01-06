@@ -62,6 +62,9 @@ def clear_login_session():
     st.session_state.user = None
     if 'awaiting_2fa' in st.session_state:
         st.session_state.awaiting_2fa = False
+    
+    # Set flag to prevent immediate auto-login on rerun
+    st.session_state.just_logged_out = True
 
 def check_auto_login():
     """
@@ -74,6 +77,11 @@ def check_auto_login():
     if st.session_state.get('logged_in'):
         return True
     
+    # Check if just logged out to prevent immediate re-login loop
+    if st.session_state.get('just_logged_out', False):
+         st.session_state.just_logged_out = False
+         return False
+
     cookie_manager = get_cookie_manager()
     
     # Get cookies
@@ -155,9 +163,21 @@ def clear_login_session():
     cookie_manager = get_cookie_manager()
     
     # Clear cookies
-    cookie_manager.delete('session_token')
-    cookie_manager.delete('username')
-    cookie_manager.delete('role')
+    # Clear cookies (ignore errors if cookie already missing)
+    try:
+        cookie_manager.delete('session_token')
+    except:
+        pass
+        
+    try:
+        cookie_manager.delete('username')
+    except:
+        pass
+        
+    try:
+        cookie_manager.delete('role')
+    except:
+        pass
     
     # Clear session_state
     st.session_state.logged_in = False
@@ -223,6 +243,8 @@ def initialize_auth_state():
         st.session_state.role = None
     if 'awaiting_2fa' not in st.session_state:
         st.session_state.awaiting_2fa = False
+    if 'just_logged_out' not in st.session_state:
+        st.session_state.just_logged_out = False
 
 def process_pending_cookie_save():
     """處理待儲存的 cookie (在 rerun 後執行)"""

@@ -14,6 +14,10 @@ st.set_page_config(page_title="案件審核 - 消防安全設備檢修申報", p
 # 載入自定義 CSS
 utils.load_custom_css()
 
+# 載入中文側邊欄
+import sidebar_nav
+sidebar_nav.render_chinese_sidebar()
+
 # --- Session State Initialization & Auto-Login ---
 auth_session.initialize_auth_state()
 auth_session.process_pending_cookie_save()

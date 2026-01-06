@@ -2,19 +2,22 @@ import streamlit as st
 import db_manager
 import pandas as pd
 import os
-import shutil
+import utils
 import config_loader as cfg
 
-st.set_page_config(page_title="民眾申辦與進度查詢", page_icon="📝")
+st.set_page_config(page_title="民眾申辦 - 消防安全設備檢修", page_icon="📝", layout="wide")
 
 # 載入自定義 CSS
-import utils
 utils.load_custom_css()
+
+# 載入中文側邊欄
+import sidebar_nav
+sidebar_nav.render_chinese_sidebar()
 
 st.title("📝 民眾申辦與進度查詢")
 
-# 三個標籤頁：申辦 → 依單號查詢 → 依 Email 查詢
-tab1, tab2, tab3 = st.tabs(["📝 民眾申辦", "🔢 依單號查詢", "📧 依 Email 查詢"])
+# 兩個標籤頁：申辦 → 查詢
+tab1, tab2 = st.tabs(["📝 申辦", "🔍 查詢進度"])
 
 # ===== Tab 1: 民眾申辦 =====
 with tab1:
@@ -32,6 +35,7 @@ with tab1:
             line_id = st.text_input("Line ID (選填)", placeholder="方便日後查詢進度", help="選填欄位，提供 Line ID 可接收進度通知")
         
         uploaded_file = st.file_uploader("上傳檢修申報書 (PDF/圖片/Word) *", type=["pdf", "png", "jpg", "jpeg", "docx", "doc"])
+        st.caption("💡 提示：可將檔案直接拖拉至上方虛線框內上傳，或點擊「從資料夾上傳」按鈕選擇檔案")
         
         st.caption("* 為必填欄位")
         submitted = st.form_submit_button("🔥 確認提交", type="primary")
@@ -51,16 +55,14 @@ with tab1:
             
             if missing:
                 st.error(f"❌ 請填寫以下必填欄位後再提交：{', '.join(missing)}")
-                st.stop()  # 阻止後續程式執行
+                st.stop()
             
-            # 檢查通過，繼續執行
             else:
                 # 1. 儲存檔案
                 upload_dir = "uploads"
                 if not os.path.exists(upload_dir):
                     os.makedirs(upload_dir)
                     
-                # 使用 {timestamp}_{uuid前8碼}_{原始檔名} 格式
                 import uuid
                 import time
                 
@@ -68,7 +70,6 @@ with tab1:
                 uuid_prefix = str(uuid.uuid4())[:8]
                 original_filename = uploaded_file.name
                 
-                # 組合新檔名
                 unique_filename = f"{timestamp}_{uuid_prefix}_{original_filename}"
                 file_path = os.path.join(upload_dir, unique_filename)
                 
@@ -80,8 +81,8 @@ with tab1:
                     case_id = db_manager.create_case(name, email, phone, place_name, place_address, file_path, line_id)
                     
                     if case_id:
-                        st.success(f"✅ 提交成功！您的案件單號為：**{case_id}**")
-                        st.warning("請記下此單號，以便日後查詢進度。")
+                        st.success(f"✅ 您已送件成功！您的案件單號為：**{case_id}**")
+                        st.info("📧 可以於信箱收信確認，您可以使用上方**案件單號**、**Email**、**電話**來查詢您的案件進度。")
                         
                         # 3. 發送受理通知信
                         try:
@@ -92,7 +93,6 @@ with tab1:
                                 if sender_email and sender_password:
                                     subject = f"【{cfg.AGENCY_NAME}】案件受理通知 (單號：{case_id})"
                                     
-                                    # 使用統一模板生成 HTML 郵件
                                     content = f"""
 <p>{cfg.AGENCY_NAME}已收到您的「消防安全設備檢修申報」，目前系統正在進行自動化初審。</p>
 
@@ -132,7 +132,6 @@ with tab1:
                                     else:
                                         st.warning(f"⚠️ 通知信發送失敗: {msg}")
                                 else:
-                                    # 未設定 Email，僅記錄 Log 或忽略
                                     pass
                         except Exception as e:
                             st.warning(f"⚠️ 發送通知信時發生錯誤: {e}")
@@ -144,180 +143,177 @@ with tab1:
                 except Exception as e:
                     st.error(f"❌ 檔案上傳失敗：{e}")
 
-# ===== Tab 2: 依單號查詢 =====
+# ===== Tab 2: 統一查詢頁面 =====
 with tab2:
-    case_id_input = st.text_input("請輸入案件單號", placeholder="例如：a1b2c3d4")
-    if st.button("查詢單號"):
-        # 清除快取以確保讀取最新資料
-        st.cache_data.clear()
-        
-        if case_id_input:
-            case = db_manager.get_case_by_id(case_id_input)
-            if case:
-                st.success("✅ 查詢成功")
-                
-                # 狀態顏色邏輯
-                status_color = ":red"
-                if case['status'] == "審核中":
-                    status_color = ":orange"
-                elif case['status'] == "可領件":
-                    status_color = ":green"
-                elif case['status'] == "待分案":
-                    status_color = ":red"
-                
-                st.markdown(f"""
-                **案件單號**: `{case['id']}`
-                **申請人**: {case['applicant_name']}
-                **目前狀態**: {status_color}[{case['status']}]
-                **申請日期**: {case['submission_date']}
-                """)
-                
-                if case['review_notes']:
-                    st.info(f"📋 **審核備註**: {case['review_notes']}")
-            else:
-                st.error("❌ 找不到此單號，請確認輸入是否正確。")
-
-# ===== Tab 3: 依 Email 查詢 =====
-with tab3:
-    email_input = st.text_input("請輸入申請 Email", placeholder="example@email.com")
-    if st.button("查詢 Email"):
+    st.info("💡 **提示**：您可以擇一欄位填寫，即可查詢過往的申請資料列表。")
+    
+    # 三個查詢欄位並排
+    col1, col2, col3 = st.columns(3)
+    
+    with col1:
+        query_case_id = st.text_input("📋 案件單號", placeholder="例如：a1b2c3d4", key="unified_case_id")
+    
+    with col2:
+        query_email = st.text_input("📧 Email", placeholder="example@email.com", key="unified_email")
+    
+    with col3:
+        query_phone = st.text_input("📞 聯絡電話", placeholder="0912-345678", key="unified_phone")
+    
+    if st.button("🔍 查詢案件", type="primary", use_container_width=True):
         # 清除快取
         st.cache_data.clear()
         
-        if email_input:
-            cases = db_manager.get_cases_by_email(email_input)
-            if cases:
-                st.success(f"✅ 找到 {len(cases)} 筆案件")
-                
-                # 轉換為 DataFrame
-                df = pd.DataFrame([dict(row) for row in cases])
-                
-                # 處理場所名稱缺失值
-                df['place_name'] = df['place_name'].fillna('未填')
-                df['review_notes'] = df['review_notes'].fillna('')
-                
-                # 狀態篩選器
+        # 判斷使用者輸入了哪個欄位
+        all_cases = []
+        search_type = None
+        
+        if query_case_id:
+            case = db_manager.get_case_by_id(query_case_id)
+            if case:
+                all_cases = [case]
+            search_type = "單號"
+        elif query_email:
+            all_cases = db_manager.get_cases_by_email(query_email)
+            search_type = "Email"
+        elif query_phone:
+            all_cases = db_manager.get_cases_by_phone(query_phone)
+            search_type = "電話"
+        else:
+            st.warning("⚠️ 請至少填寫一個欄位再進行查詢！")
+            st.stop()
+        
+        # 顯示查詢結果
+        if all_cases:
+            st.success(f"✅ 依 **{search_type}** 查詢成功，共找到 **{len(all_cases)}** 筆案件")
+            
+            df = pd.DataFrame([dict(row) for row in all_cases])
+            df['place_name'] = df['place_name'].fillna('未填')
+            df['review_notes'] = df['review_notes'].fillna('')
+            
+            if len(all_cases) > 1:
                 all_statuses = df['status'].unique().tolist()
                 selected_statuses = st.multiselect(
                     "📊 篩選狀態", 
                     options=all_statuses,
                     default=all_statuses,
-                    help="選擇要顯示的案件狀態"
+                    help="選擇要顯示的案件狀態",
+                    key="unified_status_filter"
                 )
                 
-                # 篩選資料
                 if selected_statuses:
                     df_filtered = df[df['status'].isin(selected_statuses)]
                 else:
                     df_filtered = df
-                
-                # 排序（最新的在最上面）
-                df_filtered = df_filtered.sort_values('submission_date', ascending=False)
-                
-                # 添加 Emoji 狀態標示（視覺優化）
-                def add_status_emoji(status):
-                    emoji_map = {
-                        "待分案": "🔴 待分案",
-                        "審核中": "🟡 審核中",
-                        "可領件": "🟢 可領件",
-                        "已退件": "⚫ 已退件",
-                        "待補件": "🟠 待補件"
-                    }
-                    return emoji_map.get(status, status)
-                
-                # 格式化日期（統一格式為 YYYY-MM-DD HH:mm）
-                def format_datetime(dt_str):
-                    try:
-                        # 如果已經是完整格式，直接返回前16個字符
-                        if len(dt_str) >= 16:
-                            return dt_str[:16]
-                        return dt_str
-                    except:
-                        return dt_str
-                
-                # 選擇要顯示的欄位並處理格式
-                df_display = df_filtered[['id', 'place_name', 'submission_date', 'status', 'applicant_name']].copy()
-                df_display['status'] = df_display['status'].apply(add_status_emoji)
-                df_display['submission_date'] = df_display['submission_date'].apply(format_datetime)
-                df_display.columns = ['案件單號', '場所名稱', '申請日期', '目前狀態', '申請人']
-                
-                # 顯示互動式表格（唯讀，無核取方塊）
-                st.subheader("📋 您的案件列表")
-                st.caption("💡 點擊任一行查看該案件的詳細資訊")
-                
-                event = st.dataframe(
-                    df_display,
-                    column_config={
-                        "案件單號": st.column_config.TextColumn("案件單號", width="small", help="案件追蹤編號"),
-                        "場所名稱": st.column_config.TextColumn("場所名稱", width="large", help="申報場所名稱"),
-                        "申請日期": st.column_config.TextColumn("申請日期", width="medium", help="送件時間"),
-                        "目前狀態": st.column_config.TextColumn(
-                            "目前狀態", 
-                            width="medium", 
-                            help="案件當前進度",
-                        ),
-                        "申請人": st.column_config.TextColumn("申請人", width="medium"),
-                    },
-                    hide_index=True,
-                    use_container_width=True,
-                    selection_mode="single-row",
-                    on_select="rerun",
-                    key="case_table"
-                )
-                
-                # 顯示詳細資訊卡片（當使用者點擊某一行時）
-                if event.selection.rows:
-                    selected_idx = event.selection.rows[0]
-                    selected_case = df_filtered.iloc[selected_idx]
-                    
-                    st.divider()
-                    
-                    # 使用 expander 顯示詳細資訊
-                    with st.expander("📄 案件詳細資訊", expanded=True):
-                        # 狀態圖示映射
-                        status_icon_map = {
-                            "待分案": "🔴",
-                            "審核中": "🟡",
-                            "可領件": "🟢",
-                            "已退件": "⚫",
-                            "待補件": "🟠"
-                        }
-                        status_icon = status_icon_map.get(selected_case['status'], "ℹ️")
-                        
-                        col1, col2 = st.columns(2)
-                        with col1:
-                            st.markdown(f"""
-                            **案件單號**: `{selected_case['id']}`  
-                            **申請人**: {selected_case['applicant_name']}  
-                            **聯絡電話**: {selected_case['applicant_phone']}  
-                            **Email**: {selected_case['applicant_email']}  
-                            """)
-                        
-                        with col2:
-                            st.markdown(f"""
-                            **場所名稱**: {selected_case['place_name']}  
-                            **場所地址**: {selected_case['place_address']}  
-                            **申請日期**: {selected_case['submission_date']}  
-                            **目前狀態**: {status_icon} **{selected_case['status']}**  
-                            """)
-                        
-                        # 審核備註（重點資訊）
-                        if selected_case['review_notes']:
-                            st.info(f"📋 **審核備註**: {selected_case['review_notes']}")
-                        else:
-                            st.caption("目前尚無審核備註")
-                        
-                        # 狀態提示訊息
-                        if selected_case['status'] == "可領件":
-                            st.success("🎉 恭喜！您的案件已審核通過，請攜帶身分證件至本局**預防調查科**領取核定書表。")
-                        elif selected_case['status'] == "已退件":
-                            st.error("⚠️ 您的案件已被退件，請依上方審核備註說明修正後重新送件。")
-                        elif selected_case['status'] == "待補件":
-                            st.warning("📝 您的案件需要補件，請依審核備註儘速補齊相關文件。")
-                        elif selected_case['status'] == "審核中":
-                            st.info("⏳ 您的案件正在審核中，請耐心等候。")
-                        elif selected_case['status'] == "待分案":
-                            st.info("📋 您的案件已收到，待承辦人員分案處理。")
-                
             else:
-                st.warning("查無此 Email 的相關案件。")
+                df_filtered = df
+            
+            df_filtered = df_filtered.sort_values('submission_date', ascending=False)
+            
+            def add_status_emoji(status):
+                emoji_map = {
+                    "待分案": "🔴 待分案",
+                    "審核中": "🟡 審核中",
+                    "可領件": "🟢 可領件",
+                    "已退件": "⚫ 已退件",
+                    "待補件": "🟠 待補件"
+                }
+                return emoji_map.get(status, status)
+            
+            def format_datetime(dt_str):
+                try:
+                    if len(dt_str) >= 16:
+                        return dt_str[:16]
+                    return dt_str
+                except:
+                    return dt_str
+            
+            df_display = df_filtered[['id', 'place_name', 'submission_date', 'status', 'applicant_name']].copy()
+            df_display['status'] = df_display['status'].apply(add_status_emoji)
+            df_display['submission_date'] = df_display['submission_date'].apply(format_datetime)
+            df_display.columns = ['案件單號', '場所名稱', '申請日期', '目前狀態', '申請人']
+            
+            st.subheader("📋 您的案件列表")
+            st.caption("💡 點擊任一行查看該案件的詳細資訊")
+            
+            event = st.dataframe(
+                df_display,
+                column_config={
+                    "案件單號": st.column_config.TextColumn("案件單號", width="small"),
+                    "場所名稱": st.column_config.TextColumn("場所名稱", width="large"),
+                    "申請日期": st.column_config.TextColumn("申請日期", width="medium"),
+                    "目前狀態": st.column_config.TextColumn("目前狀態", width="medium"),
+                    "申請人": st.column_config.TextColumn("申請人", width="medium"),
+                },
+                hide_index=True,
+                use_container_width=True,
+                selection_mode="single-row",
+                on_select="rerun",
+                key="unified_case_table"
+            )
+            
+            if event.selection.rows:
+                selected_idx = event.selection.rows[0]
+                selected_case = df_filtered.iloc[selected_idx]
+                
+                st.divider()
+                
+                status_config = {
+                    "待分案": {"color": "#e53e3e", "bg": "#fed7d7", "icon": "🔴"},
+                    "審核中": {"color": "#d97706", "bg": "#fef3c7", "icon": "🟡"},
+                    "可領件": {"color": "#38a169", "bg": "#c6f6d5", "icon": "🟢"},
+                    "已退件": {"color": "#4a5568", "bg": "#e2e8f0", "icon": "⚫"},
+                    "待補件": {"color": "#dd6b20", "bg": "#feebc8", "icon": "🟠"}
+                }
+                
+                status = selected_case['status']
+                config = status_config.get(status, {"color": "#4a5568", "bg": "#e2e8f0", "icon": "ℹ️"})
+                
+                place_name = selected_case['place_name'] if selected_case['place_name'] else '未填'
+                submission_date = selected_case['submission_date'][:16] if len(selected_case['submission_date']) > 16 else selected_case['submission_date']
+                
+                card_html = f"""<div style="background: linear-gradient(135deg, #1a1a2e 0%, #16213e 100%); border-radius: 16px; padding: 24px; margin: 16px 0; border: 1px solid rgba(255,255,255,0.1); box-shadow: 0 4px 20px rgba(0,0,0,0.3);">
+<div style="display: flex; align-items: center; margin-bottom: 20px;">
+<span style="font-size: 28px; background: {config['bg']}; padding: 8px 16px; border-radius: 8px; margin-right: 16px;">{config['icon']}</span>
+<span style="font-size: 24px; font-weight: 700; color: {config['color']}; background: {config['bg']}; padding: 8px 20px; border-radius: 8px;">{status}</span>
+</div>
+<div style="display: grid; grid-template-columns: 1fr 1fr; gap: 16px;">
+<div style="background: rgba(255,255,255,0.05); padding: 16px; border-radius: 12px; border-left: 4px solid #4a90d9;">
+<p style="color: #a0aec0; font-size: 14px; margin: 0 0 4px 0;">案件單號</p>
+<p style="color: #fff; font-size: 22px; font-weight: 700; margin: 0; font-family: monospace;">{selected_case['id']}</p>
+</div>
+<div style="background: rgba(255,255,255,0.05); padding: 16px; border-radius: 12px; border-left: 4px solid #48bb78;">
+<p style="color: #a0aec0; font-size: 14px; margin: 0 0 4px 0;">申請人</p>
+<p style="color: #fff; font-size: 22px; font-weight: 700; margin: 0;">{selected_case['applicant_name']}</p>
+</div>
+<div style="background: rgba(255,255,255,0.05); padding: 16px; border-radius: 12px; border-left: 4px solid #ed8936;">
+<p style="color: #a0aec0; font-size: 14px; margin: 0 0 4px 0;">場所名稱</p>
+<p style="color: #fff; font-size: 20px; font-weight: 600; margin: 0;">{place_name}</p>
+</div>
+<div style="background: rgba(255,255,255,0.05); padding: 16px; border-radius: 12px; border-left: 4px solid #9f7aea;">
+<p style="color: #a0aec0; font-size: 14px; margin: 0 0 4px 0;">申請日期</p>
+<p style="color: #fff; font-size: 18px; font-weight: 600; margin: 0;">{submission_date}</p>
+</div>
+</div>
+</div>"""
+                st.markdown(card_html, unsafe_allow_html=True)
+                
+                if selected_case['review_notes']:
+                    st.markdown(f"""
+                    <div style="background: linear-gradient(to right, #2d3748, #1a202c); border-left: 5px solid #4a90d9; padding: 16px 20px; border-radius: 8px; margin-top: 16px;">
+                        <p style="color: #a0aec0; font-size: 14px; margin: 0 0 8px 0;">📋 審核備註</p>
+                        <p style="color: #fff; font-size: 18px; margin: 0;">{selected_case['review_notes']}</p>
+                    </div>
+                    """, unsafe_allow_html=True)
+                
+                if status == "可領件":
+                    st.success("🎉 恭喜！您的案件已審核通過，請攜帶身分證件至本局**預防調查科**領取核定書表。")
+                elif status == "已退件":
+                    st.error("⚠️ 您的案件已被退件，請依審核備註說明修正後重新送件。")
+                elif status == "待補件":
+                    st.warning("📝 您的案件需要補件，請依審核備註儘速補齊相關文件。")
+                elif status == "審核中":
+                    st.info("⏳ 您的案件正在審核中，請耐心等候。")
+                elif status == "待分案":
+                    st.info("📋 您的案件已收到，待承辦人員分案處理。")
+        else:
+            st.warning(f"❌ 查無符合條件的案件，請確認輸入的 **{search_type}** 是否正確。")

@@ -5,7 +5,6 @@ import fitz  # pymupdf
 from PIL import Image
 import pytesseract
 import re
-import config_loader
 
 # 設定頁面配置
 st.set_page_config(layout="wide", page_title="臺東縣消防局檢修申報書檢核比對系統")
@@ -74,26 +73,16 @@ def download_lang_data():
             pass # 英文非必要，失敗就算了
 
 @st.cache_data
-def load_system_data(excel_source):
-    """
-    讀取系統列管資料 Excel (修正版)
-    Args:
-        excel_source: 檔案路徑 (str) 或 檔案物件 (UploadedFile)
-    """
-    if excel_source is None:
+def load_system_data(excel_path):
+    """讀取系統列管資料 Excel"""
+    if not os.path.exists(excel_path):
         return None
     try:
-        # 如果是字串路徑，先檢查存在性
-        if isinstance(excel_source, str):
-            if not os.path.exists(excel_source):
-                return None
-            engine = 'xlrd' if excel_source.endswith('.xls') else None
-            df = pd.read_excel(excel_source, header=1, engine=engine)
+        # 嘗試讀取 (支援 .xls 和 .xlsx)
+        if excel_path.endswith('.xls'):
+            df = pd.read_excel(excel_path, header=1, engine='xlrd')
         else:
-            # 如果是檔案物件，直接讀取
-            filename = getattr(excel_source, 'name', '')
-            engine = 'xlrd' if filename.endswith('.xls') else None
-            df = pd.read_excel(excel_source, header=1, engine=engine)
+            df = pd.read_excel(excel_path, header=1)
             
         # 清理欄位名稱 (去除前後空白、換行符號)
         df.columns = df.columns.astype(str).str.strip().str.replace('\n', '').str.replace('\r', '')
@@ -348,60 +337,43 @@ st.markdown("""
 with st.sidebar:
     st.header("1. 設定與資料來源")
     
-    # Tesseract 路徑設定 (移除使用者輸入，改為自動偵測與設定檔讀取)
-    tesseract_path = None
-    
-    # 1. 嘗試從設定檔讀取
-    config_path = config_loader.CONFIG.get("ocr", {}).get("default_tesseract_path")
-    if config_path and os.path.exists(config_path):
-        tesseract_path = config_path
-    
-    # 2. 如果設定檔的路徑不存在，嘗試自動偵測
-    if not tesseract_path:
-        possible_paths = [
-            r"C:\Program Files\Tesseract-OCR\tesseract.exe",
-            r"D:\Program Files\Tesseract-OCR\tesseract.exe",
-            r"E:\Program Files\Tesseract-OCR\tesseract.exe",
-            r"C:\Program Files (x86)\Tesseract-OCR\tesseract.exe",
-            r"D:\Program Files (x86)\Tesseract-OCR\tesseract.exe"
-        ]
-        for p in possible_paths:
-            if os.path.exists(p):
-                tesseract_path = p
-                break
-    
-    with st.expander("⚙️ OCR 設定狀態", expanded=True):
-        if tesseract_path and os.path.exists(tesseract_path):
-             st.success(f"✅ 已偵測到 Tesseract: {tesseract_path}")
+    # Tesseract 路徑設定
+    # 自動偵測常見路徑
+    possible_paths = [
+        r"C:\Program Files\Tesseract-OCR\tesseract.exe",
+        r"D:\Program Files\Tesseract-OCR\tesseract.exe",
+        r"E:\Program Files\Tesseract-OCR\tesseract.exe",
+        r"C:\Program Files (x86)\Tesseract-OCR\tesseract.exe",
+        r"D:\Program Files (x86)\Tesseract-OCR\tesseract.exe"
+    ]
+    detected_path = possible_paths[0]
+    for p in possible_paths:
+        if os.path.exists(p):
+            detected_path = p
+            break
+            
+    with st.expander("⚙️ OCR 設定 (若無法辨識請點此)", expanded=True):
+        user_input_path = st.text_input("Tesseract 執行檔路徑", value=detected_path)
+        
+        # 智慧修正路徑：如果使用者只貼了資料夾路徑，自動補上 .exe
+        tesseract_path = user_input_path
+        if os.path.isdir(user_input_path):
+            tesseract_path = os.path.join(user_input_path, "tesseract.exe")
+            st.info(f"💡 已自動修正路徑為：{tesseract_path}")
+            
+        if not os.path.exists(tesseract_path):
+            st.error(f"❌ 找不到檔案：{tesseract_path}\n請確認路徑是否正確，並包含 'tesseract.exe'")
         else:
-             st.error("❌ 找不到 Tesseract 執行檔！\n請安裝 Tesseract-OCR 或在 config.toml 中設定正確路徑。")
-             if not tesseract_path:
-                tesseract_path = "tesseract.exe" # Fallback
-
+            st.success("✅ Tesseract 路徑正確")
+            
         # 檢查語言包
         if not os.path.exists(os.path.join(LOCAL_TESSDATA_DIR, "chi_tra.traineddata")):
             st.warning("⚠️ 缺少繁體中文語言包")
             if st.button("📥 下載中文語言包 (必要)"):
                 download_lang_data()
-    # 1. 系統資料 (使用設定檔預設值或上傳檔案)
-    
-    # 讀取預設路徑 (從設定檔)
-    default_excel_path = config_loader.CONFIG.get("ocr", {}).get("default_excel_path")
-    
-    # 提供檔案上傳選項 (優先於預設路徑)
-    uploaded_system_file = st.file_uploader("上傳系統列管資料 (Excel)", type=["xls", "xlsx"])
-    
-    system_source = None
-    if uploaded_system_file:
-        system_source = uploaded_system_file
-        st.info("📂 使用上傳的系統資料")
-    elif default_excel_path and os.path.exists(default_excel_path):
-        system_source = default_excel_path
-        st.caption(f"📂 使用預設系統資料來源: {os.path.basename(default_excel_path)}")
-    else:
-        st.warning("⚠️ 未設定系統資料來源，請上傳檔案或檢查 config.toml 設定。")
-
-    df_system = load_system_data(system_source)
+    # 1. 系統資料
+    system_file_path = st.text_input("系統 Excel 路徑", value=r"d:\下載\downloads\00. 列管場所資料.xls")
+    df_system = load_system_data(system_file_path)
     
     selected_place = None
     
@@ -479,7 +451,7 @@ with col1:
             
             # 先顯示圖片預覽
             for i, img in enumerate(images):
-                st.image(img, caption=f"第 {i+1} 頁 (預覽)", use_container_width=True)
+                st.image(img, caption=f"第 {i+1} 頁 (預覽)", use_column_width=True)
             
             # 2. 執行 OCR
             with st.spinner("🔍 正在進行 OCR 辨識中 (請稍候)..."):
@@ -521,7 +493,7 @@ with col1:
 
         # 顯示圖片與 OCR 結果 (這是 Rerun 後或 Cache Hit 會看到的)
         for i, img in enumerate(cached_images):
-            st.image(img, caption=f"第 {i+1} 頁", use_container_width=True)
+            st.image(img, caption=f"第 {i+1} 頁", use_column_width=True)
             with st.expander(f"第 {i+1} 頁 OCR 文字內容 (除錯用)", expanded=False):
                 if i == 0: st.text(page_one_text)
                 elif i == 1: st.text(page_two_text)

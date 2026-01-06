@@ -17,15 +17,25 @@ st.set_page_config(
 # 載入自訂 CSS
 utils.load_custom_css()
 
-# ==========================================
-# Hero Banner (橫幅圖片) - 升級版
-# ==========================================
-st.image("C:/Users/User/.gemini/antigravity/brain/1222b519-4ee4-4470-8916-1a7360e613d7/uploaded_image_1763923437895.png", use_container_width=True)
+# 載入中文側邊欄
+import sidebar_nav
+sidebar_nav.render_chinese_sidebar()
 
+# ==========================================
+# Hero Banner (橫幅標題) - 升級版
+# ==========================================
 st.markdown("""
-    <div style="text-align: center; margin-top: -50px; margin-bottom: 30px;">
-        <h1 style="color: #2c3e50; font-size: 3em; font-weight: bold;"> 臺東縣消防局 防災教育館</h1>
-        <p style="color: #7f8c8d; font-size: 1.3em;">體驗防災知識 · 守護生命安全</p>
+    <div style="background: linear-gradient(135deg, #1e3a8a 0%, #3b82f6 50%, #06b6d4 100%); 
+                padding: 40px 20px; 
+                border-radius: 15px; 
+                margin-bottom: 30px;
+                box-shadow: 0 10px 30px rgba(0,0,0,0.2);">
+        <h1 style="color: white; font-size: 2.8em; font-weight: bold; text-align: center; margin: 0; text-shadow: 2px 2px 4px rgba(0,0,0,0.3);">
+            🏛️ 臺東縣消防局 防災教育館
+        </h1>
+        <p style="color: rgba(255,255,255,0.9); font-size: 1.3em; text-align: center; margin-top: 15px;">
+            體驗防災知識 · 守護生命安全
+        </p>
     </div>
 """, unsafe_allow_html=True)
 

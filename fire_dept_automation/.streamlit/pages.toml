@@ -1,0 +1,24 @@
+[[pages]]
+path = "pages/1_disaster_prevention_museum_booking.py"
+name = "防災館參館預約"
+icon = "📢"
+
+[[pages]]
+path = "pages/2_community_meal_delivery.py"
+name = "社區互助送餐"
+icon = "🍱"
+
+[[pages]]
+path = "pages/3_public_application_and_inquiry.py"
+name = "民眾申辦與查詢"
+icon = "📝"
+
+[[pages]]
+path = "pages/4_case_review.py"
+name = "案件審核"
+icon = "👮"
+
+[[pages]]
+path = "pages/5_auto_comparison_system.py"
+name = "申報書比對系統"
+icon = "🚒"

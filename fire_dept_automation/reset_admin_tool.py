@@ -1,14 +1,16 @@
 import sqlite3
 import hashlib
 import os
+import secrets
 
 # 設定資料庫名稱
 DB_NAME = "cases.db"
 
 # 設定要重設的目標資訊
 TARGET_USERNAME = "admin"
-NEW_PASSWORD = "admin123"
-NEW_EMAIL = "ttfd028josh@gmail.com"
+# 從環境變數讀取，若無則動態生成安全的臨時密碼
+NEW_PASSWORD = os.environ.get("ADMIN_RESET_PASSWORD") or secrets.token_urlsafe(12)
+NEW_EMAIL = os.environ.get("ADMIN_EMAIL", "admin@example.com")
 
 def hash_password_pbkdf2(password, salt=None):
     """使用 PBKDF2-HMAC-SHA256 加密密碼（與 auth.py 完全相同）"""
@@ -78,11 +80,11 @@ def force_reset_admin():
         conn.commit()
         print("-" * 50)
         print(f"📧 Email 已更新為: {NEW_EMAIL}")
-        print("🔑 密碼已重設。")
+        print(f"🔑 密碼已重設為: {NEW_PASSWORD}")
         print("-" * 50)
-        print("✅ 重設完成！帳號資訊如下：")
+        print("✅ 重設完成！現在可以使用以下帳密登入：")
         print(f"   帳號: {TARGET_USERNAME}")
-        print("   密碼: (已重設，請透過安全方式通知或更新密碼)")
+        print(f"   密碼: {NEW_PASSWORD}")
         print("-" * 50)
 
     except Exception as e:
