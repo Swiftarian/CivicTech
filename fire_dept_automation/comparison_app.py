@@ -104,6 +104,29 @@ def pdf_to_images(pdf_file):
 
 import subprocess
 
+def validate_tesseract_path(user_path: str) -> str:
+    """
+    驗證並正規化使用者輸入的 Tesseract 執行檔路徑，確保只執行可信的 tesseract 可執行檔。
+    回傳經驗證的絕對路徑；若無效則拋出 ValueError。
+    """
+    if not user_path:
+        raise ValueError("未提供 Tesseract 路徑")
+
+    # 展開使用者、環境變數並轉為絕對路徑
+    expanded = os.path.expandvars(os.path.expanduser(user_path))
+    abs_path = os.path.abspath(expanded)
+
+    # 必須是存在的檔案
+    if not os.path.exists(abs_path) or not os.path.isfile(abs_path):
+        raise ValueError(f"找不到可執行檔：{abs_path}")
+
+    # 檔名必須為 tesseract 或 tesseract.exe，避免執行其他程式
+    exe_name = os.path.basename(abs_path).lower()
+    if exe_name not in ("tesseract", "tesseract.exe"):
+        raise ValueError(f"無效的 Tesseract 執行檔名稱：{exe_name}")
+
+    return abs_path
+
 def perform_ocr(image, tesseract_cmd):
     """對圖片進行 OCR 辨識 (改用 subprocess 以解決編碼問題)"""
     temp_img_path = os.path.join(os.getcwd(), "temp_ocr_image.png")
@@ -360,11 +383,15 @@ with st.sidebar:
         if os.path.isdir(user_input_path):
             tesseract_path = os.path.join(user_input_path, "tesseract.exe")
             st.info(f"💡 已自動修正路徑為：{tesseract_path}")
-            
-        if not os.path.exists(tesseract_path):
-            st.error(f"❌ 找不到檔案：{tesseract_path}\n請確認路徑是否正確，並包含 'tesseract.exe'")
+
+        # 驗證並正規化 Tesseract 路徑
+        try:
+            tesseract_path = validate_tesseract_path(tesseract_path)
+        except ValueError as e:
+            st.error(f"❌ 無效的 Tesseract 路徑：{e}")
+            tesseract_path = None
         else:
-            st.success("✅ Tesseract 路徑正確")
+            st.success(f"✅ Tesseract 路徑正確：{tesseract_path}")
             
         # 檢查語言包
         if not os.path.exists(os.path.join(LOCAL_TESSDATA_DIR, "chi_tra.traineddata")):
@@ -462,7 +489,10 @@ with col1:
                 # 執行 OCR
                 pages_text = []
                 for i, img in enumerate(images):
-                    ocr_text = perform_ocr(img, tesseract_path)
+                    if tesseract_path is None:
+                        ocr_text = "Error: 未設定有效的 Tesseract 執行檔路徑，無法進行 OCR。"
+                    else:
+                        ocr_text = perform_ocr(img, tesseract_path)
                     temp_all_text += ocr_text + "\n"
                     pages_text.append(ocr_text)
                     
