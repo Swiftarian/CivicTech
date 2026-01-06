@@ -1,0 +1,1 @@
+ALTER TABLE `bookings` ADD `reminderSent` enum('no','yes') DEFAULT 'no' NOT NULL;
