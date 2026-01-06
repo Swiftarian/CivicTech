@@ -78,11 +78,11 @@ def force_reset_admin():
         conn.commit()
         print("-" * 50)
         print(f"📧 Email 已更新為: {NEW_EMAIL}")
-        print(f"🔑 密碼已重設為: {NEW_PASSWORD}")
+        print("🔑 密碼已重設。")
         print("-" * 50)
-        print("✅ 重設完成！現在可以使用以下帳密登入：")
+        print("✅ 重設完成！帳號資訊如下：")
         print(f"   帳號: {TARGET_USERNAME}")
-        print(f"   密碼: {NEW_PASSWORD}")
+        print("   密碼: (已重設，請透過安全方式通知或更新密碼)")
         print("-" * 50)
 
     except Exception as e:
