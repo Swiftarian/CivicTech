@@ -554,11 +554,11 @@ CREATE TABLE scheduled_task_logs (
 
 ## 相關文件
 
-- [預約Email通知功能說明](BOOKING_EMAIL_NOTIFICATION_GUIDE.md)
-- [志工管理與請假系統使用說明](VOLUNTEER_MANAGEMENT_GUIDE.md)
-- [送餐服務使用說明](MEAL_DELIVERY_GUIDE.md)
-- [Railway部署指南](RAILWAY_DEPLOYMENT.md)
-- [系統功能清單](../todo.md)
+- [預約Email通知功能說明](./BOOKING_EMAIL_NOTIFICATION_GUIDE.md)
+- [志工管理與請假系統使用說明](./VOLUNTEER_MANAGEMENT_GUIDE.md)
+- [送餐服務使用說明](./MEAL_DELIVERY_GUIDE.md)
+- [Railway部署指南](./RAILWAY_DEPLOYMENT.md)
+- [系統功能清單](./todo.md)
 
 ---
 

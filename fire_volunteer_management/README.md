@@ -261,7 +261,7 @@ pnpm test --watch
 
 ## 📚 文件
 
-- [送餐服務使用說明](docs/MEAL_DELIVERY_GUIDE.md)
+- [送餐服務使用說明](./MEAL_DELIVERY_GUIDE.md)
 - [快速開始指南](./QUICKSTART.md)（如果存在）
 
 ## 🚢 部署

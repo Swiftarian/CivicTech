@@ -498,10 +498,10 @@ interface EmailOptions {
 
 ## 相關文件
 
-- [志工管理與請假系統使用說明](VOLUNTEER_MANAGEMENT_GUIDE.md)
-- [送餐服務使用說明](MEAL_DELIVERY_GUIDE.md)
-- [Railway部署指南](RAILWAY_DEPLOYMENT.md)
-- [系統功能清單](../todo.md)
+- [志工管理與請假系統使用說明](./VOLUNTEER_MANAGEMENT_GUIDE.md)
+- [送餐服務使用說明](./MEAL_DELIVERY_GUIDE.md)
+- [Railway部署指南](./RAILWAY_DEPLOYMENT.md)
+- [系統功能清單](./todo.md)
 
 ---
 
