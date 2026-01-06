@@ -8,6 +8,10 @@ from email.mime.text import MIMEText
 from email.mime.multipart import MIMEMultipart
 import os
 import sys
+import os
+
+# Get the parent directory (fire_dept_automation root)
+base_dir = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
 
 def test_email_connection():
     """測試 SMTP 連線與郵件發送"""
@@ -17,7 +21,7 @@ def test_email_connection():
     print("=" * 60)
     
     # 1. 檢查 secrets.toml 檔案
-    secrets_path = ".streamlit/secrets.toml"
+    secrets_path = os.path.join(base_dir, ".streamlit/secrets.toml")
     
     if not os.path.exists(secrets_path):
         print(f"\n❌ 找不到 {secrets_path}")

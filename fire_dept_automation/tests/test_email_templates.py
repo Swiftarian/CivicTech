@@ -9,7 +9,7 @@ import sys
 import os
 
 # 將專案目錄加入路徑
-sys.path.insert(0, os.path.dirname(__file__))
+sys.path.insert(0, os.path.dirname(os.path.dirname(__file__)))
 
 import utils
 
