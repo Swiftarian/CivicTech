@@ -6,6 +6,7 @@ import path from "path";
 import rateLimit from "express-rate-limit";
 import { createServer as createViteServer } from "vite";
 import viteConfig from "../../vite.config";
+import rateLimit from "express-rate-limit";
 
 export async function setupVite(app: Express, server: Server) {
   const serverOptions = {
@@ -21,8 +22,13 @@ export async function setupVite(app: Express, server: Server) {
     appType: "custom",
   });
 
+  const viteIndexLimiter = rateLimit({
+    windowMs: 15 * 60 * 1000,
+    max: 100,
+  });
+
   app.use(vite.middlewares);
-  app.use("*", async (req, res, next) => {
+  app.use("*", viteIndexLimiter, async (req, res, next) => {
     const url = req.originalUrl;
 
     try {
