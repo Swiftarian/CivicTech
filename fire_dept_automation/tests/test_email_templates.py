@@ -217,7 +217,7 @@ def main():
         try:
             import webbrowser
             webbrowser.open(files[0])
-            print(f"\n🌐 已在瀏覽器中開啟: {files[0]}")
+            print("\n🌐 已在瀏覽器中開啟第一個預覽檔案。")
         except:
             pass
 
