@@ -428,21 +428,39 @@ with st.sidebar:
     
     # 2. 設定與資料來源 (使用 Expander 包覆)
     with st.expander("2. 設定與資料來源", expanded=expand_config):
-        # Tesseract 設定
+        # Tesseract 設定 (移除使用者輸入，改為自動偵測與設定檔讀取)
         st.markdown("#### OCR 辨識引擎設定")
-        user_input_path = st.text_input("Tesseract 執行檔路徑", key="tesseract_exe_path")
         
-        # 智慧修正路徑
-        tesseract_path = user_input_path
-        if os.path.isdir(user_input_path):
-            tesseract_path = os.path.join(user_input_path, "tesseract.exe")
-            st.info(f"💡 已自動修正路徑為：{tesseract_path}")
+        tesseract_path = None
+        
+        # 1. 嘗試從設定檔讀取
+        config_path = cfg.CONFIG.get("ocr", {}).get("default_tesseract_path")
+        if config_path and os.path.exists(config_path):
+            tesseract_path = config_path
             
-        if not os.path.exists(tesseract_path):
-            st.error(f"❌ 找不到檔案：{tesseract_path}")
+        # 2. 如果設定檔的路徑不存在，嘗試自動偵測
+        if not tesseract_path:
+            possible_paths = [
+                r"C:\Program Files\Tesseract-OCR\tesseract.exe",
+                r"D:\Program Files\Tesseract-OCR\tesseract.exe",
+                r"E:\Program Files\Tesseract-OCR\tesseract.exe",
+                r"C:\Program Files (x86)\Tesseract-OCR\tesseract.exe",
+                r"D:\Program Files (x86)\Tesseract-OCR\tesseract.exe"
+            ]
+            for p in possible_paths:
+                if os.path.exists(p):
+                    tesseract_path = p
+                    break
+        
+        if tesseract_path and os.path.exists(tesseract_path):
+             st.success(f"✅ 已偵測到 Tesseract: {tesseract_path}")
+             # 更新 session state 以供後續使用
+             st.session_state["tesseract_exe_path"] = tesseract_path
         else:
-            st.success("✅ Tesseract 路徑正確")
-            
+             st.error("❌ 找不到 Tesseract 執行檔！\n請安裝 Tesseract-OCR 或在 config.toml 中設定正確路徑。")
+             # Fallback
+             st.session_state["tesseract_exe_path"] = "tesseract.exe"
+
         # 檢查語言包
         if not os.path.exists(os.path.join(LOCAL_TESSDATA_DIR, "chi_tra.traineddata")):
             st.warning("⚠️ 缺少繁體中文語言包")
