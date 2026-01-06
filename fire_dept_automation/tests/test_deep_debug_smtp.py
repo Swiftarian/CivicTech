@@ -6,6 +6,9 @@ import socket
 import os
 import sys
 
+# Get the parent directory (fire_dept_automation root)
+base_dir = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
+
 def check_dns(hostname):
     print(f"\n🔍 [DNS] Resolving {hostname}...")
     try:
@@ -70,7 +73,8 @@ def main():
     print("="*60)
     
     # Load Secrets
-    secrets_path = '.streamlit/secrets.toml'
+    base_dir = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
+    secrets_path = os.path.join(base_dir, '.streamlit/secrets.toml')
     sender_email = None
     sender_password = None
     
