@@ -439,12 +439,9 @@ def init_admin_user():
             # 生成隨機臨時密碼
             import secrets
             default_password = secrets.token_urlsafe(12)
-            print(f"⚠️ 警告：已生成臨時管理員密碼，請立即更改！")
-            # Security: Write to temp file instead of logging, then delete after first read
-            temp_pwd_file = os.path.join(os.path.dirname(__file__), ".admin_temp_password")
-            with open(temp_pwd_file, 'w') as f:
-                f.write(default_password)
-            print(f"⚠️ 臨時密碼已儲存至: {temp_pwd_file} (請讀取後刪除此檔案)")
+            # Security: Do not log or store the password in any form
+            # User must run reset_admin_tool.py to get a known password
+            print(f"⚠️ 警告：已生成隨機管理員密碼。請執行 reset_admin_tool.py 來設定已知密碼。")
         salt, pwd_hash = auth.hash_password(default_password)
         c.execute('''
             INSERT INTO users (username, password_salt, password_hash, role, email)
