@@ -62,3 +62,13 @@ backend/.env
 /backend/app/static/uploads/pdfs
 /backend/uploads
 .manus
+
+# Archive / compressed files
+*.zip
+*.7z
+*.rar
+*.tar
+*.tar.gz
+*.tgz
+*.bz2
+*.xz
