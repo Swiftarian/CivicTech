@@ -26,9 +26,10 @@ with open(secrets_path, 'r', encoding='utf-8') as f:
             elif line.startswith('sender_password'):
                 sender_password = line.split('=')[1].strip().strip('"').strip("'")
 
-print(f'Email: {sender_email}')
-print(f'Password Length: {len(sender_password)} chars')
-print(f'Password (masked): {sender_password[:4]}...{sender_password[-4:]}')
+# Security: Only show masked credentials
+masked_email = sender_email[:3] + "***@***" + sender_email.split('@')[-1][-4:] if '@' in sender_email else "***"
+print(f'Email (masked): {masked_email}')
+print(f'Password configured: Yes (length: {len(sender_password)} chars)')
 
 try:
     print('\nTesting SMTP connection...')
