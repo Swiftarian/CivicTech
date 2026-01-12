@@ -64,12 +64,9 @@ def test_email_connection():
             print("\n❌ secrets.toml 中找不到 sender_password 設定")
             return False
         
-        # 遮罩部分資訊
-        masked_email = sender_email[:5] + "***" + sender_email[-10:]
-        masked_pwd = sender_password[:4] + "***" + sender_password[-4:]
-        
-        print(f"✅ 寄件者帳號: {masked_email}")
-        print(f"✅ 應用程式密碼: {masked_pwd}")
+        # Security: Only confirm credentials are configured, never log any part of them
+        print(f"✅ 寄件者帳號: 已設定 ({len(sender_email)} 字元)")
+        print(f"✅ 應用程式密碼: 已設定 ({len(sender_password)} 字元)")
         
     except Exception as e:
         print(f"\n❌ 讀取 secrets.toml 失敗: {e}")
