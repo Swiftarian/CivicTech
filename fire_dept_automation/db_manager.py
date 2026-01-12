@@ -440,14 +440,19 @@ def init_admin_user():
             import secrets
             default_password = secrets.token_urlsafe(12)
             print(f"⚠️ 警告：已生成臨時管理員密碼，請立即更改！")
-            print(f"⚠️ 臨時密碼: {default_password}")
+            # Security: Write to temp file instead of logging, then delete after first read
+            temp_pwd_file = os.path.join(os.path.dirname(__file__), ".admin_temp_password")
+            with open(temp_pwd_file, 'w') as f:
+                f.write(default_password)
+            print(f"⚠️ 臨時密碼已儲存至: {temp_pwd_file} (請讀取後刪除此檔案)")
         salt, pwd_hash = auth.hash_password(default_password)
         c.execute('''
             INSERT INTO users (username, password_salt, password_hash, role, email)
             VALUES (?, ?, ?, ?, ?)
         ''', ("admin", salt, pwd_hash, "admin", "admin@example.com"))
         conn.commit()
-        print("✅ Default admin user created. Please change password immediately!")
+        # Security: Never log the password in clear text
+        print("✅ Default admin user created. Check system config or environment variable for initial password.")
     conn.close()
 
 # --- User Management ---
