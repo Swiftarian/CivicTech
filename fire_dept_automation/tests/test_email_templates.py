@@ -204,7 +204,7 @@ def main():
     print("=" * 60)
     print(f"\n已生成 {len(files)} 個 HTML 預覽檔案：")
     for file in files:
-        print(f"  • {file}")
+        print(f"  • (file generated)")
     
     print("\n📌 請使用瀏覽器開啟這些檔案檢查顯示效果。")
     print("📌 建議同時測試：")
@@ -217,7 +217,7 @@ def main():
         try:
             import webbrowser
             webbrowser.open(files[0])
-            print(f"\n🌐 已在瀏覽器中開啟: {files[0]}")
+            print(f"\n🌐 已在瀏覽器中開啟預覽檔案")
         except:
             pass
 
