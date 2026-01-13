@@ -39,7 +39,7 @@ export default function VolunteerDelivery() {
   const trackingIntervalRef = useRef<number | null>(null);
 
   const { data: deliveries, refetch } = trpc.mealDeliveries.getAll.useQuery();
-  
+
   const handleShowQRCode = async () => {
     if (!selectedDeliveryId) return;
     try {
@@ -119,7 +119,7 @@ export default function VolunteerDelivery() {
     navigator.geolocation.getCurrentPosition(
       (position) => {
         const { latitude, longitude, speed, accuracy } = position.coords;
-        
+
         addTrackingMutation.mutate({
           deliveryId: selectedDeliveryId,
           latitude: latitude.toString(),
@@ -131,7 +131,7 @@ export default function VolunteerDelivery() {
         // 更新地圖上的當前位置標記
         if (map) {
           const pos = { lat: latitude, lng: longitude };
-          
+
           if (currentMarker) {
             currentMarker.setPosition(pos);
           } else {
@@ -150,7 +150,7 @@ export default function VolunteerDelivery() {
             });
             setCurrentMarker(marker);
           }
-          
+
           map.setCenter(pos);
         }
 
@@ -229,7 +229,7 @@ export default function VolunteerDelivery() {
                 <div className="space-y-3">
                   {myDeliveries.map(delivery => {
                     const isSelected = selectedDeliveryId === delivery.id;
-                    
+
                     return (
                       <Card
                         key={delivery.id}
@@ -347,7 +347,7 @@ export default function VolunteerDelivery() {
               <MapView onMapReady={handleMapReady} />
             </CardContent>
           </Card>
-          
+
           {!selectedDeliveryId && (
             <div className="mt-4 text-center text-muted-foreground">
               <p>請從左側選擇一個送餐任務</p>
@@ -392,9 +392,9 @@ export default function VolunteerDelivery() {
             {qrCodeData ? (
               <div className="space-y-4">
                 <div className="flex justify-center">
-                  <img 
-                    src={qrCodeData.qrCodeDataUrl} 
-                    alt="QR Code" 
+                  <img
+                    src={qrCodeData.qrCodeDataUrl}
+                    alt="QR Code"
                     className="w-64 h-64"
                   />
                 </div>

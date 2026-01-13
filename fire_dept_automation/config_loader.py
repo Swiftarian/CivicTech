@@ -19,7 +19,7 @@ def load_config():
     """讀取 config.toml 設定檔"""
     if not TOMLI_AVAILABLE:
         return get_default_config()
-    
+
     try:
         with open(CONFIG_PATH, "rb") as f:
             return tomli.load(f)

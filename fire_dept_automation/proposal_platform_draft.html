@@ -1,23 +1,28 @@
 <!DOCTYPE html>
 <html lang="zh-Hant">
+
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>臺東服務媒合+ (Plus) | 智慧服務平台</title>
-    
+
     <!-- Google Fonts - Noto Sans TC -->
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
     <link href="https://fonts.googleapis.com/css2?family=Noto+Sans+TC:wght@400;500;700&display=swap" rel="stylesheet">
-    
+
     <!-- Font Awesome for Icons -->
-    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css"
+        integrity="sha512-iecdLmaskl7CVkqkXNQ/ZH/XLlvWZOJyj7Yy7tcenmpD1ypASozpmT/E0iPtmFIB46ZmdtAc9eNBvH0H/ZpiBw=="
+        crossorigin="anonymous" referrerpolicy="no-referrer" />
 
     <style>
         /* CSS 變數 - 輕鬆更換主題顏色 */
         :root {
-            --primary-blue: #005A8D; /* 臺東的深藍海洋 */
-            --accent-orange: #FF6700; /* 溫暖的陽光橘 */
+            --primary-blue: #005A8D;
+            /* 臺東的深藍海洋 */
+            --accent-orange: #FF6700;
+            /* 溫暖的陽光橘 */
             --light-gray: #f8f9fa;
             --dark-gray: #343a40;
             --white: #ffffff;
@@ -72,7 +77,7 @@
             z-index: 1000;
             transition: box-shadow 0.3s ease;
         }
-        
+
         .navbar.scrolled {
             box-shadow: var(--shadow);
         }
@@ -106,7 +111,7 @@
             padding-bottom: 0.25rem;
             transition: color 0.3s ease;
         }
-        
+
         .navbar a:hover {
             color: var(--accent-orange);
         }
@@ -121,7 +126,7 @@
             background-color: var(--accent-orange);
             transition: all 0.3s ease;
         }
-        
+
         .navbar a:hover::after {
             width: 100%;
             left: 0;
@@ -151,7 +156,7 @@
             margin: 0 auto 2rem auto;
             font-weight: 400;
         }
-        
+
         .btn {
             display: inline-block;
             padding: 0.8rem 2rem;
@@ -181,7 +186,7 @@
             text-align: center;
             margin-bottom: 4rem;
         }
-        
+
         .section-title h2 {
             font-size: 2.5rem;
             margin-bottom: 1rem;
@@ -210,7 +215,7 @@
             color: var(--accent-orange);
             margin-bottom: 1rem;
         }
-        
+
         .about-diagram {
             text-align: center;
             padding: 2rem;
@@ -274,6 +279,7 @@
         #cta .section-title h2 {
             color: var(--white);
         }
+
         #cta .section-title .subtitle {
             color: rgba(255, 255, 255, 0.8);
         }
@@ -303,25 +309,30 @@
             text-align: center;
             padding: 2rem 0;
         }
-        
+
         /* 響應式設計 */
         @media (max-width: 768px) {
             .hero-content h1 {
                 font-size: 2.5rem;
             }
+
             .section-title h2 {
                 font-size: 2rem;
             }
-            .about-content, .services-grid {
+
+            .about-content,
+            .services-grid {
                 grid-template-columns: 1fr;
             }
+
             .navbar .nav-links {
-                display: none; /* 在手機版隱藏導覽列，或改為漢堡選單 */
+                display: none;
+                /* 在手機版隱藏導覽列，或改為漢堡選單 */
             }
         }
-
     </style>
 </head>
+
 <body>
 
     <!-- 導航列 -->
@@ -401,7 +412,7 @@
         <!-- 行動呼籲 -->
         <section id="cta">
             <div class="container">
-                 <div class="section-title fade-in">
+                <div class="section-title fade-in">
                     <h2>加入我們，共創美好臺東</h2>
                     <p class="subtitle">無論您是需要服務的民眾、熱心的志工，或是縣府夥伴，都歡迎登入平台。</p>
                 </div>
@@ -420,7 +431,7 @@
             <p>© 2024 臺東縣政府 | 臺東服務媒合+ (Plus) 專案</p>
         </div>
     </footer>
-    
+
     <script>
         // JavaScript for Navbar Scroll Effect
         const navbar = document.querySelector('.navbar');
@@ -439,7 +450,7 @@
             rootMargin: "0px 0px -50px 0px" // 向上偏移50px
         };
 
-        const appearOnScroll = new IntersectionObserver(function(entries, appearOnScroll) {
+        const appearOnScroll = new IntersectionObserver(function (entries, appearOnScroll) {
             entries.forEach(entry => {
                 if (!entry.isIntersecting) {
                     return;
@@ -456,4 +467,5 @@
 
     </script>
 </body>
+
 </html>

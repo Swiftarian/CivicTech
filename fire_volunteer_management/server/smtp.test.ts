@@ -5,7 +5,7 @@ describe("SMTP連線驗證", () => {
   it("應該能夠成功發送測試Email", async () => {
     // 發送測試Email到設定的SMTP帳號
     const testEmail = process.env.SMTP_USER || "test@example.com";
-    
+
     const result = await sendEmail(
       {
         to: testEmail,
@@ -37,7 +37,7 @@ describe("SMTP連線驗證", () => {
 
     // 驗證發送結果
     expect(result).toBe(true);
-    
+
     console.log("✓ SMTP測試Email已發送");
     console.log(`✓ 收件人: ${testEmail}`);
     console.log("✓ 請檢查您的信箱（包含垃圾郵件資料夾）");

@@ -13,15 +13,15 @@ import { toast } from "sonner";
 
 export function NotificationList() {
   const utils = trpc.useUtils();
-  
+
   // 取得未讀通知
   const { data: unreadNotifications = [] } = trpc.notifications.getUnread.useQuery(undefined, {
     refetchInterval: 30000, // 每30秒自動刷新
   });
-  
+
   // 取得所有通知
   const { data: allNotifications = [] } = trpc.notifications.getMyNotifications.useQuery();
-  
+
   // 標記單一通知為已讀
   const markAsRead = trpc.notifications.markAsRead.useMutation({
     onSuccess: () => {
@@ -29,7 +29,7 @@ export function NotificationList() {
       utils.notifications.getMyNotifications.invalidate();
     },
   });
-  
+
   // 標記所有通知為已讀
   const markAllAsRead = trpc.notifications.markAllAsRead.useMutation({
     onSuccess: () => {
@@ -38,15 +38,15 @@ export function NotificationList() {
       utils.notifications.getMyNotifications.invalidate();
     },
   });
-  
+
   const handleNotificationClick = (id: number, isRead: boolean) => {
     if (!isRead) {
       markAsRead.mutate({ id });
     }
   };
-  
+
   const unreadCount = unreadNotifications.length;
-  
+
   return (
     <Popover>
       <PopoverTrigger asChild>
@@ -74,7 +74,7 @@ export function NotificationList() {
             </Button>
           )}
         </div>
-        
+
         <ScrollArea className="h-[400px]">
           {allNotifications.length === 0 ? (
             <div className="p-8 text-center text-muted-foreground">
