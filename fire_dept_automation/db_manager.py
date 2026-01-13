@@ -20,44 +20,44 @@ def migrate_database():
     """
     conn = get_connection()
     c = conn.cursor()
-    
+
     try:
         # 檢查 cases 表是否有 assigned_to 欄位
         c.execute("PRAGMA table_info(cases)")
         columns = [column[1] for column in c.fetchall()]
-        
+
         if 'assigned_to' not in columns:
             print("⚠️ 偵測到舊資料庫，正在執行遷移...")
             c.execute("ALTER TABLE cases ADD COLUMN assigned_to TEXT")
             conn.commit()
             print("✅ 已新增 assigned_to 欄位")
-        
+
         # 重新取得欄位列表
         c.execute("PRAGMA table_info(cases)")
         columns = [column[1] for column in c.fetchall()]
-        
+
         # 檢查 cases 表是否有 line_id 欄位（使用者自訂 ID）
         if 'line_id' not in columns:
             print("⚠️ 正在新增 line_id 欄位...")
             c.execute("ALTER TABLE cases ADD COLUMN line_id TEXT")
             conn.commit()
             print("✅ 已新增 line_id 欄位")
-        
+
         # 重新取得欄位列表
         c.execute("PRAGMA table_info(cases)")
         columns = [column[1] for column in c.fetchall()]
-        
+
         # 檢查 cases 表是否有 line_user_id 欄位（LINE Messaging API 用）
         if 'line_user_id' not in columns:
             print("⚠️ 正在新增 line_user_id 欄位（LINE Messaging API）...")
             c.execute("ALTER TABLE cases ADD COLUMN line_user_id TEXT")
             conn.commit()
             print("✅ 已新增 line_user_id 欄位")
-        
+
         # 重新取得欄位列表
         c.execute("PRAGMA table_info(cases)")
         columns = [column[1] for column in c.fetchall()]
-        
+
         # 檢查 cases 表是否有 is_archived 欄位（封存功能）
         if 'is_archived' not in columns:
             print("⚠️ 正在新增 is_archived 欄位（封存功能）...")
@@ -91,7 +91,7 @@ def migrate_database():
             c.execute("ALTER TABLE delivery_records ADD COLUMN abnormal_reason TEXT")
             conn.commit()
             print("✅ 已新增 abnormal_reason 欄位")
-        
+
         # 檢查 elderly_profiles 表是否有 diet_type 欄位
         c.execute("PRAGMA table_info(elderly_profiles)")
         columns = [column[1] for column in c.fetchall()]
@@ -100,7 +100,7 @@ def migrate_database():
             c.execute("ALTER TABLE elderly_profiles ADD COLUMN diet_type TEXT DEFAULT '一般'")
             conn.commit()
             print("✅ 已新增 diet_type 欄位")
-        
+
         # 檢查 delivery_records 表是否有 photo_path 欄位
         c.execute("PRAGMA table_info(delivery_records)")
         columns = [column[1] for column in c.fetchall()]
@@ -109,7 +109,7 @@ def migrate_database():
             c.execute("ALTER TABLE delivery_records ADD COLUMN photo_path TEXT")
             conn.commit()
             print("✅ 已新增 photo_path 欄位")
-    
+
     except Exception as e:
         print(f"❌ 資料庫遷移失敗: {e}")
     finally:
@@ -128,26 +128,26 @@ def backup_database():
     if not os.path.exists(DB_NAME):
         print(f"⚠️ 資料庫檔案 {DB_NAME} 不存在，跳過備份")
         return None
-    
+
     # 建立備份資料夾
     backup_dir = "backups"
     if not os.path.exists(backup_dir):
         os.makedirs(backup_dir)
         print(f"✅ 已建立備份資料夾：{backup_dir}")
-    
+
     # 產生備份檔名
     timestamp = time.strftime("%Y%m%d_%H%M%S")
     backup_filename = f"cases_{timestamp}.db"
     backup_path = os.path.join(backup_dir, backup_filename)
-    
+
     try:
         # 複製資料庫檔案
         shutil.copy2(DB_NAME, backup_path)
         print(f"✅ 資料庫備份成功：{backup_path}")
-        
+
         # 自動清理：保留最新 30 個備份
         cleanup_old_backups(backup_dir, max_backups=30)
-        
+
         return backup_path
     except Exception as e:
         print(f"❌ 資料庫備份失敗: {e}")
@@ -161,24 +161,24 @@ def cleanup_old_backups(backup_dir, max_backups=30):
     try:
         # 取得所有備份檔案
         backup_files = [
-            os.path.join(backup_dir, f) 
-            for f in os.listdir(backup_dir) 
+            os.path.join(backup_dir, f)
+            for f in os.listdir(backup_dir)
             if f.startswith("cases_") and f.endswith(".db")
         ]
-        
+
         # 如果備份數量超過上限
         if len(backup_files) > max_backups:
             # 按修改時間排序（最舊的在前）
             backup_files.sort(key=lambda x: os.path.getmtime(x))
-            
+
             # 計算需要刪除的數量
             files_to_delete = backup_files[:len(backup_files) - max_backups]
-            
+
             # 刪除舊備份
             for old_file in files_to_delete:
                 os.remove(old_file)
                 print(f"🗑️  已刪除舊備份：{os.path.basename(old_file)}")
-            
+
             print(f"✅ 備份清理完成，保留最新 {max_backups} 個備份")
     except Exception as e:
         print(f"⚠️ 備份清理失敗: {e}")
@@ -186,21 +186,22 @@ def cleanup_old_backups(backup_dir, max_backups=30):
 def archive_cases(case_ids):
     """
     封存指定案件
-    
+
     Args:
         case_ids: 要封存的案件 ID 列表
-    
+
     Returns:
         (success: bool, message: str)
     """
     if not case_ids:
         return False, "未選擇任何案件"
-    
+
     conn = get_connection()
     c = conn.cursor()
     try:
-        # 使用參數化查詢防止 SQL 注入
+        # 使用參數化查詢防止 SQL 注入 (placeholders 為程式產生的 '?' 字元)
         placeholders = ','.join(['?' for _ in case_ids])
+        # nosemgrep: python.sqlalchemy.security.sqlalchemy-execute-raw-query
         c.execute(f"UPDATE cases SET is_archived = 1 WHERE id IN ({placeholders})", case_ids)
         conn.commit()
         return True, f"成功封存 {len(case_ids)} 筆案件"
@@ -213,7 +214,7 @@ def seed_meal_data():
     """若資料表為空，寫入測試資料"""
     conn = get_connection()
     c = conn.cursor()
-    
+
     try:
         # Check if routes exist
         c.execute("SELECT count(*) FROM delivery_routes")
@@ -221,7 +222,7 @@ def seed_meal_data():
             return
 
         print("🌱 正在寫入送餐系統測試資料...")
-        
+
         # 1. 建立測試帳號 volunteer1
         import auth
         c.execute("SELECT * FROM users WHERE username = 'volunteer1'")
@@ -233,19 +234,19 @@ def seed_meal_data():
                 VALUES (?, ?, ?, ?, ?)
             """, ("volunteer1", salt, hash_value, "volunteer", "volunteer1@example.com"))
             conn.commit()
-        
+
         # 2. Routes
         routes = [
             ("建和線", "建和社區方向", "volunteer1"),  # 指派給 volunteer1
             ("溫泉線", "知本溫泉方向", "josh"),
             ("市區線", "台東市區", None)
         ]
-        
+
         route_ids = []
         for name, desc, volunteer in routes:
             c.execute("INSERT INTO delivery_routes (route_name, description, default_volunteer_id) VALUES (?, ?, ?)", (name, desc, volunteer))
             route_ids.append(c.lastrowid)
-        
+
         # 2. Elderly
         elderly_data = [
             ("張爺爺", "台東市建和路1號", "一般", route_ids[0], 1),
@@ -254,31 +255,31 @@ def seed_meal_data():
             ("陳阿姨", "台東市溫泉路18號", "低鹽", route_ids[1], 2),
             ("林爺爺", "台東市中華路一段100號", "一般", route_ids[2], 1)
         ]
-        
+
         for name, addr, diet, rid, seq in elderly_data:
             c.execute("INSERT INTO elderly_profiles (name, address, diet_type, route_id, sequence) VALUES (?, ?, ?, ?, ?)", (name, addr, diet, rid, seq))
-            
+
         # 3. Today's Tasks (確保包含今天)
         today = datetime.date.today().strftime("%Y-%m-%d")
         print(f"📅 建立今天 ({today}) 的排班資料")
-        
+
         # Create tasks for all routes
         for i, (name, desc, volunteer) in enumerate(routes):
             route_id = route_ids[i]
             # Use default volunteer if available
             assigned = volunteer
-            c.execute("INSERT INTO daily_tasks (date, route_id, assigned_volunteer, status) VALUES (?, ?, ?, ?)", 
+            c.execute("INSERT INTO daily_tasks (date, route_id, assigned_volunteer, status) VALUES (?, ?, ?, ?)",
                       (today, route_id, assigned, "待執行"))
-        
+
         # 也建立未來1週的排班 (用於日曆測試)
         for day_offset in range(1, 8):
             future_date = (datetime.date.today() + datetime.timedelta(days=day_offset)).strftime("%Y-%m-%d")
             for i, (name, desc, volunteer) in enumerate(routes):
                 route_id = route_ids[i]
                 # 未來的任務不指派，留給志工認領
-                c.execute("INSERT INTO daily_tasks (date, route_id, assigned_volunteer, status) VALUES (?, ?, ?, ?)", 
+                c.execute("INSERT INTO daily_tasks (date, route_id, assigned_volunteer, status) VALUES (?, ?, ?, ?)",
                           (future_date, route_id, None, "待執行"))
-                      
+
         conn.commit()
         print("✅ 測試資料寫入完成 (包含今天與未來7天)")
     except Exception as e:
@@ -290,7 +291,7 @@ def init_db():
     """初始化資料庫：建立案件資料表"""
     # 在初始化之前先備份現有資料庫（如果存在）
     backup_database()
-    
+
     conn = get_connection()
     c = conn.cursor()
     c.execute('''
@@ -335,7 +336,7 @@ def init_db():
             timestamp TIMESTAMP DEFAULT CURRENT_TIMESTAMP
         )
     ''')
-    
+
     # Create elderly_profiles table (送餐系統：長者資料)
     c.execute('''
         CREATE TABLE IF NOT EXISTS elderly_profiles (
@@ -353,7 +354,7 @@ def init_db():
             created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
         )
     ''')
-    
+
     # Create delivery_routes table (送餐系統：送餐路線)
     c.execute('''
         CREATE TABLE IF NOT EXISTS delivery_routes (
@@ -366,7 +367,7 @@ def init_db():
             created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
         )
     ''')
-    
+
     # Create daily_tasks table (送餐系統：每日排班)
     c.execute('''
         CREATE TABLE IF NOT EXISTS daily_tasks (
@@ -380,7 +381,7 @@ def init_db():
             FOREIGN KEY (route_id) REFERENCES delivery_routes(id)
         )
     ''')
-    
+
     # Create delivery_records table (送餐系統：送達紀錄)
     c.execute('''
         CREATE TABLE IF NOT EXISTS delivery_records (
@@ -397,7 +398,7 @@ def init_db():
             FOREIGN KEY (elderly_id) REFERENCES elderly_profiles(id)
         )
     ''')
-    
+
     # Create museum_bookings table (防災館預約系統)
     c.execute('''
         CREATE TABLE IF NOT EXISTS museum_bookings (
@@ -413,16 +414,16 @@ def init_db():
             created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
         )
     ''')
-    
+
     conn.commit()
     conn.close()
-    
+
     # Execute database migration for existing databases
     migrate_database()
-    
+
     # Seed meal data if empty
     seed_meal_data()
-    
+
     # Initialize default admin if no users exist
     init_admin_user()
 
@@ -507,7 +508,7 @@ def get_all_users():
 def get_all_usernames():
     """
     取得所有使用者帳號列表（供派案下拉選單使用）
-    
+
     Returns:
         list: 帳號列表，例如 ['admin', 'josh', 'staff1']
     """
@@ -544,7 +545,7 @@ def create_case(name, email, phone, place_name, place_address, file_path, line_i
     case_id = str(uuid.uuid4())[:8]  # 產生 8 位隨機單號
     try:
         c.execute('''
-            INSERT INTO cases (id, applicant_name, applicant_email, applicant_phone, 
+            INSERT INTO cases (id, applicant_name, applicant_email, applicant_phone,
                              place_name, place_address, file_path, line_id, status)
             VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)
         ''', (case_id, name, email, phone, place_name, place_address, file_path, line_id, '待分案'))
@@ -581,8 +582,8 @@ def get_cases_by_phone(phone):
     # 移除電話中的符號以便模糊比對
     clean_phone = phone.replace("-", "").replace(" ", "").replace("(", "").replace(")", "")
     c.execute('''
-        SELECT * FROM cases 
-        WHERE REPLACE(REPLACE(REPLACE(REPLACE(applicant_phone, '-', ''), ' ', ''), '(', ''), ')', '') LIKE ? 
+        SELECT * FROM cases
+        WHERE REPLACE(REPLACE(REPLACE(REPLACE(applicant_phone, '-', ''), ' ', ''), '(', ''), ')', '') LIKE ?
         ORDER BY submission_date DESC
     ''', (f'%{clean_phone}%',))
     cases = c.fetchall()
@@ -593,7 +594,7 @@ def get_all_cases(status_filter=None, include_archived=False):
     """取得所有案件 (管理者用)"""
     conn = get_connection()
     c = conn.cursor()
-    
+
     # 建構查詢條件
     if include_archived:
         # 只顯示已封存案件
@@ -601,12 +602,15 @@ def get_all_cases(status_filter=None, include_archived=False):
     else:
         # 預設只顯示未封存案件
         archived_condition = "is_archived = 0"
-    
+
     if status_filter and status_filter != "全部":
+        # nosemgrep: python.sqlalchemy.security.sqlalchemy-execute-raw-query
         c.execute(f'SELECT * FROM cases WHERE {archived_condition} AND status = ? ORDER BY submission_date DESC', (status_filter,))
     else:
+        # nosemgrep: python.sqlalchemy.security.sqlalchemy-execute-raw-query
+        # nosemgrep: python.lang.security.audit.formatted-sql-query
         c.execute(f'SELECT * FROM cases WHERE {archived_condition} ORDER BY submission_date DESC')
-        
+
     cases = c.fetchall()
     conn.close()
     return cases
@@ -615,7 +619,7 @@ def get_cases_by_assignee(username, status_filter=None, include_archived=False):
     """取得指派給特定同仁的案件 (用於權限控管)"""
     conn = get_connection()
     c = conn.cursor()
-    
+
     # 建構查詢條件
     if include_archived:
         # 只顯示已封存案件
@@ -623,14 +627,16 @@ def get_cases_by_assignee(username, status_filter=None, include_archived=False):
     else:
         # 預設只顯示未封存案件
         archived_condition = "is_archived = 0"
-    
+
     if status_filter and status_filter != "全部":
-        c.execute(f'SELECT * FROM cases WHERE assigned_to = ? AND {archived_condition} AND status = ? ORDER BY submission_date DESC', 
+        # nosemgrep: python.sqlalchemy.security.sqlalchemy-execute-raw-query
+        c.execute(f'SELECT * FROM cases WHERE assigned_to = ? AND {archived_condition} AND status = ? ORDER BY submission_date DESC',
                   (username, status_filter))
     else:
-        c.execute(f'SELECT * FROM cases WHERE assigned_to = ? AND {archived_condition} ORDER BY submission_date DESC', 
+        # nosemgrep: python.sqlalchemy.security.sqlalchemy-execute-raw-query
+        c.execute(f'SELECT * FROM cases WHERE assigned_to = ? AND {archived_condition} ORDER BY submission_date DESC',
                   (username,))
-    
+
     cases = c.fetchall()
     conn.close()
     return cases
@@ -639,12 +645,12 @@ def update_case_status(case_id, new_status, notes=None):
     """更新案件狀態"""
     conn = get_connection()
     c = conn.cursor()
-    
+
     if notes:
         c.execute('UPDATE cases SET status = ?, review_notes = ? WHERE id = ?', (new_status, notes, case_id))
     else:
         c.execute('UPDATE cases SET status = ? WHERE id = ?', (new_status, case_id))
-        
+
     conn.commit()
     conn.close()
 
@@ -659,29 +665,29 @@ def update_case_info(case_id, place_name, applicant_name):
 def update_case_assignment(case_id_list, username):
     """
     批量更新案件的承辦人
-    
+
     Args:
         case_id_list: 案件單號列表 (list)
         username: 承辦人帳號 (str)
-    
+
     Returns:
         int: 成功更新的案件數量
     """
     conn = get_connection()
     c = conn.cursor()
     updated_count = 0
-    
+
     try:
         for case_id in case_id_list:
             # 1. 更新承辦人
             # 2. 如果狀態是 '待分案'，自動改為 '審核中'
             c.execute('''
-                UPDATE cases 
+                UPDATE cases
                 SET assigned_to = ?,
                     status = CASE WHEN status = '待分案' THEN '審核中' ELSE status END
                 WHERE id = ?
             ''', (username, case_id))
-            
+
             if c.rowcount > 0:
                 updated_count += 1
         conn.commit()
@@ -690,7 +696,7 @@ def update_case_assignment(case_id_list, username):
         conn.rollback()
     finally:
         conn.close()
-    
+
     return updated_count
 
 def delete_case(case_id):
@@ -744,26 +750,28 @@ def update_elderly_profile_fields(profile_id, updates):
     """
     if not updates:
         return
-    
+
     # 白名單驗證欄位名稱，防止 SQL 注入
-    ALLOWED_FIELDS = ['name', 'address', 'phone', 'gps_lat', 'gps_lon', 
+    ALLOWED_FIELDS = ['name', 'address', 'phone', 'gps_lat', 'gps_lon',
                       'diet_type', 'special_notes', 'route_id', 'sequence', 'status']
-    
+
     # 過濾掉不在白名單中的欄位
     safe_updates = {k: v for k, v in updates.items() if k in ALLOWED_FIELDS}
-    
+
     if not safe_updates:
         print("Warning: No valid fields to update")
         return
-        
+
     conn = get_connection()
     c = conn.cursor()
-    
+
+    # 安全: set_clause 欄位名稱來自 ALLOWED_FIELDS 白名單驗證
     set_clause = ", ".join([f"{k} = ?" for k in safe_updates.keys()])
     values = list(safe_updates.values())
     values.append(profile_id)
-    
+
     try:
+        # nosemgrep: python.sqlalchemy.security.sqlalchemy-execute-raw-query
         c.execute(f"UPDATE elderly_profiles SET {set_clause} WHERE id = ?", values)
         conn.commit()
     except Exception as e:
@@ -791,14 +799,14 @@ def create_delivery_route(route_name, description="", default_volunteer_id=None)
             VALUES (?, ?, ?)
         ''', (route_name, description, default_volunteer_id))
         route_id = c.lastrowid
-        
+
         # 2. 自動建立今日任務
         today = datetime.date.today().strftime("%Y-%m-%d")
         c.execute('''
             INSERT INTO daily_tasks (date, route_id, assigned_volunteer, status)
             VALUES (?, ?, ?, ?)
         ''', (today, route_id, default_volunteer_id, '未配送'))
-        
+
         conn.commit()
         return route_id
     except Exception as e:
@@ -912,24 +920,24 @@ def release_task(task_id):
 def get_task_events(start_date, end_date, current_user=None):
     """
     獲取日曆事件格式的任務資料 (用於streamlit-calendar)
-    
+
     Args:
         start_date: 開始日期 (YYYY-MM-DD)
         end_date: 結束日期 (YYYY-MM-DD)
         current_user: 當前使用者帳號 (用於顏色區分), 可為 None
-        
+
     Returns:
         list: 日曆事件列表, 每個事件包含 title, start, backgroundColor 等欄位
     """
     tasks = get_tasks_by_date_range(start_date, end_date)
     events = []
-    
+
     for task in tasks:
         volunteer = task['assigned_volunteer']
         route_name = task['route_name']
         task_date = str(task['date']) # Ensure string format YYYY-MM-DD
         task_id = task['id']
-        
+
         # 顏色邏輯
         if not volunteer:
             # 缺人 -> 紅色
@@ -941,9 +949,9 @@ def get_task_events(start_date, end_date, current_user=None):
             title = f"🟢 {route_name} (我)"
         else:
             # 別人 -> 藍色
-            color = "#3788d8" 
+            color = "#3788d8"
             title = f"👤 {route_name} ({volunteer})"
-            
+
         events.append({
             "title": title,
             "start": task_date,
@@ -957,7 +965,7 @@ def get_task_events(start_date, end_date, current_user=None):
                 "routeName": route_name
             }
         })
-        
+
     return events
 
 # --- 送達紀錄管理 ---
@@ -1006,7 +1014,7 @@ def get_delivery_reports(start_date, end_date):
     conn = get_connection()
     c = conn.cursor()
     c.execute('''
-        SELECT 
+        SELECT
             dt.date,
             dr.route_name,
             ep.name as elderly_name,
@@ -1023,7 +1031,7 @@ def get_delivery_reports(start_date, end_date):
         WHERE dt.date BETWEEN ? AND ?
         ORDER BY dt.date DESC, dr.route_name, ep.sequence
     ''', (start_date, end_date))
-    
+
     rows = c.fetchall()
     conn.close()
     return rows
@@ -1100,24 +1108,26 @@ def reset_meal_data():
     """
     conn = get_connection()
     c = conn.cursor()
-    
+
     try:
         print("🗑️ 正在清除送餐系統資料...")
-        
+
         # 刪除所有送餐相關表格資料（保留表結構）
         # 使用白名單驗證 table 名稱，防止 SQL 注入
         ALLOWED_TABLES = ['delivery_records', 'daily_tasks', 'elderly_profiles', 'delivery_routes']
         for table in ALLOWED_TABLES:
             # 直接使用白名單中的值，無需額外驗證
+            # nosemgrep: python.sqlalchemy.security.sqlalchemy-execute-raw-query
+            # nosemgrep: python.lang.security.audit.formatted-sql-query
             c.execute(f"DELETE FROM {table}")
             print(f"  ✅ 已清空 {table}")
-        
+
         conn.commit()
         print("🔄 重新載入種子資料...")
-        
+
         # 重新執行種子資料
         seed_meal_data()
-        
+
         return True
     except Exception as e:
         print(f"❌ 重置失敗: {e}")

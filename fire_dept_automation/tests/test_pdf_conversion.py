@@ -25,12 +25,12 @@ def test_conversion():
         print("python-docx not installed, creating an empty file (might fail conversion if strict)")
         with open(docx_path, "w") as f:
             f.write("Dummy content")
-    
+
     print("Starting conversion...")
     try:
         pdf_path = convert_doc_to_pdf(docx_path)
         print(f"Conversion successful! PDF saved at: {pdf_path}")
-        
+
         if os.path.exists(pdf_path):
             print("PDF file exists.")
             # Clean up
@@ -38,7 +38,7 @@ def test_conversion():
             print("Cleaned up PDF.")
         else:
             print("Error: PDF file reported as created but not found.")
-            
+
     except Exception as e:
         print(f"Conversion FAILED: {e}")
     finally:
@@ -53,5 +53,5 @@ if __name__ == "__main__":
     except ImportError:
         print("Installing python-docx for test generation...")
         os.system(f"{sys.executable} -m pip install python-docx")
-        
+
     test_conversion()

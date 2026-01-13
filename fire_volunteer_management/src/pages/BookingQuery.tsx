@@ -16,7 +16,7 @@ export default function BookingQuery() {
 
   const { refetch, isFetching } = trpc.bookings.getByNumber.useQuery(
     { bookingNumber },
-    { 
+    {
       enabled: false,
       retry: false
     }
@@ -29,7 +29,7 @@ export default function BookingQuery() {
     }
 
     const result = await refetch();
-    
+
     if (result.data) {
       setSearchResult(result.data);
       toast.success("查詢成功");
@@ -46,9 +46,9 @@ export default function BookingQuery() {
       cancelled: { label: "已取消", className: "badge-cancelled" },
       completed: { label: "已完成", className: "badge-completed" }
     };
-    
+
     const statusInfo = statusMap[status] || { label: status, className: "badge-status" };
-    
+
     return (
       <span className={`badge-status ${statusInfo.className}`}>
         {statusInfo.label}
@@ -90,7 +90,7 @@ export default function BookingQuery() {
                     onKeyDown={(e) => e.key === "Enter" && handleSearch()}
                   />
                 </div>
-                <Button 
+                <Button
                   onClick={handleSearch}
                   disabled={isFetching}
                 >
@@ -125,7 +125,7 @@ export default function BookingQuery() {
                 <div className="grid md:grid-cols-2 gap-6">
                   <div className="space-y-4">
                     <h4 className="font-semibold text-lg border-b pb-2">聯絡資訊</h4>
-                    
+
                     <div className="flex items-start gap-3">
                       <Users className="h-5 w-5 text-muted-foreground mt-0.5" />
                       <div>
@@ -165,7 +165,7 @@ export default function BookingQuery() {
 
                   <div className="space-y-4">
                     <h4 className="font-semibold text-lg border-b pb-2">參訪資訊</h4>
-                    
+
                     <div className="flex items-start gap-3">
                       <Calendar className="h-5 w-5 text-muted-foreground mt-0.5" />
                       <div>

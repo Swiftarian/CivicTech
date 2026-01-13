@@ -32,15 +32,15 @@ export function ImportVolunteersDialog({ onSuccess }: ImportVolunteersDialogProp
       toast.success(
         `成功匯入 ${result.success} 位志工${result.failed > 0 ? `，失敗 ${result.failed} 位` : ""}`
       );
-      
+
       // 儲存結果並顯示詳細對話框
       setImportResult(result);
       setShowResult(true);
-      
+
       // 關閉上傳對話框
       setOpen(false);
       setFile(null);
-      
+
       // 通知父組件更新
       onSuccess?.();
     },

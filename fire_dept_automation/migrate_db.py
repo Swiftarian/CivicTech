@@ -10,9 +10,9 @@ def migrate():
 
     conn = sqlite3.connect(DB_NAME)
     c = conn.cursor()
-    
+
     print("Starting migration...")
-    
+
     # Add place_name column
     try:
         c.execute("ALTER TABLE cases ADD COLUMN place_name TEXT")

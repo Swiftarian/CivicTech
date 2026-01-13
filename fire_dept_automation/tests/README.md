@@ -99,13 +99,13 @@ pytest tests\test_app.py -v
 def test_your_feature():
     """測試您的功能"""
     at = AppTest.from_file("your_page.py")
-    
+
     # 設定 session state（如需要）
     at.session_state["key"] = "value"
-    
+
     # 執行頁面
     at.run()
-    
+
     # 斷言檢查
     assert not at.exception
     assert "expected_text" in str(at.main)

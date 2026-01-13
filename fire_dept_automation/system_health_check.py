@@ -43,7 +43,7 @@ def test_core_modules():
         'PIL': '圖片處理',
         'fitz': 'PDF 處理',
     }
-    
+
     all_pass = True
     for module, desc in modules.items():
         try:
@@ -52,15 +52,15 @@ def test_core_modules():
         except ImportError:
             print_status("FAIL", f"{desc} ({module}) 缺少")
             all_pass = False
-    
+
     return all_pass
 
 def test_ocr_engines():
     """測試 OCR 引擎"""
     print(f"\n{Colors.BOLD}OCR 引擎檢查:{Colors.END}")
-    
+
     all_pass = True
-    
+
     # Test Tesseract
     try:
         import pytesseract
@@ -68,7 +68,7 @@ def test_ocr_engines():
     except ImportError:
         print_status("FAIL", "Tesseract OCR 缺少")
         all_pass = False
-    
+
     # Test PaddleOCR
     try:
         import paddle_ocr
@@ -80,13 +80,13 @@ def test_ocr_engines():
             print_status("WARN", "PaddleOCR 未安裝（可選）")
     except Exception as e:
         print_status("WARN", f"PaddleOCR 檢查失敗: {e}（可選）")
-    
+
     return all_pass
 
 def test_ai_engines():
     """測試 AI 引擎"""
     print(f"\n{Colors.BOLD}AI 引擎檢查:{Colors.END}")
-    
+
     # Test Ollama
     try:
         import ai_engine
@@ -96,13 +96,13 @@ def test_ai_engines():
             print_status("WARN", "Ollama AI 服務未運行（可選）")
     except Exception as e:
         print_status("WARN", f"AI 引擎檢查失敗: {e}（可選）")
-    
+
     return True  # AI engines are optional
 
 def test_file_structure():
     """測試檔案結構"""
     print(f"\n{Colors.BOLD}檔案結構檢查:{Colors.END}")
-    
+
     required_files = {
         'pages/5_自動比對系統.py': '自動比對系統',
         'db_manager.py': '資料庫管理',
@@ -110,7 +110,7 @@ def test_file_structure():
         'doc_integrity.py': '文件完整性',
         'paddle_ocr.py': 'PaddleOCR 模組',
     }
-    
+
     all_pass = True
     for file, desc in required_files.items():
         if os.path.exists(file):
@@ -118,13 +118,13 @@ def test_file_structure():
         else:
             print_status("FAIL", f"{desc} ({file}) 缺少")
             all_pass = False
-    
+
     return all_pass
 
 def test_database():
     """測試資料庫"""
     print(f"\n{Colors.BOLD}資料庫檢查:{Colors.END}")
-    
+
     try:
         import db_manager
         # Try to get cases
@@ -138,16 +138,16 @@ def test_database():
 def test_configuration():
     """測試設定檔"""
     print(f"\n{Colors.BOLD}設定檔檢查:{Colors.END}")
-    
+
     all_pass = True
-    
+
     # Check secrets.toml
     secrets_path = ".streamlit/secrets.toml"
     if os.path.exists(secrets_path):
         print_status("PASS", "Streamlit secrets 設定檔 ✓")
     else:
         print_status("WARN", "Streamlit secrets 設定檔不存在（可選）")
-    
+
     # Check config files
     config_files = ['config_loader.py', 'requirements.txt']
     for config in config_files:
@@ -156,7 +156,7 @@ def test_configuration():
         else:
             print_status("FAIL", f"{config} 缺少")
             all_pass = False
-    
+
     return all_pass
 
 def run_all_tests():
@@ -166,38 +166,38 @@ def run_all_tests():
     print("消防局自動化系統 - 紅黃綠燈健康檢查")
     print("=" * 60)
     print(f"{Colors.END}\n")
-    
+
     results = []
-    
+
     print(f"{Colors.BOLD}基礎環境檢查:{Colors.END}")
     results.append(("Python 版本", test_python_version()))
-    
+
     print(f"\n{Colors.BOLD}核心模組檢查:{Colors.END}")
     results.append(("核心模組", test_core_modules()))
-    
+
     results.append(("OCR 引擎", test_ocr_engines()))
     results.append(("AI 引擎", test_ai_engines()))
     results.append(("檔案結構", test_file_structure()))
     results.append(("資料庫", test_database()))
     results.append(("設定檔", test_configuration()))
-    
+
     # Summary
     print(f"\n{Colors.BOLD}{Colors.BLUE}")
     print("=" * 60)
     print("測試摘要")
     print("=" * 60)
     print(f"{Colors.END}")
-    
+
     passed = sum(1 for _, result in results if result)
     total = len(results)
-    
+
     print(f"\n通過率: {passed}/{total} ({passed/total*100:.0f}%)\n")
-    
+
     for name, result in results:
         status = "✓ PASS" if result else "✗ FAIL"
         color = Colors.GREEN if result else Colors.RED
         print(f"{color}{status}{Colors.END} - {name}")
-    
+
     print(f"\n{Colors.BOLD}系統狀態:{Colors.END}")
     if passed == total:
         print(f"{Colors.GREEN}● 綠燈 - 所有系統正常運作{Colors.END}")
@@ -205,9 +205,9 @@ def run_all_tests():
         print(f"{Colors.YELLOW}● 黃燈 - 系統大致正常，有些可選功能未啟用{Colors.END}")
     else:
         print(f"{Colors.RED}● 紅燈 - 發現嚴重問題，需要修復{Colors.END}")
-    
+
     print(f"\n{Colors.BLUE}{'=' * 60}{Colors.END}\n")
-    
+
     return passed == total
 
 if __name__ == "__main__":

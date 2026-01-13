@@ -4,18 +4,18 @@
 
 def add_model_selector():
     file_path = r"d:\下載\fire_dept_automation\pages\5_自動比對系統.py"
-    
+
     # 讀取檔案
     with open(file_path, 'r', encoding='utf-8') as f:
         lines = f.readlines()
-    
+
     # 找到插入位置（在 use_vision_ai checkbox 之後，第523行之後）
     insert_pos = 523  # 第524行之前 (0-indexed: lines[523])
-    
+
     # 檢查是否找到正確的位置
     if 'use_vision_ai = st.checkbox' in lines[insert_pos-1]:
         print("✓ 找到插入位置")
-        
+
         # 新增的程式碼
         new_code = [
             '        \r\n',
@@ -49,14 +49,14 @@ def add_model_selector():
             '            vision_model = "llama3.2-vision"\r\n',
             '        \r\n',
         ]
-        
+
         # 插入程式碼
         lines[insert_pos:insert_pos] = new_code
-        
+
         # 寫回檔案
         with open(file_path, 'w', encoding='utf-8') as f:
             f.writelines(lines)
-        
+
         print("\n✅ 成功添加 AI 模型選擇器！")
         print(f"\n插入位置: 第 {insert_pos + 1} 行")
         print("新增內容: AI 模型選擇下拉選單 (30 行)")
