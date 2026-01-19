@@ -312,9 +312,9 @@ export async function sendDeliveryNotificationSMS(params: {
 
 ## 相關文件
 
-- [Email通知功能說明](BOOKING_EMAIL_NOTIFICATION_GUIDE.md)
-- [預約提醒排程任務說明](BOOKING_REMINDER_GUIDE.md)
-- [送餐服務使用說明](MEAL_DELIVERY_GUIDE.md)
+- [Email通知功能說明](./BOOKING_EMAIL_NOTIFICATION_GUIDE.md)
+- [預約提醒排程任務說明](./BOOKING_REMINDER_GUIDE.md)
+- [送餐服務使用說明](./MEAL_DELIVERY_GUIDE.md)
 
 ## 技術支援
 
