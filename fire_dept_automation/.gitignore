@@ -68,3 +68,10 @@ temp_*.pdf
 # Archive folders (old code)
 _archive/
 .archive_*
+
+# Compressed/Archive files (too large for Git)
+*.7z
+*.zip
+*.rar
+*.tar.gz
+*.tar

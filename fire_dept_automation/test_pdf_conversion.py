@@ -1,5 +1,8 @@
 import os
 import sys
+
+sys.path.insert(0, os.path.dirname(os.path.dirname(__file__)))
+
 from utils import convert_doc_to_pdf, get_libreoffice_path
 
 def test_conversion():
