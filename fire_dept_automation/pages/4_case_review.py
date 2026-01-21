@@ -33,7 +33,7 @@ def login():
     if st.session_state.awaiting_2fa:
         st.title("🔒 二階段驗證 (2FA)")
         st.info("系統已發送驗證碼至您的 Email，請查收並輸入。")
-        
+
         otp_input = st.text_input("請輸入 6 位數驗證碼", max_chars=6)
         col1, col2 = st.columns([1, 1])
         with col1:
@@ -41,14 +41,14 @@ def login():
                 if otp_input == st.session_state.otp:
                     # 2FA Success
                     user = st.session_state.temp_user
-                    
+
                     # Save login session to cookies
                     auth_session.save_login_session(user['username'], user['role'])
-                    
+
                     st.session_state.awaiting_2fa = False
                     del st.session_state.otp
                     del st.session_state.temp_user
-                    
+
                     db_manager.update_last_login(user['username'])
                     db_manager.add_log(user['username'], "登入成功", "2FA 驗證通過")
                     st.success("驗證成功！")
@@ -68,34 +68,34 @@ def login():
 
     # Standard Login/Registration Screen
     st.title("👮 消防局內部系統")
-    
+
     # 部門通行碼設定
     REGISTRATION_KEY = cfg.REGISTRATION_KEY
-    
+
     # 建立登入/註冊分頁
     tab_login, tab_register = st.tabs(["🔑 登入", "📝 註冊新帳號"])
-    
+
     with tab_login:
         st.subheader("帳號登入")
-        
+
         with st.form("login_form"):
             username = st.text_input("帳號")
             password = st.text_input("密碼", type="password")
             login_btn = st.form_submit_button("登入", type="primary", use_container_width=True)
-            
+
             if login_btn:
                 try:
                     user = db_manager.get_user(username)
                     if user:
                         # Verify password
                         if auth.verify_password(user['password_salt'], user['password_hash'], password):
-                            
+
                             # Check Role for 2FA
                             if user['role'] == 'admin':
                                 # Generate OTP
                                 import random
                                 otp = f"{random.randint(0, 999999):06d}"
-                                
+
                                 # Send Email
                                 if "email" in st.secrets:
                                     sender_email = st.secrets["email"].get("sender_email", "")
@@ -103,22 +103,22 @@ def login():
                                     if sender_email and sender_password:
                                         # ... email sending logic (omitted for brevity in this thought, but should be in file) ...
                                         # Wait, I don't need to touch the admin block, just add the else.
-                                        pass 
-                                
+                                        pass
+
                                 # Store temp user for 2FA
                                 st.session_state.temp_user = user
                                 st.session_state.otp = otp
                                 st.session_state.awaiting_2fa = True
-                                
+
                                 # Send OTP Email
                                 subject = "【消防局後台】登入驗證碼"
-                                
+
                                 # 準備 HTML 內容
                                 content_html = f"""
                                 <p>您正在進行消防局後台系統的登入驗證。</p>
                                 <p>請在驗證頁面輸入以下 6 位數代碼：</p>
                                 """
-                                
+
                                 # 呼叫共用模板
                                 email_html = utils.generate_email_html(
                                     title="登入驗證碼 (2FA)",
@@ -127,9 +127,9 @@ def login():
                                     highlight_info=otp,
                                     color_theme="#2b6cb0" # 科技藍
                                 )
-                                
+
                                 utils.send_email(sender_email, sender_password, user['email'], subject, email_html)
-                                
+
                                 st.rerun()
                             else:
                                 # Staff Login (No 2FA)
@@ -151,9 +151,9 @@ def login():
                     st.error(f"❌ 登入失敗！請聯繫管理員。系統錯誤碼: {type(e).__name__}")
                     st.code(str(e))
                     # db_manager.add_log(username, "LOGIN_ERROR", str(e))
-        
+
         st.divider()
-        
+
         with st.expander("🔑 忘記密碼？"):
             st.write("請輸入您的帳號，系統將發送臨時密碼至您的 Email。")
             reset_username = st.text_input("輸入帳號重設密碼", key="reset_user")
@@ -163,14 +163,14 @@ def login():
                     # Generate temp password
                     temp_pwd = auth.generate_temp_password()
                     db_manager.update_user_password(reset_username, temp_pwd)
-                    
+
                     # Send Email
                     if "email" in st.secrets:
                         sender_email = st.secrets["email"].get("sender_email", "")
                         sender_password = st.secrets["email"].get("sender_password", "")
                         if sender_email and sender_password:
                             subject = "【消防局後台】重設密碼通知"
-                            
+
                             content = """
 <p>您的帳號密碼已重設，系統已為您生成一組臨時密碼。</p>
 <p style="margin-top: 15px;">請使用下方臨時密碼登入系統，並於登入後<strong>立即修改密碼</strong>以確保帳號安全。</p>
@@ -190,7 +190,7 @@ def login():
                                 highlight_info=temp_pwd,
                                 color_theme="#e53e3e"
                             )
-                            
+
                             success, msg = utils.send_email(sender_email, sender_password, user['email'], subject, body)
                             if success:
                                 st.success(f"✅ 已發送臨時密碼至 {user['email']}")
@@ -203,11 +203,11 @@ def login():
                         st.error("系統未設定 Secrets。")
                 else:
                     st.error("找不到此帳號或該帳號未設定 Email。")
-    
+
     with tab_register:
         st.subheader("內部同仁註冊")
         st.info("💡 請輸入科室共用的註冊碼以完成註冊。如不知道註冊碼，請洽詢管理員。")
-        
+
         with st.form("register_form"):
             new_username = st.text_input("帳號 *", help="僅限英數字，作為登入使用")
             col_r1, col_r2 = st.columns(2)
@@ -215,35 +215,35 @@ def login():
                 new_password = st.text_input("密碼 *", type="password")
             with col_r2:
                 confirm_password = st.text_input("確認密碼 *", type="password")
-            
+
             new_email = st.text_input("Email *", help="用於重要通知")
             registration_code = st.text_input("部門通行碼 *", type="password", help="請輸入科室共用的註冊碼")
-            
+
             st.caption("* 為必填欄位")
             register_btn = st.form_submit_button("🚀 註冊", type="primary", use_container_width=True)
-            
+
             if register_btn:
                 # 驗證 1: 檢查通行碼
                 if registration_code != REGISTRATION_KEY:
                     st.error("❌ 部門通行碼錯誤，請詢問管理員")
                     st.stop()
-                
+
                 # 驗證 2: 檢查必填欄位
                 if not all([new_username, new_password, confirm_password, new_email]):
                     st.error("❌ 請填寫所有必填欄位")
                     st.stop()
-                
+
                 # 驗證 3: 檢查密碼一致
                 if new_password != confirm_password:
                     st.error("❌ 兩次密碼輸入不一致")
                     st.stop()
-                
+
                 # 驗證 4: 檢查帳號是否已存在
                 existing_user = db_manager.get_user(new_username)
                 if existing_user:
                     st.error("❌ 帳號已存在，請使用其他帳號或直接登入")
                     st.stop()
-                
+
                 # 通過驗證，建立帳號
                 success, msg = db_manager.create_user(
                     username=new_username,
@@ -251,7 +251,7 @@ def login():
                     role='staff',  # 預設為一般人員
                     email=new_email
                 )
-                
+
                 if success:
                     st.success("✅ 註冊成功！請切換至「🔑 登入」頁面進行登入。")
                     db_manager.add_log("system", "新用戶註冊", f"帳號: {new_username}")
@@ -294,15 +294,15 @@ if "tesseract_exe_path" not in st.session_state:
 
 with st.sidebar.expander("⚙️ OCR 比對設定", expanded=False):
     st.caption("💡 設定會自動記憶，重新整理後不會遺失")
-    
+
     # 使用 key 參數綁定 session_state，自動記憶輸入
     system_file_path = st.text_input(
-        "系統 Excel 路徑", 
+        "系統 Excel 路徑",
         key="system_excel_path",
         help="列管場所資料檔案位置"
     )
     tesseract_path = st.text_input(
-        "Tesseract 路徑", 
+        "Tesseract 路徑",
         key="tesseract_exe_path",
         help="Tesseract OCR 執行檔位置"
     )
@@ -310,16 +310,16 @@ with st.sidebar.expander("⚙️ OCR 比對設定", expanded=False):
 # --- Page: 案件審核 ---
 if page == "案件審核":
     st.title("📋 案件審核")
-    
+
     tab1, tab2 = st.tabs(["📂 案件總覽與管理", "📝 單筆審核與比對"])
-    
+
     # --- Tab 1: 案件總覽與管理 ---
     with tab1:
         st.subheader("案件總覽")
-        
+
         # 篩選器 (Pills UI / Radio Buttons)
         col_filter_title, col_search, col_refresh = st.columns([2, 2, 0.5])
-        
+
         with col_filter_title:
             st.write("**篩選案件**")
             # 使用 radio 按鈕，horizontal 佈局
@@ -329,10 +329,10 @@ if page == "案件審核":
                 horizontal=True,
                 label_visibility="collapsed"
             )
-        
+
         with col_search:
             search_term = st.text_input("🔍 搜尋 (單號/場所/申請人)", placeholder="輸入關鍵字...")
-        
+
         with col_refresh:
             st.write(" ") # Spacer
             st.write(" ")
@@ -341,7 +341,7 @@ if page == "案件審核":
                 if 'case_editor_df' in st.session_state:
                     del st.session_state.case_editor_df
                 st.rerun()
-        
+
         # 根據篩選器決定查詢條件
         if selected_filter == "📌 進行中":
             status_filter = None  # 不設定 status_filter，改用後續篩選
@@ -359,11 +359,11 @@ if page == "案件審核":
             status_filter = None
             include_archived = True
             filter_statuses = None  # 顯示所有已封存
-        
+
         # 取得當前登入者資訊（從 user 物件中讀取）
         current_user = st.session_state.user['username']
         current_role = st.session_state.user['role']
-        
+
         # 根據角色篩選案件
         if current_role == "admin":
             # 管理員：看全部案件
@@ -373,13 +373,13 @@ if page == "案件審核":
             # 一般同仁：只看指派給自己的案件
             all_cases = db_manager.get_cases_by_assignee(current_user, status_filter=None, include_archived=include_archived)
             st.info(f"👤 同仁模式：僅顯示指派給 {current_user} 的案件 ({selected_filter})")
-        
+
         # 根據狀態篩選
         if filter_statuses:
             cases = [c for c in all_cases if dict(c)['status'] in filter_statuses]
         else:
             cases = all_cases
-        
+
         if not cases:
             if user['role'] == 'admin':
                 st.info("目前無符合條件的案件可審核。")
@@ -389,13 +389,13 @@ if page == "案件審核":
         else:
             # Convert to DataFrame
             df = pd.DataFrame([dict(row) for row in cases])
-            
+
             # 處理承辦人欄位顯示（向後相容）
             if 'assigned_to' in df.columns:
                 df['assigned_to'] = df['assigned_to'].fillna('未指派')
             else:
                 df['assigned_to'] = '未指派'
-            
+
             # 美化狀態欄位 (加入 Emoji)
             status_emoji_map = {
                 "待分案": "🔴 待分案",
@@ -405,12 +405,12 @@ if page == "案件審核":
                 "待補件": "🟠 待補件"
             }
             df['status'] = df['status'].map(lambda x: status_emoji_map.get(x, x))
-            
+
             # Filter by search term
             if search_term:
                 mask = df.apply(lambda x: search_term.lower() in str(x.values).lower(), axis=1)
                 df = df[mask]
-            
+
             if df.empty:
                 st.warning("找不到符合搜尋條件的案件。")
             else:
@@ -418,20 +418,20 @@ if page == "案件審核":
                 if 'case_editor_df' not in st.session_state or len(st.session_state.case_editor_df) != len(df):
                     df.insert(0, "選取", False)
                     st.session_state.case_editor_df = df
-                
+
                 # 全選/取消全選按鈕 + 封存按鈕
                 col_select1, col_select2, col_archive, _ = st.columns([1, 1, 1.5, 5])
-                
+
                 with col_select1:
                     if st.button("✅ 全選", use_container_width=True):
                         st.session_state.case_editor_df['選取'] = True
                         st.rerun()
-                
+
                 with col_select2:
                     if st.button("⬜ 取消全選", use_container_width=True):
                         st.session_state.case_editor_df['選取'] = False
                         st.rerun()
-                
+
                 with col_archive:
                     if st.button("🗄️ 封存案件", type="secondary", use_container_width=True, help="只能封存「可領件」或「已退件」的案件"):
                         import time
@@ -440,17 +440,17 @@ if page == "案件審核":
                             # 篩選出可以封存的案件（移除 Emoji 再比對）
                             archivable_case_ids = []
                             non_archivable_cases = []
-                            
+
                             for idx, row in selected_rows.iterrows():
                                 # 移除 Emoji 取得原始狀態
                                 raw_status = row['status'].replace("🟢 ", "").replace("⚫ ", "").replace("🔴 ", "").replace("🟡 ", "").replace("🟠 ", "").strip()
-                                
+
                                 # 寬鬆比對
                                 if "可領件" in raw_status or "已退件" in raw_status:
                                     archivable_case_ids.append(row['id'])
                                 else:
                                     non_archivable_cases.append(f"{row['id']} ({raw_status})")
-                            
+
                             if not archivable_case_ids:
                                 st.warning("⚠️ 只有「可領件」或「已退件」的案件可以被封存")
                             else:
@@ -469,7 +469,7 @@ if page == "案件審核":
                                     st.error(msg)
                         else:
                             st.warning("請先勾選要封存的案件")
-                
+
                 # Configure columns for data_editor
                 edited_df = st.data_editor(
                     st.session_state.case_editor_df,
@@ -492,15 +492,15 @@ if page == "案件審核":
                     use_container_width=True,
                     key="case_editor"
                 )
-                
+
                 # Update session state with edited data
                 st.session_state.case_editor_df = edited_df
-                
+
                 # 批量操作（僅管理員可見）
                 if current_role == "admin":
                     st.subheader("批量操作")
                     col_assign1, col_assign2, col_assign3 = st.columns([2, 2, 1])
-                    
+
                     with col_assign1:
                         st.write("**👤 派案給同仁**")
                         available_users = db_manager.get_all_usernames()
@@ -509,7 +509,7 @@ if page == "案件審核":
                             options=["（請選擇）"] + available_users,
                             key="assignee_select"
                         )
-                    
+
                     with col_assign2:
                         st.write(" ")  # 對齊
                         st.write(" ")
@@ -525,13 +525,13 @@ if page == "案件審核":
                                     st.rerun()
                                 else:
                                     st.warning("請先勾選案件")
-                    
+
 
 
     # --- Tab 2: 單筆審核與比對 ---
     with tab2:
         st.subheader("📝 單筆審核與比對")
-        
+
         # 嘗試從 Session State 取得 Tab 1 選取的案件
         selected_case_id = None
         if 'case_editor_df' in st.session_state:
@@ -540,14 +540,14 @@ if page == "案件審核":
                 selected_rows = editor_df[editor_df['選取']]
                 if not selected_rows.empty:
                     selected_case_id = selected_rows.iloc[0]['id']
-        
+
         if selected_case_id:
             # 取得案件詳細資料 (直接從 dataframe 取，避免額外查詢)
             # 注意：這裡假設 editor_df 包含所有必要欄位。如果需要更多細節，可能需要 db_manager.get_case(selected_case_id)
             row = editor_df[editor_df['id'] == selected_case_id].iloc[0]
-            
+
             st.info(f"正在審核案件：{row['id']} - {row['applicant_name']}")
-            
+
             # 顯示案件詳情
             col_d1, col_d2 = st.columns(2)
             with col_d1:
@@ -558,11 +558,11 @@ if page == "案件審核":
                 st.write(f"**👤 申請人:** {row['applicant_name']}")
                 st.write(f"**📞 電話:** {row.get('applicant_phone', '(未填)')}")
                 st.write(f"**📧 Email:** {row.get('applicant_email', '(未填)')}")
-            
+
             st.divider()
-            
+
             col_review, col_ocr = st.columns([1, 1])
-            
+
             with col_review:
                 st.subheader("審核操作")
                 with st.form("review_form"):
@@ -570,14 +570,14 @@ if page == "案件審核":
                     status_options = ["待分案", "審核中", "可領件", "已退件", "待補件"]
                     # 移除 emoji 進行比對
                     current_status_raw = row['status'].split(" ")[-1] if " " in row['status'] else row['status']
-                    
+
                     default_index = 0
                     if current_status_raw in status_options:
                         default_index = status_options.index(current_status_raw)
-                    
+
                     new_status = st.selectbox("更新狀態", status_options, index=default_index)
                     review_notes = st.text_area("審核備註", value=row.get('review_notes', '') if pd.notna(row.get('review_notes')) else "")
-                    
+
                     if st.form_submit_button("💾 儲存審核結果", type="primary"):
                         try:
                             db_manager.update_case_status(selected_case_id, new_status, review_notes)
@@ -587,7 +587,7 @@ if page == "案件審核":
                             raise
                         except Exception as e:
                             st.error(f"更新失敗: {e}")
-            
+
             with col_ocr:
                 st.subheader("📄 檔案與 OCR 比對")
                 file_path = row.get('file_path')
@@ -611,9 +611,9 @@ elif page == "人員管理":
         st.error("⛔ 您沒有權限存取此頁面")
     else:
         st.title("👤 人員帳號管理")
-        
+
         col_add, col_list = st.columns([1, 2])
-        
+
         with col_add:
             st.subheader("新增人員")
             with st.form("add_user_form"):
@@ -632,7 +632,7 @@ elif page == "人員管理":
                             st.error(msg)
                     else:
                         st.error("請輸入帳號與密碼")
-        
+
         with col_list:
             st.subheader("人員列表")
             users = db_manager.get_all_users()
@@ -645,15 +645,15 @@ elif page == "系統紀錄":
         st.error("⛔ 您沒有權限存取此頁面")
     else:
         st.title("📜 系統稽核紀錄")
-        
+
         # 資料庫備份功能
         st.subheader("💾 資料庫備份")
         col_backup1, col_backup2 = st.columns([2, 1])
-        
+
         with col_backup1:
             st.write("系統會在每次重啟時自動備份資料庫。您也可以隨時手動進行備份。")
             st.caption("備份檔案儲存於：`backups/` 資料夾，保留最新 30 個備份")
-        
+
         with col_backup2:
             if st.button("💾 立即備份資料庫", type="primary", use_container_width=True):
                 backup_path = db_manager.backup_database()
@@ -663,9 +663,9 @@ elif page == "系統紀錄":
                     db_manager.add_log(user['username'], "手動備份資料庫", f"備份至：{backup_path}")
                 else:
                     st.error("❌ 備份失敗！請檢查系統權限或磁碟空間。")
-        
+
         st.divider()
-        
+
         # 稽核紀錄
         st.subheader("📋 稽核紀錄")
         logs = db_manager.get_audit_logs()
@@ -676,12 +676,12 @@ elif page == "系統紀錄":
 # --- Page: 修改密碼 ---
 elif page == "修改密碼":
     st.title("🔑 修改密碼")
-    
+
     with st.form("change_pwd_form"):
         old_pwd = st.text_input("舊密碼", type="password")
         new_pwd = st.text_input("新密碼", type="password")
         confirm_pwd = st.text_input("確認新密碼", type="password")
-        
+
         if st.form_submit_button("確認修改", type="primary"):
             if new_pwd != confirm_pwd:
                 st.error("兩次新密碼輸入不一致")
@@ -694,7 +694,7 @@ elif page == "修改密碼":
                     db_manager.update_user_password(user['username'], new_pwd)
                     db_manager.add_log(user['username'], "修改密碼", "使用者自行修改")
                     st.success("密碼修改成功！請重新登入。")
-                    
+
                     # Force logout
                     auth_session.clear_login_session()
                     st.rerun()

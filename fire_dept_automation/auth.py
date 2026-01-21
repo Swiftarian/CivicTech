@@ -10,7 +10,7 @@ def hash_password(password, salt=None):
         # Ensure salt is bytes
         if isinstance(salt, str):
             salt = bytes.fromhex(salt)
-            
+
     # PBKDF2 with SHA256, 100,000 iterations
     pwd_hash = hashlib.pbkdf2_hmac(
         'sha256',
@@ -18,7 +18,7 @@ def hash_password(password, salt=None):
         salt,
         100000
     )
-    
+
     # Return salt and hash as hex strings
     return salt.hex(), pwd_hash.hex()
 

@@ -4,18 +4,18 @@
 
 def insert_ocr_selector():
     file_path = r"d:\下載\fire_dept_automation\pages\5_自動比對系統.py"
-    
+
     # 讀取檔案
     with open(file_path, 'r', encoding='utf-8') as f:
         lines = f.readlines()
-    
+
     # 找到插入位置 (在 st.divider() 之後, 第456行)
     insert_pos = 456  # 第457行之前 (0-indexed: lines[456])
-    
+
     # 檢查是否找到正確的位置
     if 'st.divider()' in lines[insert_pos-1]:
         print("✓ 找到插入位置")
-        
+
         # 新增的程式碼
         new_code = [
             '        \r\n',
@@ -49,14 +49,14 @@ def insert_ocr_selector():
             '        \r\n',
             '        st.divider()\r\n',
         ]
-        
+
         # 插入程式碼
         lines[insert_pos:insert_pos] = new_code
-        
+
         # 寫回檔案
         with open(file_path, 'w', encoding='utf-8') as f:
             f.writelines(lines)
-        
+
         print("\n✅ 成功插入 OCR 引擎選擇器！")
         print(f"\n插入位置: 第 {insert_pos + 1} 行")
         print("新增內容: OCR 引擎選擇器 (30 行)")

@@ -5,20 +5,20 @@
 
 def patch_ocr_display():
     file_path = r"d:\下載\fire_dept_automation\pages\5_自動比對系統.py"
-    
+
     # 讀取檔案
     with open(file_path, 'r', encoding='utf-8') as f:
         lines = f.readlines()
-    
+
     # 找到要替換的行（667-670）
     # 注意：Python list是0-indexed，所以667行是lines[666]
     target_start = 666  # 第667行 (0-indexed)
     target_end = 670    # 第670行 (0-indexed, exclusive end)
-    
+
     # 檢查是否找到正確的位置
     if 'with st.expander(f"第 {i+1} 頁 OCR 文字內容 (除錯用)"' in lines[target_start]:
         print("✓ 找到目標位置")
-        
+
         # 新的程式碼（保持相同的縮排）
         new_code = [
             '                with st.expander(f"第 {i+1} 頁 OCR 文字內容 (除錯用)", expanded=False):\r\n',
@@ -31,14 +31,14 @@ def patch_ocr_display():
             '                    else:\r\n',
             '                        st.text("(無法取得此頁內容)")\r\n'
         ]
-        
+
         # 替換這4行
         lines[target_start:target_end] = new_code
-        
+
         # 寫回檔案
         with open(file_path, 'w', encoding='utf-8') as f:
             f.writelines(lines)
-        
+
         print("\n✅ 成功更新 OCR 文字預覽顯示！")
         print("\n修改內容：")
         print("  - 移除了只顯示第1、2頁的限制")

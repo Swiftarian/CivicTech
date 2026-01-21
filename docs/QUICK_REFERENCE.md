@@ -118,8 +118,8 @@ Invoke-WebRequest -Uri "http://localhost:3000" -UseBasicParsing
 
 # 查看進程
 Get-Process | Where-Object {
-  $_.ProcessName -like "*python*" -or 
-  $_.ProcessName -like "*node*" -or 
+  $_.ProcessName -like "*python*" -or
+  $_.ProcessName -like "*node*" -or
   $_.ProcessName -like "*streamlit*"
 }
 ```

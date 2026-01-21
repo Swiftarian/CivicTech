@@ -30,7 +30,7 @@ const volunteerProcedure = protectedProcedure.use(({ ctx, next }) => {
 
 export const appRouter = router({
   system: systemRouter,
-  
+
   auth: router({
     me: publicProcedure.query(opts => opts.ctx.user),
     logout: publicProcedure.mutation(({ ctx }) => {
@@ -45,7 +45,7 @@ export const appRouter = router({
     getAll: adminProcedure.query(async () => {
       return await db.getAllUsers();
     }),
-    
+
     updateRole: adminProcedure
       .input(z.object({
         userId: z.number(),
@@ -91,7 +91,7 @@ export const appRouter = router({
           try {
             await db.createVolunteer(volunteerData);
             await db.updateUserRole(volunteerData.userId, "volunteer");
-            
+
             // 取得使用者資訊以顯示在結果中
             const user = await db.getUserById(volunteerData.userId);
             results.successDetails.push({
@@ -100,7 +100,7 @@ export const appRouter = router({
               name: user?.name || undefined,
               email: user?.email || undefined,
             });
-            
+
             results.success++;
           } catch (error) {
             results.failed++;
@@ -362,8 +362,8 @@ export const appRouter = router({
           verificationCode: testVerificationCode,
           deliveryNumber: testDeliveryNumber,
           smsContent,
-          message: result.success 
-            ? 'SMS發送成功！（模擬模式，請查看console輸出）' 
+          message: result.success
+            ? 'SMS發送成功！（模擬模式，請查看console輸出）'
             : 'SMS發送失敗，請檢查SMS設定'
         };
       }),
@@ -392,7 +392,7 @@ export const appRouter = router({
           userId: ctx.user?.id,
           status: "pending"
         });
-        
+
         // 發送Email通知（如果有提供Email）
         if (input.contactEmail) {
           const visitDate = input.visitDate.toLocaleDateString('zh-TW', {
@@ -400,7 +400,7 @@ export const appRouter = router({
             month: '2-digit',
             day: '2-digit'
           });
-          
+
           if (input.type === 'group' && input.organizationName) {
             // 團體預約
             await sendGroupBookingConfirmationEmail(
@@ -424,7 +424,7 @@ export const appRouter = router({
             );
           }
         }
-        
+
         return { success: true, bookingNumber };
       }),
 
@@ -548,13 +548,13 @@ export const appRouter = router({
         if (!database) {
           throw new TRPCError({ code: 'INTERNAL_SERVER_ERROR', message: '資料庫連線失敗' });
         }
-        
+
         const { attendances } = await import('../drizzle/schema');
         const { eq } = await import('drizzle-orm');
-        
+
         const attendance = await database.select().from(attendances)
           .where(eq(attendances.id, input.attendanceId)).limit(1);
-        
+
         if (!attendance || attendance.length === 0) {
           throw new TRPCError({ code: 'NOT_FOUND', message: '找不到打卡記錄' });
         }
@@ -565,10 +565,10 @@ export const appRouter = router({
         const checkOutTime = new Date();
         const workHours = Math.floor((checkOutTime.getTime() - checkInTime.getTime()) / 60000);
         await db.checkOut(input.attendanceId, checkOutTime, workHours);
-        
+
         const volunteerId = attendance[0].volunteerId;
         await db.updateVolunteerHours(volunteerId, Math.floor(workHours / 60));
-        
+
         return { success: true, workHours };
       }),
 
@@ -618,7 +618,7 @@ export const appRouter = router({
       }))
       .mutation(async ({ input, ctx }) => {
         const result = await db.updateLeaveRequestStatus(input.id, "approved", ctx.user.id, input.reviewNotes);
-        
+
         // 發送Email通知
         if (result && result.userEmail) {
           const { sendLeaveRequestReviewEmail } = await import('./emailService');
@@ -630,7 +630,7 @@ export const appRouter = router({
             input.reviewNotes
           );
         }
-        
+
         return { success: true };
       }),
 
@@ -641,7 +641,7 @@ export const appRouter = router({
       }))
       .mutation(async ({ input, ctx }) => {
         const result = await db.updateLeaveRequestStatus(input.id, "rejected", ctx.user.id, input.reviewNotes);
-        
+
         // 發送Email通知
         if (result && result.userEmail) {
           const { sendLeaveRequestReviewEmail } = await import('./emailService');
@@ -653,7 +653,7 @@ export const appRouter = router({
             input.reviewNotes
           );
         }
-        
+
         return { success: true };
       }),
   }),
@@ -752,7 +752,7 @@ export const appRouter = router({
         const deliveryNumber = `MD${Date.now()}`;
         const verificationCode = Math.random().toString(36).substring(2, 8).toUpperCase();
         const qrCode = JSON.stringify({ deliveryNumber, verificationCode });
-        
+
         const delivery = await db.createMealDelivery({
           ...input,
           deliveryNumber,
@@ -760,11 +760,11 @@ export const appRouter = router({
           qrCode,
           status: "pending"
         });
-        
+
         if (!delivery) {
           throw new TRPCError({ code: "INTERNAL_SERVER_ERROR", message: "建立送餐任務失敗" });
         }
-        
+
         // 發送SMS簡訊通知收餐人
         await sendDeliveryNotificationSMS({
           recipientPhone: input.recipientPhone,
@@ -774,7 +774,7 @@ export const appRouter = router({
           deliveryDate: input.deliveryDate,
           deliveryTime: input.deliveryTime,
         });
-        
+
         return delivery;
       }),
 
@@ -795,7 +795,7 @@ export const appRouter = router({
           const deliveryNumber = `D${Date.now()}${Math.floor(Math.random() * 1000)}`;
           const verificationCode = generateVerificationCode();
           const qrCode = JSON.stringify({ deliveryNumber, verificationCode });
-          
+
           const createdDelivery = await db.createMealDelivery({
             ...delivery,
             deliveryNumber,
@@ -803,7 +803,7 @@ export const appRouter = router({
             qrCode,
             status: "pending"
           });
-          
+
           // 發送SMS通知收餐人
           if (createdDelivery) {
             await sendDeliveryNotificationSMS({
@@ -815,7 +815,7 @@ export const appRouter = router({
               deliveryTime: delivery.deliveryTime,
             });
           }
-          
+
           results.push({ deliveryNumber, verificationCode });
         }
         return { success: true, count: results.length, deliveries: results };
@@ -955,7 +955,7 @@ export const appRouter = router({
 
         // 生成QR Code URL（收餐人掃描後會導向確認頁面）
         const confirmUrl = `${process.env.VITE_APP_URL || 'https://3000-il1io6hgxt6mik0thc87e-9837adb0.manus-asia.computer'}/confirm-receipt/${input.deliveryId}`;
-        
+
         // 生成QR Code圖片（Base64格式）
         const qrCodeDataUrl = await QRCode.toDataURL(confirmUrl, {
           width: 300,

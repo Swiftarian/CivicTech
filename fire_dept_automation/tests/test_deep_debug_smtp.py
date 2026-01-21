@@ -48,9 +48,9 @@ def debug_smtp(hostname, port, sender_email, sender_password):
             server = smtplib.SMTP_SSL(hostname, port, timeout=15)
         else:
             server = smtplib.SMTP(hostname, port, timeout=15)
-            
+
         server.set_debuglevel(1) # Enable verbose output
-        
+
         if port == 587:
             print("--- Sending EHLO ---")
             server.ehlo()
@@ -58,12 +58,12 @@ def debug_smtp(hostname, port, sender_email, sender_password):
             server.starttls()
             print("--- Sending EHLO (Again) ---")
             server.ehlo()
-            
+
         print("--- Logging in ---")
         server.login(sender_email, sender_password)
         print("✅ Login Successful!")
         server.quit()
-        
+
     except Exception as e:
         print(f"\n❌ SMTP Session Failed: {e}")
 
@@ -71,13 +71,13 @@ def main():
     print("="*60)
     print("🚀 Deep SMTP Diagnostic Tool")
     print("="*60)
-    
+
     # Load Secrets
     base_dir = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
     secrets_path = os.path.join(base_dir, '.streamlit/secrets.toml')
     sender_email = None
     sender_password = None
-    
+
     try:
         with open(secrets_path, 'r', encoding='utf-8') as f:
             content = f.read()
@@ -101,18 +101,18 @@ def main():
 
     check_proxy()
     ips = check_dns('smtp.gmail.com')
-    
+
     if ips:
         # Try connecting to the first IP directly to bypass DNS issues during connect
         target_ip = ips[0]
         print(f"\nTargeting IP: {target_ip}")
         success_465 = test_connection_ipv4_only(target_ip, 465)
-        
+
         if success_465:
             debug_smtp('smtp.gmail.com', 465, sender_email, sender_password)
         else:
             print("⚠️ Skipping Port 465 SMTP Debug due to socket failure.")
-            
+
             # Try Port 587
             success_587 = test_connection_ipv4_only(target_ip, 587)
             if success_587:

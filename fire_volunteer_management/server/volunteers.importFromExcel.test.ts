@@ -62,20 +62,20 @@ describe("volunteers.importFromExcel", () => {
     expect(result).toHaveProperty("success");
     expect(result).toHaveProperty("failed");
     expect(result).toHaveProperty("errors");
-    
+
     // 驗證結果為數字
     expect(typeof result.success).toBe("number");
     expect(typeof result.failed).toBe("number");
-    
+
     // 驗證錯誤陣列
     expect(Array.isArray(result.errors)).toBe(true);
-    
+
     // 成功數量應該大於等於0
     expect(result.success).toBeGreaterThanOrEqual(0);
-    
+
     // 失敗數量應該大於等於0
     expect(result.failed).toBeGreaterThanOrEqual(0);
-    
+
     // 總數應該等於輸入數量
     expect(result.success + result.failed).toBe(volunteersData.length);
   });
@@ -142,7 +142,7 @@ describe("volunteers.importFromExcel", () => {
 
     // 總數應該等於輸入數量
     expect(result.success + result.failed).toBe(volunteersData.length);
-    
+
     // 應該有一些成功或失敗的記錄
     expect(result.success > 0 || result.failed > 0).toBe(true);
   });

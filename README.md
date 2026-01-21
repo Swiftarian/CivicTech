@@ -58,18 +58,18 @@ powershell -c "irm https://astral.sh/uv/install.ps1 | iex"
 ## 📋 初次使用設置
 
 1. **複製環境變數範例檔案**
-   
+
    首次執行時，腳本會自動從 `.env.example` 建立 `.env` 檔案。
 
 2. **配置環境變數**（可選）
-   
+
    編輯各專案的 `.env` 檔案以配置資料庫、API 金鑰等：
-   
+
    - `fire_dept_automation/.env`
    - `fire_volunteer_management/.env`
 
 3. **執行啟動腳本**
-   
+
    ```powershell
    .\start-all.ps1
    ```
@@ -192,5 +192,5 @@ MIT License
 
 ---
 
-**最後更新**: 2025-11-27  
+**最後更新**: 2025-11-27
 **專案維護**: CivicTech Team 臺東縣消防局
