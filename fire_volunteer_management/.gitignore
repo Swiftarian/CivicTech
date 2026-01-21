@@ -108,3 +108,7 @@ temp/
 
 # Manus
 .manus
+
+# Ignore root .md except README.md
+/*.md
+!README.md

@@ -78,3 +78,7 @@ fire_dept_automation/uv.lock
 node_modules/
 npm-debug.log*
 yarn-debug.log*
+
+# Ignore root .md except README.md
+/*.md
+!README.md

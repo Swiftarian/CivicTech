@@ -5,12 +5,14 @@
 ## 環境需求
 
 ### 必要軟體版本
+
 - **Node.js**: 22.x（建議使用 22.13.0 或更高版本）
 - **pnpm**: 10.x（專案使用 pnpm 作為套件管理工具）
 - **MySQL**: 8.x 或 **TiDB**（資料庫系統）
 - **Git**: 用於版本控制
 
 ### 檢查環境
+
 ```bash
 node --version   # 應顯示 v22.x.x
 pnpm --version   # 應顯示 10.x.x
@@ -20,17 +22,20 @@ mysql --version  # 應顯示 8.x.x
 ## 安裝步驟
 
 ### 1. 克隆專案
+
 ```bash
 git clone https://github.com/Swiftarian/CivicTech.git
 cd CivicTech/fire_volunteer_management
 ```
 
 ### 2. 安裝依賴套件
+
 ```bash
 pnpm install
 ```
 
 此步驟會安裝所有前端和後端依賴，包括：
+
 - React 19 + TypeScript（前端框架）
 - Express 4（後端框架）
 - tRPC 11（API 通訊）
@@ -40,6 +45,7 @@ pnpm install
 ### 3. 配置環境變數
 
 複製環境變數範例檔案：
+
 ```bash
 cp .env.example .env
 ```
@@ -47,6 +53,7 @@ cp .env.example .env
 編輯 `.env` 檔案，填入必要的環境變數：
 
 #### 必要配置
+
 ```env
 # 資料庫連線（必填）
 DATABASE_URL=mysql://username:password@localhost:3306/taitung_disaster
@@ -60,9 +67,11 @@ OAUTH_SERVER_URL=https://oauth.manus.space
 ```
 
 #### 選填配置
+
 根據需要啟用的功能，配置以下環境變數：
 
 **AWS S3（檔案上傳功能）**
+
 ```env
 AWS_ACCESS_KEY_ID=your-access-key
 AWS_SECRET_ACCESS_KEY=your-secret-key
@@ -71,6 +80,7 @@ AWS_S3_BUCKET=your-bucket-name
 ```
 
 **Email 通知**
+
 ```env
 SMTP_HOST=smtp.gmail.com
 SMTP_PORT=587
@@ -80,6 +90,7 @@ EMAIL_FROM=your-email@gmail.com
 ```
 
 **SMS 通知（Twilio）**
+
 ```env
 TWILIO_ACCOUNT_SID=your-account-sid
 TWILIO_AUTH_TOKEN=your-auth-token
@@ -87,6 +98,7 @@ TWILIO_PHONE_NUMBER=+1234567890
 ```
 
 **LINE 通知**
+
 ```env
 LINE_CHANNEL_ACCESS_TOKEN=your-channel-access-token
 LINE_CHANNEL_SECRET=your-channel-secret
@@ -95,6 +107,7 @@ LINE_CHANNEL_SECRET=your-channel-secret
 ### 4. 設置資料庫
 
 #### 建立資料庫
+
 ```bash
 # 連線到 MySQL
 mysql -u root -p
@@ -110,15 +123,18 @@ EXIT;
 ```
 
 #### 執行資料庫遷移
+
 ```bash
 pnpm db:push
 ```
 
 此指令會：
+
 1. 根據 `drizzle/schema.ts` 生成遷移檔案
 2. 執行遷移，建立所有資料表
 
 ### 5. 啟動開發伺服器
+
 ```bash
 pnpm dev
 ```
@@ -128,6 +144,7 @@ pnpm dev
 ## 開發指令
 
 ### 常用指令
+
 ```bash
 # 啟動開發伺服器（熱重載）
 pnpm dev
@@ -152,6 +169,7 @@ pnpm test --watch
 ```
 
 ### 資料庫指令
+
 ```bash
 # 推送 schema 變更到資料庫
 pnpm db:push
@@ -196,21 +214,25 @@ fire_volunteer_management/
 系統包含以下主要資料表：
 
 ### 核心模組
+
 - **users**: 使用者資料（支援 admin、volunteer、user 三種角色）
 - **volunteers**: 志工資料擴展表
 - **notifications**: 系統通知
 
 ### 導覽預約模組
+
 - **bookings**: 預約記錄（團體與個人）
 - **schedules**: 志工排班表
 - **attendances**: 打卡記錄
 - **leaveRequests**: 換班/請假申請
 
 ### 案件查詢模組
+
 - **cases**: 案件申請表
 - **caseProgress**: 案件進度記錄
 
 ### 送餐服務模組
+
 - **mealDeliveries**: 送餐任務表
 - **deliveryTracking**: 路徑追蹤記錄
 
@@ -221,6 +243,7 @@ fire_volunteer_management/
 ## 開發工作流程
 
 ### 新增功能
+
 1. **更新資料庫結構**
    - 編輯 `drizzle/schema.ts`
    - 執行 `pnpm db:push`
@@ -240,6 +263,7 @@ fire_volunteer_management/
    - 執行 `pnpm test` 確認測試通過
 
 ### 程式碼風格
+
 - 使用 TypeScript 進行型別檢查
 - 遵循 ESLint 規則
 - 使用 Prettier 格式化程式碼（執行 `pnpm format`）
@@ -249,15 +273,19 @@ fire_volunteer_management/
 ## 常見問題
 
 ### 1. 資料庫連線失敗
+
 **錯誤訊息**: `Error: connect ECONNREFUSED`
 
 **解決方法**:
+
 - 確認 MySQL 服務正在運行
 - 檢查 `.env` 中的 `DATABASE_URL` 是否正確
 - 確認資料庫已建立
 
 ### 2. pnpm install 失敗
+
 **解決方法**:
+
 ```bash
 # 清除快取
 pnpm store prune
@@ -268,7 +296,9 @@ pnpm install
 ```
 
 ### 3. TypeScript 型別錯誤
+
 **解決方法**:
+
 ```bash
 # 執行型別檢查
 pnpm check
@@ -278,7 +308,9 @@ Cmd/Ctrl + Shift + P → "TypeScript: Restart TS Server"
 ```
 
 ### 4. 開發伺服器無法啟動
+
 **解決方法**:
+
 - 確認 port 3000 未被佔用
 - 檢查環境變數是否正確設置
 - 查看終端機錯誤訊息
@@ -293,6 +325,7 @@ Cmd/Ctrl + Shift + P → "TypeScript: Restart TS Server"
 ## 技術支援
 
 如有任何問題或建議，請透過以下方式聯繫：
+
 - GitHub Issues: https://github.com/Swiftarian/CivicTech/issues
 - Email: huanchenlin@gmail.com
 
