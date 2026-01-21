@@ -25,6 +25,8 @@ export async function setupVite(app: Express, server: Server) {
   const viteIndexLimiter = rateLimit({
     windowMs: 15 * 60 * 1000,
     max: 100,
+    standardHeaders: true,
+    legacyHeaders: false,
   });
 
   app.use(vite.middlewares);
@@ -67,13 +69,15 @@ export function serveStatic(app: Express) {
 
   app.use(express.static(distPath));
 
-  const staticFallbackLimiter = rateLimit({
+  const staticIndexLimiter = rateLimit({
     windowMs: 15 * 60 * 1000,
     max: 100,
+    standardHeaders: true,
+    legacyHeaders: false,
   });
 
   // fall through to index.html if the file doesn't exist
-  app.use("*", staticFallbackLimiter, (_req, res) => {
+  app.use("*", staticIndexLimiter, (_req, res) => {
     res.sendFile(path.resolve(distPath, "index.html"));
   });
 }
