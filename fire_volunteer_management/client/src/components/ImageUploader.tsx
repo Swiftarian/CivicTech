@@ -23,6 +23,22 @@ export function ImageUploader({
   const [isDragging, setIsDragging] = useState(false);
   const fileInputRef = useRef<HTMLInputElement>(null);
 
+  // Sanitize description to prevent XSS - only allow plain text
+  const sanitizeText = (text: string): string => {
+    return text.replace(/[<>"'&]/g, (char) => {
+      const entities: Record<string, string> = {
+        '<': '&lt;',
+        '>': '&gt;',
+        '"': '&quot;',
+        "'": '&#x27;',
+        '&': '&amp;'
+      };
+      return entities[char] || char;
+    });
+  };
+  const safeDescription = sanitizeText(description);
+  const safeLabel = sanitizeText(label);
+
   const uploadMutation = trpc.upload.image.useMutation({
     onSuccess: (data) => {
       toast.success("圖片上傳成功");
@@ -151,8 +167,8 @@ export function ImageUploader({
 
   return (
     <div className="space-y-2">
-      <label className="text-sm font-medium">{label}</label>
-      <p className="text-sm text-muted-foreground">{description}</p>
+      <label className="text-sm font-medium">{safeLabel}</label>
+      <p className="text-sm text-muted-foreground">{safeDescription}</p>
 
       {safePreview ? (
         <Card className="relative overflow-hidden">
