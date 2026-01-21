@@ -33,6 +33,13 @@ COPY .streamlit/ ./.streamlit/
 # 建立必要的目錄
 RUN mkdir -p uploads downloads
 
+# 建立非 root 使用者以提升安全性
+RUN useradd -m -u 1001 appuser && \
+    chown -R appuser:appuser /app
+
+# 切換到非 root 使用者
+USER appuser
+
 # 暴露 Streamlit 預設 Port
 EXPOSE 8501
 

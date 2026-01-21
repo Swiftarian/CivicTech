@@ -165,7 +165,8 @@ export default function VolunteerDelivery() {
           map.setCenter(pos);
         }
 
-        console.log("GPS位置已上傳", { latitude, longitude, speed, accuracy });
+        // Security: Don't log sensitive GPS coordinates
+        // console.log("GPS位置已上傳", { latitude, longitude, speed, accuracy });
       },
       error => {
         console.error("GPS定位失敗", error);
