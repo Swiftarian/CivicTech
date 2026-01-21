@@ -45,7 +45,7 @@ export default function GroupBooking() {
         specialNeeds: ""
       });
       setDate(undefined);
-      
+
       // 3秒後跳轉到查詢頁面
       setTimeout(() => {
         setLocation("/booking/query");
@@ -60,7 +60,7 @@ export default function GroupBooking() {
 
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
-    
+
     if (!date) {
       toast.error("請選擇參訪日期");
       return;

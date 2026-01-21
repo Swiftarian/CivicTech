@@ -213,7 +213,7 @@ export async function sendDeliveryNotificationSMS(params: {
       });
 
       console.log(`✅ SMS發送成功！Message SID: ${message.sid}`);
-      
+
       return {
         success: true,
         message: 'SMS sent successfully',
@@ -295,7 +295,7 @@ export async function sendDeliveryNotificationSMS(params: {
 
 ### Q5：如何測試完整的簽收流程？
 
-**A：** 
+**A：**
 1. 建立送餐任務（記錄產生的驗證序號）
 2. 訪問收餐確認頁面 `/confirm-receipt/{deliveryId}`
 3. 輸入驗證序號
@@ -303,7 +303,7 @@ export async function sendDeliveryNotificationSMS(params: {
 
 ### Q6：SMS發送失敗怎麼辦？
 
-**A：** 
+**A：**
 1. 檢查環境變數是否正確設定
 2. 確認Twilio帳號餘額充足
 3. 驗證手機號碼格式正確

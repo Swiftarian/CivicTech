@@ -27,7 +27,7 @@ st.markdown("""
     #MainMenu {visibility: hidden;}
     footer {visibility: hidden;}
     header {visibility: hidden;}
-    
+
     /* CSS 變數 */
     :root {
         --primary-blue: #005A8D;
@@ -36,10 +36,10 @@ st.markdown("""
         --dark-gray: #343a40;
         --white: #ffffff;
     }
-    
+
     /* Hero Section */
     .hero-section {
-        background: linear-gradient(rgba(0, 90, 141, 0.85), rgba(0, 0, 0, 0.5)), 
+        background: linear-gradient(rgba(0, 90, 141, 0.85), rgba(0, 0, 0, 0.5)),
                     url('https://images.unsplash.com/photo-1593593394331-294158807355?q=80&w=2070') no-repeat center center;
         background-size: cover;
         color: white;
@@ -48,21 +48,21 @@ st.markdown("""
         border-radius: 16px;
         margin-bottom: 40px;
     }
-    
+
     .hero-section h1 {
         font-size: 3rem;
         font-weight: 700;
         margin-bottom: 20px;
         text-shadow: 0 2px 10px rgba(0,0,0,0.3);
     }
-    
+
     .hero-section p {
         font-size: 1.2rem;
         max-width: 700px;
         margin: 0 auto 30px;
         opacity: 0.95;
     }
-    
+
     .hero-btn {
         display: inline-block;
         padding: 12px 30px;
@@ -74,29 +74,29 @@ st.markdown("""
         transition: all 0.3s ease;
         border: 2px solid #FF6700;
     }
-    
+
     .hero-btn:hover {
         background: transparent;
         color: #FF6700 !important;
     }
-    
+
     /* Section Titles */
     .section-title {
         text-align: center;
         margin-bottom: 40px;
     }
-    
+
     .section-title h2 {
         font-size: 2.2rem;
         color: #005A8D;
         margin-bottom: 10px;
     }
-    
+
     .section-title p {
         font-size: 1.1rem;
         color: #6c757d;
     }
-    
+
     /* How it Works */
     .how-it-works {
         background: #f8f9fa;
@@ -104,7 +104,7 @@ st.markdown("""
         border-radius: 16px;
         margin-bottom: 40px;
     }
-    
+
     .diagram-box {
         background: white;
         padding: 30px;
@@ -112,19 +112,19 @@ st.markdown("""
         text-align: center;
         box-shadow: 0 4px 15px rgba(0,0,0,0.1);
     }
-    
+
     .diagram-item {
         font-size: 1.2rem;
         font-weight: 500;
         margin: 15px 0;
         color: #005A8D;
     }
-    
+
     .diagram-arrow {
         font-size: 1.5rem;
         color: #FF6700;
     }
-    
+
     /* Service Cards (Enhanced) */
     .service-card-new {
         background: white;
@@ -136,30 +136,30 @@ st.markdown("""
         height: 100%;
         border: 2px solid transparent;
     }
-    
+
     .service-card-new:hover {
         transform: translateY(-10px);
         box-shadow: 0 15px 35px rgba(0,0,0,0.15);
         border-color: #005A8D;
     }
-    
+
     .service-icon {
         font-size: 3.5rem;
         margin-bottom: 20px;
     }
-    
+
     .service-card-new h3 {
         font-size: 1.4rem;
         color: #005A8D;
         margin-bottom: 15px;
     }
-    
+
     .service-card-new p {
         font-size: 1rem;
         color: #6c757d;
         line-height: 1.7;
     }
-    
+
     /* CTA Section */
     .cta-section {
         background: linear-gradient(135deg, #005A8D 0%, #003d5c 100%);
@@ -169,18 +169,18 @@ st.markdown("""
         border-radius: 16px;
         margin: 40px 0;
     }
-    
+
     .cta-section h2 {
         font-size: 2rem;
         margin-bottom: 15px;
     }
-    
+
     .cta-section p {
         font-size: 1.1rem;
         opacity: 0.9;
         margin-bottom: 30px;
     }
-    
+
     /* Footer */
     .custom-footer {
         background: #343a40;
@@ -222,7 +222,7 @@ with col_about1:
     st.markdown("""
     ### 🖥️ 強大的管理中樞
     所有複雜的服務流程、人力媒合、案件管理與數據分析，都在「服務媒合+」網站平台上完成。這是我們服務的大腦，確保所有流程都有條不紊、紀錄完整。
-    
+
     ### 📲 輕量化的溝通渠道
     所有重要的任務通知、進度更新、預約提醒，都會透過您最熟悉的 LINE 即時傳遞。點擊訊息中的連結，即可無縫接軌至平台進行操作。這是我們服務的神經網路，確保訊息不漏接。
     """)
