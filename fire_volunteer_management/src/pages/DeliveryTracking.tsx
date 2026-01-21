@@ -136,7 +136,7 @@ export default function DeliveryTracking() {
     return <Badge variant={config.variant}>{config.label}</Badge>;
   };
 
-  const activeDeliveries = deliveries?.filter(d =>
+  const activeDeliveries = deliveries?.filter(d => 
     d.status === "in_transit" || d.status === "assigned"
   ) || [];
 
@@ -180,7 +180,7 @@ export default function DeliveryTracking() {
                   {activeDeliveries.map(delivery => {
                     const volunteer = volunteers?.find(v => v.volunteer.id === delivery.volunteerId);
                     const isSelected = selectedDeliveryId === delivery.id;
-
+                    
                     return (
                       <Card
                         key={delivery.id}
@@ -268,7 +268,7 @@ export default function DeliveryTracking() {
               <MapView onMapReady={handleMapReady} />
             </CardContent>
           </Card>
-
+          
           {!selectedDeliveryId && (
             <div className="mt-4 text-center text-muted-foreground">
               <p>請從左側選擇一個送餐任務以查看路徑追蹤</p>

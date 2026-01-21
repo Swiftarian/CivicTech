@@ -16,7 +16,7 @@ import { toast } from "sonner";
 export default function ConfirmReceipt() {
   const params = useParams();
   const deliveryId = params.deliveryId ? parseInt(params.deliveryId) : 0;
-
+  
   const [confirming, setConfirming] = useState(false);
   const [confirmed, setConfirmed] = useState(false);
   const [error, setError] = useState<string | null>(null);

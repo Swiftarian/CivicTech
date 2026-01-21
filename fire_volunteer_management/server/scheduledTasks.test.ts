@@ -232,7 +232,7 @@ describe("scheduledTasks - sendBookingReminders", () => {
 
     // 驗證Email發送函數被調用
     expect(emailService.sendPublicBookingReminderEmail).toHaveBeenCalledTimes(1);
-
+    
     // 驗證沒有標記為已發送（因為發送失敗）
     expect(db.markBookingReminderSent).not.toHaveBeenCalled();
   });
@@ -302,12 +302,12 @@ describe("scheduledTasks - sendBookingReminders", () => {
     ];
 
     vi.mocked(db.getBookingsNeedingReminder).mockResolvedValue(mockBookings);
-
+    
     // 第一筆拋出異常，第二筆成功
     vi.mocked(emailService.sendPublicBookingReminderEmail)
       .mockRejectedValueOnce(new Error("SMTP連線失敗"))
       .mockResolvedValueOnce(true);
-
+    
     vi.mocked(db.markBookingReminderSent).mockResolvedValue(undefined);
 
     const results = await sendBookingReminders();

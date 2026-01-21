@@ -36,7 +36,7 @@ describe("檢查SMS發送狀態", () => {
       console.log('\n✅ 找到發送到測試號碼的簡訊：');
       console.log(`   Message SID: ${testMessage.sid}`);
       console.log(`   當前狀態: ${testMessage.status}`);
-
+      
       // 狀態說明
       const statusExplanation: Record<string, string> = {
         'queued': '已排隊等待發送',
@@ -46,14 +46,14 @@ describe("檢查SMS發送狀態", () => {
         'undelivered': '發送失敗',
         'failed': '發送失敗',
       };
-
+      
       console.log(`   狀態說明: ${statusExplanation[testMessage.status] || '未知狀態'}`);
-
+      
       if (testMessage.errorCode) {
         console.log(`   ❌ 錯誤代碼: ${testMessage.errorCode}`);
         console.log(`   ❌ 錯誤訊息: ${testMessage.errorMessage}`);
       }
-
+      
       if (testMessage.status === 'delivered') {
         console.log('\n🎉 簡訊已成功送達！請檢查手機');
       } else if (testMessage.status === 'undelivered' || testMessage.status === 'failed') {

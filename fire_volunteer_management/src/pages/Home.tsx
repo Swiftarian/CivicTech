@@ -3,11 +3,11 @@ import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { APP_TITLE, getLoginUrl } from "@/const";
 import { Link } from "wouter";
-import {
-  Users,
-  User,
-  MapPin,
-  Search,
+import { 
+  Users, 
+  User, 
+  MapPin, 
+  Search, 
   Calendar,
   Shield,
   Heart,
@@ -64,7 +64,7 @@ export default function Home() {
               <Shield className="h-8 w-8 text-green-600" />
               <span className="text-xl font-bold text-gray-900">{APP_TITLE}</span>
             </Link>
-
+            
             <div className="hidden md:flex items-center space-x-6 text-gray-700">
               <Link href="/" className="hover:text-green-600 transition-colors">首頁</Link>
               <Link href="/booking/group" className="hover:text-green-600 transition-colors">團體預約</Link>
@@ -72,7 +72,7 @@ export default function Home() {
               <Link href="/traffic" className="hover:text-green-600 transition-colors">交通指引</Link>
               <Link href="/booking/query" className="hover:text-green-600 transition-colors">預約查詢</Link>
               <Link href="/case/query" className="hover:text-green-600 transition-colors">案件查詢</Link>
-
+              
               {isAuthenticated ? (
                 <>
                   {user?.role === 'admin' && (
@@ -130,7 +130,7 @@ export default function Home() {
             </div>
           </div>
         ))}
-
+        
         <button
           onClick={prevSlide}
           className="absolute left-8 top-1/2 -translate-y-1/2 bg-gray-900/5 hover:bg-gray-900/10 p-3 rounded-full transition-all"

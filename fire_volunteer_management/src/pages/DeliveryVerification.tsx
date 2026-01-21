@@ -26,7 +26,7 @@ export default function DeliveryVerification() {
   const [currentPosition, setCurrentPosition] = useState<{ lat: number; lng: number } | null>(null);
   const [isCapturing, setIsCapturing] = useState(false);
   const [isVerifying, setIsVerifying] = useState(false);
-
+  
   const videoRef = useRef<HTMLVideoElement>(null);
   const canvasRef = useRef<HTMLCanvasElement>(null);
   const fileInputRef = useRef<HTMLInputElement>(null);
@@ -97,21 +97,21 @@ export default function DeliveryVerification() {
     if (videoRef.current && canvasRef.current) {
       const canvas = canvasRef.current;
       const video = videoRef.current;
-
+      
       canvas.width = video.videoWidth;
       canvas.height = video.videoHeight;
-
+      
       const ctx = canvas.getContext("2d");
       if (ctx) {
         ctx.drawImage(video, 0, 0);
         const photoData = canvas.toDataURL("image/jpeg", 0.8);
         setPhoto(photoData);
-
+        
         // 停止相機
         const stream = video.srcObject as MediaStream;
         stream?.getTracks().forEach(track => track.stop());
         setIsCapturing(false);
-
+        
         toast.success("照片已拍攝");
       }
     }

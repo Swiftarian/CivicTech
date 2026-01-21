@@ -63,13 +63,13 @@ describe("leaveRequests notification flow", () => {
       email: "test-approve@example.com",
       role: "volunteer",
     });
-
+    
     const testUser = await db.getUserByOpenId("test-volunteer-approve");
     expect(testUser).toBeDefined();
-
+    
     const volunteerCtx = createVolunteerContext(testUser!.id, "test-volunteer-approve");
     const volunteerCaller = appRouter.createCaller(volunteerCtx);
-
+    
     // 2. 建立志工
     const volunteer = await db.createVolunteer({
       userId: testUser!.id,
@@ -101,7 +101,7 @@ describe("leaveRequests notification flow", () => {
     const requestToApprove = pendingRequests.find(
       (r) => r.request.volunteerId === volunteer!.id
     );
-
+    
     expect(requestToApprove).toBeDefined();
 
     // 6. 管理員核准請假
@@ -135,10 +135,10 @@ describe("leaveRequests notification flow", () => {
       email: "test-reject@example.com",
       role: "volunteer",
     });
-
+    
     const testUser = await db.getUserByOpenId("test-volunteer-reject");
     expect(testUser).toBeDefined();
-
+    
     const volunteerCtx = createVolunteerContext(testUser!.id, "test-volunteer-reject");
     const volunteerCaller = appRouter.createCaller(volunteerCtx);
 
@@ -199,19 +199,19 @@ describe("leaveRequests notification flow", () => {
   it("should allow user to mark notification as read", async () => {
     // 取得先前建立的使用者
     const testUser = await db.getUserByOpenId("test-volunteer-approve");
-
+    
     if (!testUser) {
       // 如果測試順序不同，跳過此測試
       expect(true).toBe(true);
       return;
     }
-
+    
     const volunteerCtx = createVolunteerContext(testUser.id, "test-volunteer-approve");
     const volunteerCaller = appRouter.createCaller(volunteerCtx);
 
     // 取得未讀通知
     const unreadNotifications = await volunteerCaller.notifications.getUnread();
-
+    
     // 如果沒有通知，跳過測試
     if (unreadNotifications.length === 0) {
       expect(true).toBe(true);
@@ -236,13 +236,13 @@ describe("leaveRequests notification flow", () => {
   it("should allow user to mark all notifications as read", async () => {
     // 取得先前建立的使用者
     const testUser = await db.getUserByOpenId("test-volunteer-approve");
-
+    
     if (!testUser) {
       // 如果測試順序不同，跳過此測試
       expect(true).toBe(true);
       return;
     }
-
+    
     const volunteerCtx = createVolunteerContext(testUser.id, "test-volunteer-approve");
     const volunteerCaller = appRouter.createCaller(volunteerCtx);
 
