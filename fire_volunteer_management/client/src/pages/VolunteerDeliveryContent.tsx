@@ -19,7 +19,13 @@ import {
   QrCode,
 } from "lucide-react";
 import { format } from "date-fns";
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select";
 import {
   Dialog,
   DialogContent,
@@ -30,33 +36,45 @@ import {
 
 export default function VolunteerDeliveryContent() {
   const { user } = useAuth();
-  const isAdmin = user?.role === 'admin';
-  const [selectedDeliveryId, setSelectedDeliveryId] = useState<number | null>(null);
+  const isAdmin = user?.role === "admin";
+  const [selectedDeliveryId, setSelectedDeliveryId] = useState<number | null>(
+    null
+  );
   const [isTracking, setIsTracking] = useState(false);
   const [showCompleteDialog, setShowCompleteDialog] = useState(false);
   const [showQRCodeDialog, setShowQRCodeDialog] = useState(false);
-  const [qrCodeData, setQRCodeData] = useState<{ qrCodeDataUrl: string; confirmUrl: string } | null>(null);
+  const [qrCodeData, setQRCodeData] = useState<{
+    qrCodeDataUrl: string;
+    confirmUrl: string;
+  } | null>(null);
   const [map, setMap] = useState<google.maps.Map | null>(null);
-  const [currentMarker, setCurrentMarker] = useState<google.maps.Marker | null>(null);
+  const [currentMarker, setCurrentMarker] = useState<google.maps.Marker | null>(
+    null
+  );
   const trackingIntervalRef = useRef<number | null>(null);
-  
+
   // 篩選狀態
-  const [filterDate, setFilterDate] = useState<'all' | 'today' | 'week'>('all');
-  const [filterStatus, setFilterStatus] = useState<'all' | 'assigned' | 'in_transit' | 'delivered'>('all');
-  const [filterVolunteer, setFilterVolunteer] = useState<string>('all');
+  const [filterDate, setFilterDate] = useState<"all" | "today" | "week">("all");
+  const [filterStatus, setFilterStatus] = useState<
+    "all" | "assigned" | "in_transit" | "delivered"
+  >("all");
+  const [filterVolunteer, setFilterVolunteer] = useState<string>("all");
 
   // 查詢送餐任務（管理員查看所有，志工查看自己的）
-  const { data: deliveries, refetch } = trpc.mealDeliveries.getMyDeliveries.useQuery();
+  const { data: deliveries, refetch } =
+    trpc.mealDeliveries.getMyDeliveries.useQuery();
   const utils = trpc.useUtils();
-  
+
   const handleShowQRCode = async () => {
     if (!selectedDeliveryId) return;
     try {
-      const data = await utils.mealDeliveries.getQRCode.fetch({ deliveryId: selectedDeliveryId });
+      const data = await utils.mealDeliveries.getQRCode.fetch({
+        deliveryId: selectedDeliveryId,
+      });
       setQRCodeData(data);
       setShowQRCodeDialog(true);
     } catch (error) {
-      console.error('QR Code error:', error);
+      console.error("QR Code error:", error);
       toast.error("無法生成QR Code");
     }
   };
@@ -77,41 +95,54 @@ export default function VolunteerDeliveryContent() {
 
   // 管理員可以查看所有任務，志工只能查看自己的
   // 根據篩選條件過濾
-  const myDeliveries = deliveries?.filter(d => {
-    // 狀態篩選
-    if (filterStatus !== 'all' && d.status !== filterStatus) {
-      return false;
-    }
-    
-    // 志工篩選（僅管理員可用）
-    if (isAdmin && filterVolunteer !== 'all' && d.volunteerName !== filterVolunteer) {
-      return false;
-    }
-    
-    // 日期篩選
-    const deliveryDate = new Date(d.deliveryDate);
-    const today = new Date();
-    today.setHours(0, 0, 0, 0);
-    
-    if (filterDate === 'today') {
-      const tomorrow = new Date(today);
-      tomorrow.setDate(tomorrow.getDate() + 1);
-      if (deliveryDate < today || deliveryDate >= tomorrow) {
+  const myDeliveries =
+    deliveries?.filter(d => {
+      // 狀態篩選
+      if (filterStatus !== "all" && d.status !== filterStatus) {
         return false;
       }
-    } else if (filterDate === 'week') {
-      const weekLater = new Date(today);
-      weekLater.setDate(weekLater.getDate() + 7);
-      if (deliveryDate < today || deliveryDate >= weekLater) {
+
+      // 志工篩選（僅管理員可用）
+      if (
+        isAdmin &&
+        filterVolunteer !== "all" &&
+        d.volunteerName !== filterVolunteer
+      ) {
         return false;
       }
-    }
-    
-    return true;
-  }) || [];
-  
+
+      // 日期篩選
+      const deliveryDate = new Date(d.deliveryDate);
+      const today = new Date();
+      today.setHours(0, 0, 0, 0);
+
+      if (filterDate === "today") {
+        const tomorrow = new Date(today);
+        tomorrow.setDate(tomorrow.getDate() + 1);
+        if (deliveryDate < today || deliveryDate >= tomorrow) {
+          return false;
+        }
+      } else if (filterDate === "week") {
+        const weekLater = new Date(today);
+        weekLater.setDate(weekLater.getDate() + 7);
+        if (deliveryDate < today || deliveryDate >= weekLater) {
+          return false;
+        }
+      }
+
+      return true;
+    }) || [];
+
   // 取得所有志工名稱（用於管理員篩選）
-  const volunteerNames = isAdmin ? Array.from(new Set(deliveries?.map(d => d.volunteerName).filter((name): name is string => Boolean(name)) || [])) : [];
+  const volunteerNames = isAdmin
+    ? Array.from(
+        new Set(
+          deliveries
+            ?.map(d => d.volunteerName)
+            .filter((name): name is string => Boolean(name)) || []
+        )
+      )
+    : [];
 
   const selectedDelivery = deliveries?.find(d => d.id === selectedDeliveryId);
 
@@ -172,7 +203,13 @@ export default function VolunteerDeliveryContent() {
   };
 
   const getStatusBadge = (status: string) => {
-    const statusMap: Record<string, { label: string; variant: "default" | "secondary" | "destructive" | "outline" }> = {
+    const statusMap: Record<
+      string,
+      {
+        label: string;
+        variant: "default" | "secondary" | "destructive" | "outline";
+      }
+    > = {
       assigned: { label: "待開始", variant: "secondary" },
       in_transit: { label: "配送中", variant: "default" },
       delivered: { label: "已送達", variant: "outline" },
@@ -183,15 +220,19 @@ export default function VolunteerDeliveryContent() {
 
   return (
     <div>
-
       <div className="grid lg:grid-cols-3 gap-6">
         {/* 左側：任務列表 */}
         <div className="lg:col-span-1 space-y-4">
           <Card>
             <CardHeader>
-              <CardTitle className="text-lg">{isAdmin ? '所有送餐任務' : '我的送餐任務'}</CardTitle>
+              <CardTitle className="text-lg">
+                {isAdmin ? "所有送餐任務" : "我的送餐任務"}
+              </CardTitle>
               <div className="grid grid-cols-2 gap-2 mt-3">
-                <Select value={filterDate} onValueChange={(value: any) => setFilterDate(value)}>
+                <Select
+                  value={filterDate}
+                  onValueChange={(value: any) => setFilterDate(value)}
+                >
                   <SelectTrigger>
                     <SelectValue placeholder="選擇日期" />
                   </SelectTrigger>
@@ -201,8 +242,11 @@ export default function VolunteerDeliveryContent() {
                     <SelectItem value="week">本週</SelectItem>
                   </SelectContent>
                 </Select>
-                
-                <Select value={filterStatus} onValueChange={(value: any) => setFilterStatus(value)}>
+
+                <Select
+                  value={filterStatus}
+                  onValueChange={(value: any) => setFilterStatus(value)}
+                >
                   <SelectTrigger>
                     <SelectValue placeholder="選擇狀態" />
                   </SelectTrigger>
@@ -213,16 +257,21 @@ export default function VolunteerDeliveryContent() {
                     <SelectItem value="delivered">已送達</SelectItem>
                   </SelectContent>
                 </Select>
-                
+
                 {isAdmin && volunteerNames.length > 0 && (
-                  <Select value={filterVolunteer} onValueChange={(value: string) => setFilterVolunteer(value)}>
+                  <Select
+                    value={filterVolunteer}
+                    onValueChange={(value: string) => setFilterVolunteer(value)}
+                  >
                     <SelectTrigger className="col-span-2">
                       <SelectValue placeholder="篩選志工" />
                     </SelectTrigger>
                     <SelectContent>
                       <SelectItem value="all">所有志工</SelectItem>
                       {volunteerNames.map(name => (
-                        <SelectItem key={name} value={name}>{name}</SelectItem>
+                        <SelectItem key={name} value={name}>
+                          {name}
+                        </SelectItem>
                       ))}
                     </SelectContent>
                   </Select>
@@ -239,7 +288,7 @@ export default function VolunteerDeliveryContent() {
                 <div className="space-y-3">
                   {myDeliveries.map(delivery => {
                     const isSelected = selectedDeliveryId === delivery.id;
-                    
+
                     return (
                       <Card
                         key={delivery.id}
@@ -250,13 +299,17 @@ export default function VolunteerDeliveryContent() {
                       >
                         <CardContent className="pt-4">
                           <div className="flex items-start justify-between mb-2">
-                            <h3 className="font-semibold">{delivery.recipientName}</h3>
+                            <h3 className="font-semibold">
+                              {delivery.recipientName}
+                            </h3>
                             {getStatusBadge(delivery.status)}
                           </div>
                           <div className="space-y-1 text-sm text-muted-foreground">
                             <div className="flex items-center gap-2">
                               <MapPin className="h-3 w-3 flex-shrink-0" />
-                              <span className="line-clamp-2">{delivery.deliveryAddress}</span>
+                              <span className="line-clamp-2">
+                                {delivery.deliveryAddress}
+                              </span>
                             </div>
                             <div className="flex items-center gap-2">
                               <Phone className="h-3 w-3" />
@@ -265,7 +318,11 @@ export default function VolunteerDeliveryContent() {
                             <div className="flex items-center gap-2">
                               <Clock className="h-3 w-3" />
                               <span>
-                                {format(new Date(delivery.deliveryDate), "MM/dd")} {delivery.deliveryTime}
+                                {format(
+                                  new Date(delivery.deliveryDate),
+                                  "MM/dd"
+                                )}{" "}
+                                {delivery.deliveryTime}
                               </span>
                             </div>
                           </div>
@@ -337,8 +394,13 @@ export default function VolunteerDeliveryContent() {
                 {/* 導航按鈕 */}
                 <Button
                   onClick={() => {
-                    const address = encodeURIComponent(selectedDelivery.deliveryAddress);
-                    window.open(`https://www.google.com/maps/dir/?api=1&destination=${address}`, '_blank');
+                    const address = encodeURIComponent(
+                      selectedDelivery.deliveryAddress
+                    );
+                    window.open(
+                      `https://www.google.com/maps/dir/?api=1&destination=${address}`,
+                      "_blank"
+                    );
                   }}
                   variant="outline"
                   className="w-full"
@@ -386,7 +448,7 @@ export default function VolunteerDeliveryContent() {
               <MapView onMapReady={handleMapReady} />
             </CardContent>
           </Card>
-          
+
           {!selectedDeliveryId && (
             <div className="mt-4 text-center text-muted-foreground">
               <p>請從左側選擇一個送餐任務</p>
@@ -405,18 +467,23 @@ export default function VolunteerDeliveryContent() {
             <p>確定要標記此送餐任務為已完成嗎？</p>
             {selectedDelivery && (
               <div className="mt-4 p-4 bg-muted rounded">
-                <p className="font-semibold">{selectedDelivery.recipientName}</p>
-                <p className="text-sm text-muted-foreground">{selectedDelivery.deliveryAddress}</p>
+                <p className="font-semibold">
+                  {selectedDelivery.recipientName}
+                </p>
+                <p className="text-sm text-muted-foreground">
+                  {selectedDelivery.deliveryAddress}
+                </p>
               </div>
             )}
           </div>
           <DialogFooter>
-            <Button variant="outline" onClick={() => setShowCompleteDialog(false)}>
+            <Button
+              variant="outline"
+              onClick={() => setShowCompleteDialog(false)}
+            >
               取消
             </Button>
-            <Button onClick={completeDelivery}>
-              確認完成
-            </Button>
+            <Button onClick={completeDelivery}>確認完成</Button>
           </DialogFooter>
         </DialogContent>
       </Dialog>
@@ -431,9 +498,9 @@ export default function VolunteerDeliveryContent() {
             {qrCodeData ? (
               <div className="space-y-4">
                 <div className="flex justify-center">
-                  <img 
-                    src={qrCodeData.qrCodeDataUrl} 
-                    alt="QR Code" 
+                  <img
+                    src={qrCodeData.qrCodeDataUrl}
+                    alt="QR Code"
                     className="w-64 h-64"
                   />
                 </div>
@@ -461,8 +528,12 @@ export default function VolunteerDeliveryContent() {
                 )}
                 {selectedDelivery && (
                   <div className="p-3 bg-muted rounded text-sm">
-                    <p className="font-semibold">{selectedDelivery.recipientName}</p>
-                    <p className="text-muted-foreground">{selectedDelivery.deliveryAddress}</p>
+                    <p className="font-semibold">
+                      {selectedDelivery.recipientName}
+                    </p>
+                    <p className="text-muted-foreground">
+                      {selectedDelivery.deliveryAddress}
+                    </p>
                   </div>
                 )}
               </div>
@@ -473,7 +544,11 @@ export default function VolunteerDeliveryContent() {
             )}
           </div>
           <DialogFooter>
-            <Button variant="outline" onClick={() => setShowQRCodeDialog(false)} className="w-full">
+            <Button
+              variant="outline"
+              onClick={() => setShowQRCodeDialog(false)}
+              className="w-full"
+            >
               關閉
             </Button>
           </DialogFooter>

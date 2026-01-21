@@ -57,7 +57,9 @@ describe("Email歷史記錄功能", () => {
     });
 
     const logs = await getEmailLogs({ limit: 10 });
-    const failedLog = logs.find(log => log.recipientEmail === "fail@example.com");
+    const failedLog = logs.find(
+      log => log.recipientEmail === "fail@example.com"
+    );
     expect(failedLog).toBeDefined();
     expect(failedLog?.status).toBe("failed");
     expect(failedLog?.errorMessage).toBe("SMTP connection failed");

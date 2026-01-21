@@ -63,13 +63,16 @@ describe("leaveRequests notification flow", () => {
       email: "test-approve@example.com",
       role: "volunteer",
     });
-    
+
     const testUser = await db.getUserByOpenId("test-volunteer-approve");
     expect(testUser).toBeDefined();
-    
-    const volunteerCtx = createVolunteerContext(testUser!.id, "test-volunteer-approve");
+
+    const volunteerCtx = createVolunteerContext(
+      testUser!.id,
+      "test-volunteer-approve"
+    );
     const volunteerCaller = appRouter.createCaller(volunteerCtx);
-    
+
     // 2. 建立志工
     const volunteer = await db.createVolunteer({
       userId: testUser!.id,
@@ -99,9 +102,9 @@ describe("leaveRequests notification flow", () => {
     // 5. 取得待審核的請假申請
     const pendingRequests = await adminCaller.leaveRequests.getPending();
     const requestToApprove = pendingRequests.find(
-      (r) => r.request.volunteerId === volunteer!.id
+      r => r.request.volunteerId === volunteer!.id
     );
-    
+
     expect(requestToApprove).toBeDefined();
 
     // 6. 管理員核准請假
@@ -135,11 +138,14 @@ describe("leaveRequests notification flow", () => {
       email: "test-reject@example.com",
       role: "volunteer",
     });
-    
+
     const testUser = await db.getUserByOpenId("test-volunteer-reject");
     expect(testUser).toBeDefined();
-    
-    const volunteerCtx = createVolunteerContext(testUser!.id, "test-volunteer-reject");
+
+    const volunteerCtx = createVolunteerContext(
+      testUser!.id,
+      "test-volunteer-reject"
+    );
     const volunteerCaller = appRouter.createCaller(volunteerCtx);
 
     // 2. 建立志工
@@ -171,7 +177,7 @@ describe("leaveRequests notification flow", () => {
     // 5. 取得待審核的請假申請
     const pendingRequests = await adminCaller.leaveRequests.getPending();
     const requestToReject = pendingRequests.find(
-      (r) => r.request.volunteerId === volunteer!.id
+      r => r.request.volunteerId === volunteer!.id
     );
 
     expect(requestToReject).toBeDefined();
@@ -199,19 +205,22 @@ describe("leaveRequests notification flow", () => {
   it("should allow user to mark notification as read", async () => {
     // 取得先前建立的使用者
     const testUser = await db.getUserByOpenId("test-volunteer-approve");
-    
+
     if (!testUser) {
       // 如果測試順序不同，跳過此測試
       expect(true).toBe(true);
       return;
     }
-    
-    const volunteerCtx = createVolunteerContext(testUser.id, "test-volunteer-approve");
+
+    const volunteerCtx = createVolunteerContext(
+      testUser.id,
+      "test-volunteer-approve"
+    );
     const volunteerCaller = appRouter.createCaller(volunteerCtx);
 
     // 取得未讀通知
     const unreadNotifications = await volunteerCaller.notifications.getUnread();
-    
+
     // 如果沒有通知，跳過測試
     if (unreadNotifications.length === 0) {
       expect(true).toBe(true);
@@ -221,12 +230,14 @@ describe("leaveRequests notification flow", () => {
     const notificationToMark = unreadNotifications[0];
 
     // 標記為已讀
-    await volunteerCaller.notifications.markAsRead({ id: notificationToMark.id });
+    await volunteerCaller.notifications.markAsRead({
+      id: notificationToMark.id,
+    });
 
     // 檢查是否已標記為已讀
     const updatedNotifications = await db.getNotificationsByUser(testUser.id);
     const markedNotification = updatedNotifications.find(
-      (n) => n.id === notificationToMark.id
+      n => n.id === notificationToMark.id
     );
 
     expect(markedNotification?.isRead).toBe(true);
@@ -236,14 +247,17 @@ describe("leaveRequests notification flow", () => {
   it("should allow user to mark all notifications as read", async () => {
     // 取得先前建立的使用者
     const testUser = await db.getUserByOpenId("test-volunteer-approve");
-    
+
     if (!testUser) {
       // 如果測試順序不同，跳過此測試
       expect(true).toBe(true);
       return;
     }
-    
-    const volunteerCtx = createVolunteerContext(testUser.id, "test-volunteer-approve");
+
+    const volunteerCtx = createVolunteerContext(
+      testUser.id,
+      "test-volunteer-approve"
+    );
     const volunteerCaller = appRouter.createCaller(volunteerCtx);
 
     // 標記所有通知為已讀

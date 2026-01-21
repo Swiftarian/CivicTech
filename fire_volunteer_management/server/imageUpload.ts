@@ -43,7 +43,10 @@ export function validateImageFile(
 /**
  * 生成唯一檔名
  */
-export function generateUniqueFileName(originalName: string, userId: number): string {
+export function generateUniqueFileName(
+  originalName: string,
+  userId: number
+): string {
   const timestamp = Date.now();
   const randomStr = Math.random().toString(36).substring(2, 8);
   const parts = originalName.split(".");

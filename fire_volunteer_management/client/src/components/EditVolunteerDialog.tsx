@@ -1,9 +1,22 @@
 import { useState, useEffect } from "react";
-import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle } from "@/components/ui/dialog";
+import {
+  Dialog,
+  DialogContent,
+  DialogDescription,
+  DialogFooter,
+  DialogHeader,
+  DialogTitle,
+} from "@/components/ui/dialog";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select";
 import { Textarea } from "@/components/ui/textarea";
 import { trpc } from "@/lib/trpc";
 import { toast } from "sonner";
@@ -61,7 +74,7 @@ export function EditVolunteerDialog({
       onSuccess();
       onOpenChange(false);
     },
-    onError: (error) => {
+    onError: error => {
       toast.error("更新失敗", { description: error.message });
     },
   });
@@ -79,9 +92,7 @@ export function EditVolunteerDialog({
       <DialogContent className="sm:max-w-[500px]">
         <DialogHeader>
           <DialogTitle>編輯志工資料</DialogTitle>
-          <DialogDescription>
-            修改志工的基本資訊和狀態
-          </DialogDescription>
+          <DialogDescription>修改志工的基本資訊和狀態</DialogDescription>
         </DialogHeader>
         <form onSubmit={handleSubmit}>
           <div className="grid gap-4 py-4">
@@ -89,13 +100,15 @@ export function EditVolunteerDialog({
               <Label htmlFor="userId">關聯使用者帳號</Label>
               <Select
                 value={formData.userId.toString()}
-                onValueChange={(value) => setFormData({ ...formData, userId: parseInt(value) })}
+                onValueChange={value =>
+                  setFormData({ ...formData, userId: parseInt(value) })
+                }
               >
                 <SelectTrigger id="userId">
                   <SelectValue />
                 </SelectTrigger>
                 <SelectContent>
-                  {users.map((user) => (
+                  {users.map(user => (
                     <SelectItem key={user.id} value={user.id.toString()}>
                       {user.name || user.email} ({user.email || user.openId})
                     </SelectItem>
@@ -109,7 +122,9 @@ export function EditVolunteerDialog({
               <Input
                 id="employeeId"
                 value={formData.employeeId}
-                onChange={(e) => setFormData({ ...formData, employeeId: e.target.value })}
+                onChange={e =>
+                  setFormData({ ...formData, employeeId: e.target.value })
+                }
                 placeholder="例如：V001"
               />
             </div>
@@ -119,7 +134,9 @@ export function EditVolunteerDialog({
               <Input
                 id="department"
                 value={formData.department}
-                onChange={(e) => setFormData({ ...formData, department: e.target.value })}
+                onChange={e =>
+                  setFormData({ ...formData, department: e.target.value })
+                }
                 placeholder="例如：導覽組"
               />
             </div>
@@ -129,7 +146,9 @@ export function EditVolunteerDialog({
               <Input
                 id="position"
                 value={formData.position}
-                onChange={(e) => setFormData({ ...formData, position: e.target.value })}
+                onChange={e =>
+                  setFormData({ ...formData, position: e.target.value })
+                }
                 placeholder="例如：導覽員"
               />
             </div>
@@ -139,7 +158,9 @@ export function EditVolunteerDialog({
               <Textarea
                 id="skills"
                 value={formData.skills}
-                onChange={(e) => setFormData({ ...formData, skills: e.target.value })}
+                onChange={e =>
+                  setFormData({ ...formData, skills: e.target.value })
+                }
                 placeholder="例如：防災知識、急救技能"
                 rows={3}
               />
@@ -150,7 +171,9 @@ export function EditVolunteerDialog({
               <Textarea
                 id="availability"
                 value={formData.availability}
-                onChange={(e) => setFormData({ ...formData, availability: e.target.value })}
+                onChange={e =>
+                  setFormData({ ...formData, availability: e.target.value })
+                }
                 placeholder="例如：週一至週五 09:00-17:00"
                 rows={2}
               />

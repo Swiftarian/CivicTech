@@ -1,7 +1,13 @@
 import { useState } from "react";
 import { useAuth } from "@/_core/hooks/useAuth";
 import { trpc } from "@/lib/trpc";
-import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
+import {
+  Card,
+  CardContent,
+  CardHeader,
+  CardTitle,
+  CardDescription,
+} from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -22,7 +28,7 @@ export default function SmsTest() {
   } | null>(null);
 
   const testSmsMutation = trpc.smsTest.testDeliveryNotification.useMutation({
-    onSuccess: (data) => {
+    onSuccess: data => {
       setTestResult(data);
       if (data.success) {
         toast.success("SMS測試發送成功！");
@@ -30,7 +36,7 @@ export default function SmsTest() {
         toast.error("SMS測試發送失敗");
       }
     },
-    onError: (error) => {
+    onError: error => {
       toast.error(`測試失敗：${error.message}`);
     },
   });
@@ -96,9 +102,7 @@ export default function SmsTest() {
               <MessageSquare className="h-5 w-5" />
               發送測試SMS
             </CardTitle>
-            <CardDescription>
-              填寫測試資訊並發送SMS通知
-            </CardDescription>
+            <CardDescription>填寫測試資訊並發送SMS通知</CardDescription>
           </CardHeader>
           <CardContent className="space-y-4">
             <div className="space-y-2">
@@ -106,7 +110,7 @@ export default function SmsTest() {
               <Input
                 id="recipientName"
                 value={recipientName}
-                onChange={(e) => setRecipientName(e.target.value)}
+                onChange={e => setRecipientName(e.target.value)}
                 placeholder="例如：王小明"
               />
             </div>
@@ -116,7 +120,7 @@ export default function SmsTest() {
               <Input
                 id="recipientPhone"
                 value={recipientPhone}
-                onChange={(e) => setRecipientPhone(e.target.value)}
+                onChange={e => setRecipientPhone(e.target.value)}
                 placeholder="例如：0912-345-678"
               />
             </div>
@@ -147,7 +151,11 @@ export default function SmsTest() {
               </CardTitle>
             </CardHeader>
             <CardContent className="space-y-4">
-              <Alert className={testResult.success ? "border-green-600" : "border-red-600"}>
+              <Alert
+                className={
+                  testResult.success ? "border-green-600" : "border-red-600"
+                }
+              >
                 <AlertDescription>{testResult.message}</AlertDescription>
               </Alert>
 
@@ -156,7 +164,9 @@ export default function SmsTest() {
                   <div className="grid grid-cols-2 gap-4">
                     <div className="space-y-1">
                       <p className="text-sm text-muted-foreground">送餐編號</p>
-                      <p className="font-mono font-semibold">{testResult.deliveryNumber}</p>
+                      <p className="font-mono font-semibold">
+                        {testResult.deliveryNumber}
+                      </p>
                     </div>
                     <div className="space-y-1">
                       <p className="text-sm text-muted-foreground">驗證序號</p>
@@ -194,9 +204,7 @@ export default function SmsTest() {
         <Card>
           <CardHeader>
             <CardTitle>整合真實SMS服務</CardTitle>
-            <CardDescription>
-              如何將模擬模式改為真實SMS發送
-            </CardDescription>
+            <CardDescription>如何將模擬模式改為真實SMS發送</CardDescription>
           </CardHeader>
           <CardContent className="space-y-3 text-sm">
             <div>
@@ -223,7 +231,11 @@ export default function SmsTest() {
             <div>
               <p className="font-semibold mb-2">步驟3：修改程式碼</p>
               <p className="text-muted-foreground">
-                在 <code className="px-1 py-0.5 bg-muted rounded">server/smsService.ts</code> 中將模擬發送改為真實API呼叫
+                在{" "}
+                <code className="px-1 py-0.5 bg-muted rounded">
+                  server/smsService.ts
+                </code>{" "}
+                中將模擬發送改為真實API呼叫
               </p>
             </div>
 

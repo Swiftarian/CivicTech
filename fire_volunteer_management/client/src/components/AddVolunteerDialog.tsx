@@ -56,7 +56,7 @@ export function AddVolunteerDialog() {
       });
       utils.volunteers.getAll.invalidate();
     },
-    onError: (error) => {
+    onError: error => {
       toast.error("建立失敗", { description: error.message });
     },
   });
@@ -103,7 +103,7 @@ export function AddVolunteerDialog() {
             <Input
               id="name"
               value={formData.name}
-              onChange={(e) => setFormData({ ...formData, name: e.target.value })}
+              onChange={e => setFormData({ ...formData, name: e.target.value })}
               className="col-span-3"
               placeholder="例如：王小明"
               required
@@ -118,7 +118,9 @@ export function AddVolunteerDialog() {
               id="email"
               type="email"
               value={formData.email}
-              onChange={(e) => setFormData({ ...formData, email: e.target.value })}
+              onChange={e =>
+                setFormData({ ...formData, email: e.target.value })
+              }
               className="col-span-3"
               placeholder="例如：wang@example.com"
             />
@@ -131,7 +133,9 @@ export function AddVolunteerDialog() {
             <Input
               id="phone"
               value={formData.phone}
-              onChange={(e) => setFormData({ ...formData, phone: e.target.value })}
+              onChange={e =>
+                setFormData({ ...formData, phone: e.target.value })
+              }
               className="col-span-3"
               placeholder="例如：0912345678"
             />
@@ -144,7 +148,9 @@ export function AddVolunteerDialog() {
             <Input
               id="employeeId"
               value={formData.employeeId}
-              onChange={(e) => setFormData({ ...formData, employeeId: e.target.value })}
+              onChange={e =>
+                setFormData({ ...formData, employeeId: e.target.value })
+              }
               className="col-span-3"
               placeholder="例如：V001"
             />
@@ -157,7 +163,9 @@ export function AddVolunteerDialog() {
             <Input
               id="department"
               value={formData.department}
-              onChange={(e) => setFormData({ ...formData, department: e.target.value })}
+              onChange={e =>
+                setFormData({ ...formData, department: e.target.value })
+              }
               className="col-span-3"
               placeholder="例如：導覽組"
             />
@@ -170,7 +178,9 @@ export function AddVolunteerDialog() {
             <Input
               id="position"
               value={formData.position}
-              onChange={(e) => setFormData({ ...formData, position: e.target.value })}
+              onChange={e =>
+                setFormData({ ...formData, position: e.target.value })
+              }
               className="col-span-3"
               placeholder="例如：導覽員"
             />
@@ -182,7 +192,12 @@ export function AddVolunteerDialog() {
             </Label>
             <Select
               value={formData.category}
-              onValueChange={(value) => setFormData({ ...formData, category: value as "導覽館志工" | "送餐志工" })}
+              onValueChange={value =>
+                setFormData({
+                  ...formData,
+                  category: value as "導覽館志工" | "送餐志工",
+                })
+              }
             >
               <SelectTrigger className="col-span-3">
                 <SelectValue placeholder="選擇志工分類" />
@@ -201,7 +216,9 @@ export function AddVolunteerDialog() {
             <Textarea
               id="skills"
               value={formData.skills}
-              onChange={(e) => setFormData({ ...formData, skills: e.target.value })}
+              onChange={e =>
+                setFormData({ ...formData, skills: e.target.value })
+              }
               className="col-span-3"
               placeholder="例如：導覽解說、活動支援、送餐服務"
               rows={2}
@@ -215,7 +232,9 @@ export function AddVolunteerDialog() {
             <Textarea
               id="availability"
               value={formData.availability}
-              onChange={(e) => setFormData({ ...formData, availability: e.target.value })}
+              onChange={e =>
+                setFormData({ ...formData, availability: e.target.value })
+              }
               className="col-span-3"
               placeholder="例如：週一至週五 09:00-17:00"
               rows={2}
@@ -223,10 +242,18 @@ export function AddVolunteerDialog() {
           </div>
         </div>
         <DialogFooter>
-          <Button type="button" variant="outline" onClick={() => setOpen(false)}>
+          <Button
+            type="button"
+            variant="outline"
+            onClick={() => setOpen(false)}
+          >
             取消
           </Button>
-          <Button type="button" onClick={handleSubmit} disabled={createVolunteer.isPending}>
+          <Button
+            type="button"
+            onClick={handleSubmit}
+            disabled={createVolunteer.isPending}
+          >
             {createVolunteer.isPending ? "建立中..." : "建立"}
           </Button>
         </DialogFooter>

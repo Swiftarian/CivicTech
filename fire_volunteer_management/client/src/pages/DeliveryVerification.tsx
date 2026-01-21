@@ -23,10 +23,13 @@ export default function DeliveryVerification() {
 
   const [verificationCode, setVerificationCode] = useState("");
   const [photo, setPhoto] = useState<string | null>(null);
-  const [currentPosition, setCurrentPosition] = useState<{ lat: number; lng: number } | null>(null);
+  const [currentPosition, setCurrentPosition] = useState<{
+    lat: number;
+    lng: number;
+  } | null>(null);
   const [isCapturing, setIsCapturing] = useState(false);
   const [isVerifying, setIsVerifying] = useState(false);
-  
+
   const videoRef = useRef<HTMLVideoElement>(null);
   const canvasRef = useRef<HTMLCanvasElement>(null);
   const fileInputRef = useRef<HTMLInputElement>(null);
@@ -55,13 +58,13 @@ export default function DeliveryVerification() {
   useEffect(() => {
     if (navigator.geolocation) {
       navigator.geolocation.getCurrentPosition(
-        (position) => {
+        position => {
           setCurrentPosition({
             lat: position.coords.latitude,
             lng: position.coords.longitude,
           });
         },
-        (error) => {
+        error => {
           console.error("GPS定位失敗", error);
           toast.error("無法獲取GPS位置，請確認已開啟定位權限");
         },
@@ -97,21 +100,21 @@ export default function DeliveryVerification() {
     if (videoRef.current && canvasRef.current) {
       const canvas = canvasRef.current;
       const video = videoRef.current;
-      
+
       canvas.width = video.videoWidth;
       canvas.height = video.videoHeight;
-      
+
       const ctx = canvas.getContext("2d");
       if (ctx) {
         ctx.drawImage(video, 0, 0);
         const photoData = canvas.toDataURL("image/jpeg", 0.8);
         setPhoto(photoData);
-        
+
         // 停止相機
         const stream = video.srcObject as MediaStream;
         stream?.getTracks().forEach(track => track.stop());
         setIsCapturing(false);
-        
+
         toast.success("照片已拍攝");
       }
     }
@@ -122,7 +125,7 @@ export default function DeliveryVerification() {
     const file = e.target.files?.[0];
     if (file) {
       const reader = new FileReader();
-      reader.onload = (event) => {
+      reader.onload = event => {
         setPhoto(event.target?.result as string);
         toast.success("照片已上傳");
       };
@@ -326,7 +329,9 @@ export default function DeliveryVerification() {
                 type="text"
                 maxLength={6}
                 value={verificationCode}
-                onChange={(e) => setVerificationCode(e.target.value.replace(/\D/g, ""))}
+                onChange={e =>
+                  setVerificationCode(e.target.value.replace(/\D/g, ""))
+                }
                 placeholder="輸入6位數驗證碼"
                 className="text-2xl text-center tracking-widest"
               />
@@ -362,7 +367,9 @@ export default function DeliveryVerification() {
           onClick={handleComplete}
           size="lg"
           className="w-full"
-          disabled={!photo || !verificationCode || !currentPosition || isVerifying}
+          disabled={
+            !photo || !verificationCode || !currentPosition || isVerifying
+          }
         >
           {isVerifying ? (
             <>

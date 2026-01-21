@@ -20,16 +20,16 @@ export async function createContext(
     user = await sdk.authenticateRequest(opts.req);
   } catch (error) {
     // Manus認證失敗，嘗試測試登入JWT token
-    if (process.env.ENABLE_TEST_LOGIN === 'true') {
+    if (process.env.ENABLE_TEST_LOGIN === "true") {
       try {
         const token = opts.req.cookies?.[COOKIE_NAME];
         if (token) {
-          const jwt = await import('jsonwebtoken');
+          const jwt = await import("jsonwebtoken");
           const decoded = jwt.default.verify(
             token,
-            process.env.JWT_SECRET || 'test-secret'
+            process.env.JWT_SECRET || "test-secret"
           ) as { openId: string };
-          
+
           if (decoded.openId) {
             const foundUser = await getUserByOpenId(decoded.openId);
             user = foundUser || null;

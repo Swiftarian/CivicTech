@@ -76,7 +76,10 @@ describe("志工任務指派LINE通知功能", () => {
       deliveryTime: "12:00",
       deliveryNumber: "MD123456",
       verificationCode: "ABC123",
-      qrCode: JSON.stringify({ deliveryNumber: "MD123456", verificationCode: "ABC123" }),
+      qrCode: JSON.stringify({
+        deliveryNumber: "MD123456",
+        verificationCode: "ABC123",
+      }),
       status: "pending",
     });
 
@@ -147,7 +150,10 @@ describe("志工任務指派LINE通知功能", () => {
       deliveryTime: "13:00",
       deliveryNumber: "MD789012",
       verificationCode: "DEF456",
-      qrCode: JSON.stringify({ deliveryNumber: "MD789012", verificationCode: "DEF456" }),
+      qrCode: JSON.stringify({
+        deliveryNumber: "MD789012",
+        verificationCode: "DEF456",
+      }),
       status: "pending",
     });
 
@@ -186,7 +192,9 @@ describe("志工任務指派LINE通知功能", () => {
       role: "user",
     });
 
-    const volunteerUser = await db.getUserByEmail("volunteer-noline@example.com");
+    const volunteerUser = await db.getUserByEmail(
+      "volunteer-noline@example.com"
+    );
     expect(volunteerUser).toBeDefined();
 
     // 建立志工記錄
@@ -210,7 +218,10 @@ describe("志工任務指派LINE通知功能", () => {
       deliveryTime: "14:00",
       deliveryNumber: "MD345678",
       verificationCode: "GHI789",
-      qrCode: JSON.stringify({ deliveryNumber: "MD345678", verificationCode: "GHI789" }),
+      qrCode: JSON.stringify({
+        deliveryNumber: "MD345678",
+        verificationCode: "GHI789",
+      }),
       status: "pending",
     });
 

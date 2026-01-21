@@ -4,13 +4,19 @@ import { trpc } from "@/lib/trpc";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
+import {
+  Card,
+  CardContent,
+  CardDescription,
+  CardHeader,
+  CardTitle,
+} from "@/components/ui/card";
 import { Alert, AlertDescription } from "@/components/ui/alert";
 import { AlertCircle, Shield } from "lucide-react";
 
 /**
  * ⚠️ 測試專用登入頁面
- * 
+ *
  * 僅供資安掃描測試使用
  * 測試完成後必須刪除此檔案
  */
@@ -27,17 +33,17 @@ export default function TestLogin() {
         window.location.href = "/admin";
       }, 500);
     },
-    onError: (err) => {
+    onError: err => {
       setError(err.message || "登入失敗");
     },
   });
 
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
-    console.log('[TestLogin] handleSubmit called', { email, password: '***' });
+    console.log("[TestLogin] handleSubmit called", { email, password: "***" });
     setError("");
     loginMutation.mutate({ email, password });
-    console.log('[TestLogin] mutation.mutate called');
+    console.log("[TestLogin] mutation.mutate called");
   };
 
   return (
@@ -48,9 +54,7 @@ export default function TestLogin() {
             <Shield className="h-6 w-6 text-orange-600" />
             <CardTitle className="text-2xl">測試專用登入</CardTitle>
           </div>
-          <CardDescription>
-            此登入頁面僅供資安掃描測試使用
-          </CardDescription>
+          <CardDescription>此登入頁面僅供資安掃描測試使用</CardDescription>
         </CardHeader>
         <CardContent>
           <Alert className="mb-6 border-orange-200 bg-orange-50">
@@ -68,7 +72,7 @@ export default function TestLogin() {
                 type="email"
                 placeholder="your.email@example.com"
                 value={email}
-                onChange={(e) => setEmail(e.target.value)}
+                onChange={e => setEmail(e.target.value)}
                 required
                 autoComplete="email"
               />
@@ -81,7 +85,7 @@ export default function TestLogin() {
                 type="password"
                 placeholder="輸入密碼"
                 value={password}
-                onChange={(e) => setPassword(e.target.value)}
+                onChange={e => setPassword(e.target.value)}
                 required
                 autoComplete="current-password"
               />
@@ -104,7 +108,9 @@ export default function TestLogin() {
           </form>
 
           <div className="mt-6 p-4 bg-gray-50 rounded-lg border border-gray-200">
-            <h3 className="text-sm font-semibold mb-2 text-gray-700">測試帳號資訊</h3>
+            <h3 className="text-sm font-semibold mb-2 text-gray-700">
+              測試帳號資訊
+            </h3>
             <div className="space-y-2 text-xs text-gray-600">
               <div>
                 <strong>管理員1:</strong> jacky.hsieh@insight.ntu.edu.tw

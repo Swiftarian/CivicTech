@@ -29,23 +29,33 @@ import {
 
 export default function VolunteerDelivery() {
   const { user } = useAuth();
-  const [selectedDeliveryId, setSelectedDeliveryId] = useState<number | null>(null);
+  const [selectedDeliveryId, setSelectedDeliveryId] = useState<number | null>(
+    null
+  );
   const [isTracking, setIsTracking] = useState(false);
   const [showCompleteDialog, setShowCompleteDialog] = useState(false);
   const [showQRCodeDialog, setShowQRCodeDialog] = useState(false);
-  const [qrCodeData, setQRCodeData] = useState<{ qrCodeDataUrl: string; confirmUrl: string } | null>(null);
+  const [qrCodeData, setQRCodeData] = useState<{
+    qrCodeDataUrl: string;
+    confirmUrl: string;
+  } | null>(null);
   const [map, setMap] = useState<google.maps.Map | null>(null);
-  const [currentMarker, setCurrentMarker] = useState<google.maps.Marker | null>(null);
+  const [currentMarker, setCurrentMarker] = useState<google.maps.Marker | null>(
+    null
+  );
   const trackingIntervalRef = useRef<number | null>(null);
 
   // 只查詢指派給該志工的送餐任務
-  const { data: deliveries, refetch } = trpc.mealDeliveries.getMyDeliveries.useQuery();
-  
+  const { data: deliveries, refetch } =
+    trpc.mealDeliveries.getMyDeliveries.useQuery();
+
   const handleShowQRCode = async () => {
     if (!selectedDeliveryId) return;
     try {
       const utils = trpc.useUtils();
-      const data = await utils.mealDeliveries.getQRCode.fetch({ deliveryId: selectedDeliveryId });
+      const data = await utils.mealDeliveries.getQRCode.fetch({
+        deliveryId: selectedDeliveryId,
+      });
       setQRCodeData(data);
       setShowQRCodeDialog(true);
     } catch (error) {
@@ -69,9 +79,10 @@ export default function VolunteerDelivery() {
 
   // getMyDeliveries API已經過濾了，只回傳該志工的任務
   // 再過濾出待配送和配送中的任務
-  const myDeliveries = deliveries?.filter(d => {
-    return d.status === "assigned" || d.status === "in_transit";
-  }) || [];
+  const myDeliveries =
+    deliveries?.filter(d => {
+      return d.status === "assigned" || d.status === "in_transit";
+    }) || [];
 
   const selectedDelivery = deliveries?.find(d => d.id === selectedDeliveryId);
 
@@ -117,9 +128,9 @@ export default function VolunteerDelivery() {
     if (!selectedDeliveryId) return;
 
     navigator.geolocation.getCurrentPosition(
-      (position) => {
+      position => {
         const { latitude, longitude, speed, accuracy } = position.coords;
-        
+
         addTrackingMutation.mutate({
           deliveryId: selectedDeliveryId,
           latitude: latitude.toString(),
@@ -131,7 +142,7 @@ export default function VolunteerDelivery() {
         // 更新地圖上的當前位置標記
         if (map) {
           const pos = { lat: latitude, lng: longitude };
-          
+
           if (currentMarker) {
             currentMarker.setPosition(pos);
           } else {
@@ -150,13 +161,13 @@ export default function VolunteerDelivery() {
             });
             setCurrentMarker(marker);
           }
-          
+
           map.setCenter(pos);
         }
 
         console.log("GPS位置已上傳", { latitude, longitude, speed, accuracy });
       },
-      (error) => {
+      error => {
         console.error("GPS定位失敗", error);
         toast.error("GPS定位失敗，請確認已開啟定位權限");
       },
@@ -196,7 +207,13 @@ export default function VolunteerDelivery() {
   };
 
   const getStatusBadge = (status: string) => {
-    const statusMap: Record<string, { label: string; variant: "default" | "secondary" | "destructive" | "outline" }> = {
+    const statusMap: Record<
+      string,
+      {
+        label: string;
+        variant: "default" | "secondary" | "destructive" | "outline";
+      }
+    > = {
       assigned: { label: "待開始", variant: "secondary" },
       in_transit: { label: "配送中", variant: "default" },
       delivered: { label: "已送達", variant: "outline" },
@@ -229,7 +246,7 @@ export default function VolunteerDelivery() {
                 <div className="space-y-3">
                   {myDeliveries.map(delivery => {
                     const isSelected = selectedDeliveryId === delivery.id;
-                    
+
                     return (
                       <Card
                         key={delivery.id}
@@ -240,13 +257,17 @@ export default function VolunteerDelivery() {
                       >
                         <CardContent className="pt-4">
                           <div className="flex items-start justify-between mb-2">
-                            <h3 className="font-semibold">{delivery.recipientName}</h3>
+                            <h3 className="font-semibold">
+                              {delivery.recipientName}
+                            </h3>
                             {getStatusBadge(delivery.status)}
                           </div>
                           <div className="space-y-1 text-sm text-muted-foreground">
                             <div className="flex items-center gap-2">
                               <MapPin className="h-3 w-3 flex-shrink-0" />
-                              <span className="line-clamp-2">{delivery.deliveryAddress}</span>
+                              <span className="line-clamp-2">
+                                {delivery.deliveryAddress}
+                              </span>
                             </div>
                             <div className="flex items-center gap-2">
                               <Phone className="h-3 w-3" />
@@ -255,7 +276,11 @@ export default function VolunteerDelivery() {
                             <div className="flex items-center gap-2">
                               <Clock className="h-3 w-3" />
                               <span>
-                                {format(new Date(delivery.deliveryDate), "MM/dd")} {delivery.deliveryTime}
+                                {format(
+                                  new Date(delivery.deliveryDate),
+                                  "MM/dd"
+                                )}{" "}
+                                {delivery.deliveryTime}
                               </span>
                             </div>
                           </div>
@@ -347,7 +372,7 @@ export default function VolunteerDelivery() {
               <MapView onMapReady={handleMapReady} />
             </CardContent>
           </Card>
-          
+
           {!selectedDeliveryId && (
             <div className="mt-4 text-center text-muted-foreground">
               <p>請從左側選擇一個送餐任務</p>
@@ -366,18 +391,23 @@ export default function VolunteerDelivery() {
             <p>確定要標記此送餐任務為已完成嗎？</p>
             {selectedDelivery && (
               <div className="mt-4 p-4 bg-muted rounded">
-                <p className="font-semibold">{selectedDelivery.recipientName}</p>
-                <p className="text-sm text-muted-foreground">{selectedDelivery.deliveryAddress}</p>
+                <p className="font-semibold">
+                  {selectedDelivery.recipientName}
+                </p>
+                <p className="text-sm text-muted-foreground">
+                  {selectedDelivery.deliveryAddress}
+                </p>
               </div>
             )}
           </div>
           <DialogFooter>
-            <Button variant="outline" onClick={() => setShowCompleteDialog(false)}>
+            <Button
+              variant="outline"
+              onClick={() => setShowCompleteDialog(false)}
+            >
               取消
             </Button>
-            <Button onClick={completeDelivery}>
-              確認完成
-            </Button>
+            <Button onClick={completeDelivery}>確認完成</Button>
           </DialogFooter>
         </DialogContent>
       </Dialog>
@@ -392,9 +422,9 @@ export default function VolunteerDelivery() {
             {qrCodeData ? (
               <div className="space-y-4">
                 <div className="flex justify-center">
-                  <img 
-                    src={qrCodeData.qrCodeDataUrl} 
-                    alt="QR Code" 
+                  <img
+                    src={qrCodeData.qrCodeDataUrl}
+                    alt="QR Code"
                     className="w-64 h-64"
                   />
                 </div>
@@ -422,8 +452,12 @@ export default function VolunteerDelivery() {
                 )}
                 {selectedDelivery && (
                   <div className="p-3 bg-muted rounded text-sm">
-                    <p className="font-semibold">{selectedDelivery.recipientName}</p>
-                    <p className="text-muted-foreground">{selectedDelivery.deliveryAddress}</p>
+                    <p className="font-semibold">
+                      {selectedDelivery.recipientName}
+                    </p>
+                    <p className="text-muted-foreground">
+                      {selectedDelivery.deliveryAddress}
+                    </p>
                   </div>
                 )}
               </div>
@@ -434,7 +468,11 @@ export default function VolunteerDelivery() {
             )}
           </div>
           <DialogFooter>
-            <Button variant="outline" onClick={() => setShowQRCodeDialog(false)} className="w-full">
+            <Button
+              variant="outline"
+              onClick={() => setShowQRCodeDialog(false)}
+              className="w-full"
+            >
               關閉
             </Button>
           </DialogFooter>

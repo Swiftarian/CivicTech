@@ -36,13 +36,13 @@ async function startServer() {
   // Configure body parser with larger size limit for file uploads
   app.use(express.json({ limit: "50mb" }));
   app.use(express.urlencoded({ limit: "50mb", extended: true }));
-  
+
   // Apply rate limiting to all /api routes
   app.use("/api", apiLimiter);
-  
+
   // OAuth callback under /api/oauth/callback
   registerOAuthRoutes(app);
-  
+
   // LINE webhook under /api/line/webhook with stricter rate limiting
   app.post("/api/line/webhook", webhookLimiter, handleLineWebhook);
   // tRPC API
@@ -69,13 +69,13 @@ async function startServer() {
 
   server.listen(port, () => {
     console.log(`Server running on http://localhost:${port}/`);
-    
+
     // 初始化排程任務（只在生產環境執行）
     if (process.env.NODE_ENV === "production") {
       initializeScheduledTasks();
-      console.log('[Server] 排程任務已啟動');
+      console.log("[Server] 排程任務已啟動");
     } else {
-      console.log('[Server] 開發環境，排程任務未啟動（可透過 API 手動觸發）');
+      console.log("[Server] 開發環境，排程任務未啟動（可透過 API 手動觸發）");
     }
   });
 }

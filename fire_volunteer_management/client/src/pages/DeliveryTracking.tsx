@@ -9,22 +9,29 @@ import { format } from "date-fns";
 import { toast } from "sonner";
 
 export default function DeliveryTracking() {
-  const [selectedDeliveryId, setSelectedDeliveryId] = useState<number | null>(null);
+  const [selectedDeliveryId, setSelectedDeliveryId] = useState<number | null>(
+    null
+  );
   const [map, setMap] = useState<google.maps.Map | null>(null);
   const [markers, setMarkers] = useState<google.maps.Marker[]>([]);
   const [polyline, setPolyline] = useState<google.maps.Polyline | null>(null);
   const [autoRefresh, setAutoRefresh] = useState(true);
 
   // 查詢進行中的送餐任務
-  const { data: deliveries, refetch: refetchDeliveries } = trpc.mealDeliveries.getAll.useQuery(undefined, {
-    refetchInterval: autoRefresh ? 10000 : false, // 每10秒自動刷新
-  });
+  const { data: deliveries, refetch: refetchDeliveries } =
+    trpc.mealDeliveries.getAll.useQuery(undefined, {
+      refetchInterval: autoRefresh ? 10000 : false, // 每10秒自動刷新
+    });
 
   // 查詢選中任務的路徑追蹤資料
-  const { data: trackingData, refetch: refetchTracking } = trpc.mealDeliveries.getTracking.useQuery(
-    { deliveryId: selectedDeliveryId! },
-    { enabled: !!selectedDeliveryId, refetchInterval: autoRefresh ? 5000 : false }
-  );
+  const { data: trackingData, refetch: refetchTracking } =
+    trpc.mealDeliveries.getTracking.useQuery(
+      { deliveryId: selectedDeliveryId! },
+      {
+        enabled: !!selectedDeliveryId,
+        refetchInterval: autoRefresh ? 5000 : false,
+      }
+    );
 
   const { data: volunteers } = trpc.volunteers.getAll.useQuery();
 
@@ -125,7 +132,13 @@ export default function DeliveryTracking() {
   };
 
   const getStatusBadge = (status: string) => {
-    const statusMap: Record<string, { label: string; variant: "default" | "secondary" | "destructive" | "outline" }> = {
+    const statusMap: Record<
+      string,
+      {
+        label: string;
+        variant: "default" | "secondary" | "destructive" | "outline";
+      }
+    > = {
       pending: { label: "待指派", variant: "secondary" },
       assigned: { label: "已指派", variant: "default" },
       in_transit: { label: "配送中", variant: "default" },
@@ -136,9 +149,10 @@ export default function DeliveryTracking() {
     return <Badge variant={config.variant}>{config.label}</Badge>;
   };
 
-  const activeDeliveries = deliveries?.filter(d => 
-    d.status === "in_transit" || d.status === "assigned"
-  ) || [];
+  const activeDeliveries =
+    deliveries?.filter(
+      d => d.status === "in_transit" || d.status === "assigned"
+    ) || [];
 
   const selectedDelivery = deliveries?.find(d => d.id === selectedDeliveryId);
 
@@ -178,9 +192,11 @@ export default function DeliveryTracking() {
               ) : (
                 <div className="space-y-3">
                   {activeDeliveries.map(delivery => {
-                    const volunteer = volunteers?.find(v => v.volunteer.id === delivery.volunteerId);
+                    const volunteer = volunteers?.find(
+                      v => v.volunteer.id === delivery.volunteerId
+                    );
                     const isSelected = selectedDeliveryId === delivery.id;
-                    
+
                     return (
                       <Card
                         key={delivery.id}
@@ -191,13 +207,17 @@ export default function DeliveryTracking() {
                       >
                         <CardContent className="pt-4">
                           <div className="flex items-start justify-between mb-2">
-                            <h3 className="font-semibold">{delivery.recipientName}</h3>
+                            <h3 className="font-semibold">
+                              {delivery.recipientName}
+                            </h3>
                             {getStatusBadge(delivery.status)}
                           </div>
                           <div className="space-y-1 text-sm text-muted-foreground">
                             <div className="flex items-center gap-2">
                               <MapPin className="h-3 w-3" />
-                              <span className="truncate">{delivery.deliveryAddress}</span>
+                              <span className="truncate">
+                                {delivery.deliveryAddress}
+                              </span>
                             </div>
                             {volunteer && (
                               <div className="flex items-center gap-2">
@@ -208,7 +228,11 @@ export default function DeliveryTracking() {
                             <div className="flex items-center gap-2">
                               <Clock className="h-3 w-3" />
                               <span>
-                                {format(new Date(delivery.deliveryDate), "MM/dd")} {delivery.deliveryTime}
+                                {format(
+                                  new Date(delivery.deliveryDate),
+                                  "MM/dd"
+                                )}{" "}
+                                {delivery.deliveryTime}
                               </span>
                             </div>
                           </div>
@@ -224,7 +248,7 @@ export default function DeliveryTracking() {
                   <input
                     type="checkbox"
                     checked={autoRefresh}
-                    onChange={(e) => setAutoRefresh(e.target.checked)}
+                    onChange={e => setAutoRefresh(e.target.checked)}
                     className="rounded"
                   />
                   <span>自動刷新</span>
@@ -242,18 +266,25 @@ export default function DeliveryTracking() {
               <CardContent className="space-y-2 text-sm">
                 <div className="flex justify-between">
                   <span className="text-muted-foreground">總追蹤點數：</span>
-                  <span className="font-semibold">{trackingData.length} 個</span>
+                  <span className="font-semibold">
+                    {trackingData.length} 個
+                  </span>
                 </div>
                 <div className="flex justify-between">
                   <span className="text-muted-foreground">最後更新：</span>
                   <span className="font-semibold">
-                    {format(new Date(trackingData[trackingData.length - 1].timestamp), "HH:mm:ss")}
+                    {format(
+                      new Date(trackingData[trackingData.length - 1].timestamp),
+                      "HH:mm:ss"
+                    )}
                   </span>
                 </div>
                 {trackingData[trackingData.length - 1].speed && (
                   <div className="flex justify-between">
                     <span className="text-muted-foreground">當前速度：</span>
-                    <span className="font-semibold">{trackingData[trackingData.length - 1].speed} km/h</span>
+                    <span className="font-semibold">
+                      {trackingData[trackingData.length - 1].speed} km/h
+                    </span>
                   </div>
                 )}
               </CardContent>
@@ -268,7 +299,7 @@ export default function DeliveryTracking() {
               <MapView onMapReady={handleMapReady} />
             </CardContent>
           </Card>
-          
+
           {!selectedDeliveryId && (
             <div className="mt-4 text-center text-muted-foreground">
               <p>請從左側選擇一個送餐任務以查看路徑追蹤</p>

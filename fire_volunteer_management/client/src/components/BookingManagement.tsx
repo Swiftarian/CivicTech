@@ -1,22 +1,66 @@
 import { useState } from "react";
 import { useAuth } from "@/_core/hooks/useAuth";
 import { Button } from "@/components/ui/button";
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
-import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
-import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle } from "@/components/ui/dialog";
-import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle } from "@/components/ui/alert-dialog";
+import {
+  Card,
+  CardContent,
+  CardDescription,
+  CardHeader,
+  CardTitle,
+} from "@/components/ui/card";
+import {
+  Table,
+  TableBody,
+  TableCell,
+  TableHead,
+  TableHeader,
+  TableRow,
+} from "@/components/ui/table";
+import {
+  Dialog,
+  DialogContent,
+  DialogDescription,
+  DialogFooter,
+  DialogHeader,
+  DialogTitle,
+} from "@/components/ui/dialog";
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+} from "@/components/ui/alert-dialog";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select";
 import { Textarea } from "@/components/ui/textarea";
 import { trpc } from "@/lib/trpc";
 import { toast } from "sonner";
 import { format } from "date-fns";
 import { zhTW } from "date-fns/locale";
-import { Pencil, Trash2, Search, Filter, CheckCircle, XCircle, Clock, Calendar } from "lucide-react";
+import {
+  Pencil,
+  Trash2,
+  Search,
+  Filter,
+  CheckCircle,
+  XCircle,
+  Clock,
+  Calendar,
+} from "lucide-react";
 
-type BookingType = 'individual' | 'group';
-type BookingStatus = 'pending' | 'confirmed' | 'cancelled' | 'completed';
+type BookingType = "individual" | "group";
+type BookingStatus = "pending" | "confirmed" | "cancelled" | "completed";
 
 interface Booking {
   id: number;
@@ -37,14 +81,14 @@ interface Booking {
 
 export function BookingManagement() {
   const { user } = useAuth();
-  const isAdmin = user?.role === 'admin';
+  const isAdmin = user?.role === "admin";
   const [filterType, setFilterType] = useState<string>("all");
   const [filterStatus, setFilterStatus] = useState<string>("all");
   const [searchTerm, setSearchTerm] = useState("");
   const [editDialogOpen, setEditDialogOpen] = useState(false);
   const [deleteDialogOpen, setDeleteDialogOpen] = useState(false);
   const [selectedBooking, setSelectedBooking] = useState<Booking | null>(null);
-  
+
   // 編輯表單狀態
   const [editForm, setEditForm] = useState({
     contactName: "",
@@ -55,11 +99,11 @@ export function BookingManagement() {
     purpose: "",
     specialNeeds: "",
     status: "pending" as BookingStatus,
-    organizationName: ""
+    organizationName: "",
   });
 
   const { data: bookings, refetch } = trpc.bookings.getAll.useQuery();
-  
+
   const updateBooking = trpc.bookings.update.useMutation({
     onSuccess: () => {
       toast.success("預約已更新");
@@ -67,9 +111,9 @@ export function BookingManagement() {
       setEditDialogOpen(false);
       setSelectedBooking(null);
     },
-    onError: (error) => {
+    onError: error => {
       toast.error("更新失敗", { description: error.message });
-    }
+    },
   });
 
   const deleteBooking = trpc.bookings.delete.useMutation({
@@ -79,9 +123,9 @@ export function BookingManagement() {
       setDeleteDialogOpen(false);
       setSelectedBooking(null);
     },
-    onError: (error) => {
+    onError: error => {
       toast.error("刪除失敗", { description: error.message });
-    }
+    },
   });
 
   const updateStatus = trpc.bookings.updateStatus.useMutation({
@@ -89,29 +133,31 @@ export function BookingManagement() {
       toast.success("狀態已更新");
       refetch();
     },
-    onError: (error) => {
+    onError: error => {
       toast.error("更新失敗", { description: error.message });
-    }
+    },
   });
 
   // 篩選預約
-  const filteredBookings = bookings?.filter((booking: Booking) => {
-    // 類型篩選
-    if (filterType !== "all" && booking.type !== filterType) return false;
-    // 狀態篩選
-    if (filterStatus !== "all" && booking.status !== filterStatus) return false;
-    // 搜尋篩選
-    if (searchTerm) {
-      const search = searchTerm.toLowerCase();
-      return (
-        booking.bookingNumber.toLowerCase().includes(search) ||
-        booking.contactName.toLowerCase().includes(search) ||
-        booking.contactPhone.includes(search) ||
-        (booking.organizationName?.toLowerCase().includes(search) ?? false)
-      );
-    }
-    return true;
-  }) || [];
+  const filteredBookings =
+    bookings?.filter((booking: Booking) => {
+      // 類型篩選
+      if (filterType !== "all" && booking.type !== filterType) return false;
+      // 狀態篩選
+      if (filterStatus !== "all" && booking.status !== filterStatus)
+        return false;
+      // 搜尋篩選
+      if (searchTerm) {
+        const search = searchTerm.toLowerCase();
+        return (
+          booking.bookingNumber.toLowerCase().includes(search) ||
+          booking.contactName.toLowerCase().includes(search) ||
+          booking.contactPhone.includes(search) ||
+          (booking.organizationName?.toLowerCase().includes(search) ?? false)
+        );
+      }
+      return true;
+    }) || [];
 
   const handleEdit = (booking: Booking) => {
     setSelectedBooking(booking);
@@ -124,7 +170,7 @@ export function BookingManagement() {
       purpose: booking.purpose || "",
       specialNeeds: booking.specialNeeds || "",
       status: booking.status,
-      organizationName: booking.organizationName || ""
+      organizationName: booking.organizationName || "",
     });
     setEditDialogOpen(true);
   };
@@ -139,7 +185,7 @@ export function BookingManagement() {
     updateBooking.mutate({
       id: selectedBooking.id,
       type: selectedBooking.type,
-      ...editForm
+      ...editForm,
     });
   };
 
@@ -147,7 +193,7 @@ export function BookingManagement() {
     if (!selectedBooking) return;
     deleteBooking.mutate({
       id: selectedBooking.id,
-      type: selectedBooking.type
+      type: selectedBooking.type,
     });
   };
 
@@ -156,23 +202,25 @@ export function BookingManagement() {
       pending: "bg-yellow-100 text-yellow-800",
       confirmed: "bg-green-100 text-green-800",
       cancelled: "bg-red-100 text-red-800",
-      completed: "bg-blue-100 text-blue-800"
+      completed: "bg-blue-100 text-blue-800",
     };
     const labels: Record<string, string> = {
       pending: "待確認",
       confirmed: "已確認",
       cancelled: "已取消",
-      completed: "已完成"
+      completed: "已完成",
     };
     return (
-      <span className={`px-2 py-1 rounded-full text-xs font-medium ${styles[status] || ""}`}>
+      <span
+        className={`px-2 py-1 rounded-full text-xs font-medium ${styles[status] || ""}`}
+      >
         {labels[status] || status}
       </span>
     );
   };
 
   const getTypeBadge = (type: string) => {
-    return type === 'group' ? (
+    return type === "group" ? (
       <span className="px-2 py-1 rounded-full text-xs font-medium bg-purple-100 text-purple-800">
         團體
       </span>
@@ -200,7 +248,7 @@ export function BookingManagement() {
             <Input
               placeholder="搜尋預約編號、聯絡人、電話..."
               value={searchTerm}
-              onChange={(e) => setSearchTerm(e.target.value)}
+              onChange={e => setSearchTerm(e.target.value)}
               className="w-64"
             />
           </div>
@@ -253,43 +301,54 @@ export function BookingManagement() {
             <TableBody>
               {filteredBookings.length === 0 ? (
                 <TableRow>
-                  <TableCell colSpan={9} className="text-center py-8 text-muted-foreground">
+                  <TableCell
+                    colSpan={9}
+                    className="text-center py-8 text-muted-foreground"
+                  >
                     沒有符合條件的預約紀錄
                   </TableCell>
                 </TableRow>
               ) : (
                 filteredBookings.map((booking: Booking) => (
                   <TableRow key={`${booking.type}-${booking.id}`}>
-                    <TableCell className="font-mono text-sm">{booking.bookingNumber}</TableCell>
+                    <TableCell className="font-mono text-sm">
+                      {booking.bookingNumber}
+                    </TableCell>
                     <TableCell>{getTypeBadge(booking.type)}</TableCell>
                     <TableCell>
                       <div>
                         <div className="font-medium">{booking.contactName}</div>
                         {booking.organizationName && (
-                          <div className="text-xs text-muted-foreground">{booking.organizationName}</div>
+                          <div className="text-xs text-muted-foreground">
+                            {booking.organizationName}
+                          </div>
                         )}
                       </div>
                     </TableCell>
                     <TableCell>{booking.contactPhone}</TableCell>
                     <TableCell>
-                      {format(new Date(booking.visitDate), "yyyy/MM/dd (E)", { locale: zhTW })}
+                      {format(new Date(booking.visitDate), "yyyy/MM/dd (E)", {
+                        locale: zhTW,
+                      })}
                     </TableCell>
                     <TableCell>{booking.visitTime}</TableCell>
                     <TableCell>{booking.numberOfPeople} 人</TableCell>
                     <TableCell>{getStatusBadge(booking.status)}</TableCell>
                     <TableCell className="text-right">
                       <div className="flex justify-end gap-2">
-                        {isAdmin && booking.status === 'pending' && (
+                        {isAdmin && booking.status === "pending" && (
                           <>
                             <Button
                               size="sm"
                               variant="outline"
                               className="h-8 px-2"
-                              onClick={() => updateStatus.mutate({ 
-                                id: booking.id, 
-                                status: 'confirmed',
-                                type: booking.type
-                              })}
+                              onClick={() =>
+                                updateStatus.mutate({
+                                  id: booking.id,
+                                  status: "confirmed",
+                                  type: booking.type,
+                                })
+                              }
                             >
                               <CheckCircle className="h-4 w-4 text-green-600" />
                             </Button>
@@ -297,11 +356,13 @@ export function BookingManagement() {
                               size="sm"
                               variant="outline"
                               className="h-8 px-2"
-                              onClick={() => updateStatus.mutate({ 
-                                id: booking.id, 
-                                status: 'cancelled',
-                                type: booking.type
-                              })}
+                              onClick={() =>
+                                updateStatus.mutate({
+                                  id: booking.id,
+                                  status: "cancelled",
+                                  type: booking.type,
+                                })
+                              }
                             >
                               <XCircle className="h-4 w-4 text-red-600" />
                             </Button>
@@ -328,7 +389,9 @@ export function BookingManagement() {
                           </>
                         )}
                         {!isAdmin && (
-                          <span className="text-xs text-muted-foreground px-2">僅查看</span>
+                          <span className="text-xs text-muted-foreground px-2">
+                            僅查看
+                          </span>
                         )}
                       </div>
                     </TableCell>
@@ -355,7 +418,9 @@ export function BookingManagement() {
                   <Input
                     id="contactName"
                     value={editForm.contactName}
-                    onChange={(e) => setEditForm({ ...editForm, contactName: e.target.value })}
+                    onChange={e =>
+                      setEditForm({ ...editForm, contactName: e.target.value })
+                    }
                   />
                 </div>
                 <div className="space-y-2">
@@ -363,7 +428,9 @@ export function BookingManagement() {
                   <Input
                     id="contactPhone"
                     value={editForm.contactPhone}
-                    onChange={(e) => setEditForm({ ...editForm, contactPhone: e.target.value })}
+                    onChange={e =>
+                      setEditForm({ ...editForm, contactPhone: e.target.value })
+                    }
                   />
                 </div>
               </div>
@@ -374,7 +441,9 @@ export function BookingManagement() {
                     id="contactEmail"
                     type="email"
                     value={editForm.contactEmail}
-                    onChange={(e) => setEditForm({ ...editForm, contactEmail: e.target.value })}
+                    onChange={e =>
+                      setEditForm({ ...editForm, contactEmail: e.target.value })
+                    }
                   />
                 </div>
                 <div className="space-y-2">
@@ -383,26 +452,38 @@ export function BookingManagement() {
                     id="numberOfPeople"
                     type="number"
                     value={editForm.numberOfPeople}
-                    onChange={(e) => setEditForm({ ...editForm, numberOfPeople: parseInt(e.target.value) || 0 })}
+                    onChange={e =>
+                      setEditForm({
+                        ...editForm,
+                        numberOfPeople: parseInt(e.target.value) || 0,
+                      })
+                    }
                   />
                 </div>
               </div>
-              {selectedBooking?.type === 'group' && (
+              {selectedBooking?.type === "group" && (
                 <div className="space-y-2">
                   <Label htmlFor="organizationName">團體名稱</Label>
                   <Input
                     id="organizationName"
                     value={editForm.organizationName}
-                    onChange={(e) => setEditForm({ ...editForm, organizationName: e.target.value })}
+                    onChange={e =>
+                      setEditForm({
+                        ...editForm,
+                        organizationName: e.target.value,
+                      })
+                    }
                   />
                 </div>
               )}
               <div className="grid grid-cols-2 gap-4">
                 <div className="space-y-2">
                   <Label htmlFor="visitTime">參訪時段</Label>
-                  <Select 
-                    value={editForm.visitTime} 
-                    onValueChange={(value) => setEditForm({ ...editForm, visitTime: value })}
+                  <Select
+                    value={editForm.visitTime}
+                    onValueChange={value =>
+                      setEditForm({ ...editForm, visitTime: value })
+                    }
                   >
                     <SelectTrigger>
                       <SelectValue placeholder="選擇時段" />
@@ -419,9 +500,14 @@ export function BookingManagement() {
                 </div>
                 <div className="space-y-2">
                   <Label htmlFor="status">狀態</Label>
-                  <Select 
-                    value={editForm.status} 
-                    onValueChange={(value) => setEditForm({ ...editForm, status: value as BookingStatus })}
+                  <Select
+                    value={editForm.status}
+                    onValueChange={value =>
+                      setEditForm({
+                        ...editForm,
+                        status: value as BookingStatus,
+                      })
+                    }
                   >
                     <SelectTrigger>
                       <SelectValue placeholder="選擇狀態" />
@@ -440,7 +526,9 @@ export function BookingManagement() {
                 <Textarea
                   id="purpose"
                   value={editForm.purpose}
-                  onChange={(e) => setEditForm({ ...editForm, purpose: e.target.value })}
+                  onChange={e =>
+                    setEditForm({ ...editForm, purpose: e.target.value })
+                  }
                   rows={2}
                 />
               </div>
@@ -449,16 +537,24 @@ export function BookingManagement() {
                 <Textarea
                   id="specialNeeds"
                   value={editForm.specialNeeds}
-                  onChange={(e) => setEditForm({ ...editForm, specialNeeds: e.target.value })}
+                  onChange={e =>
+                    setEditForm({ ...editForm, specialNeeds: e.target.value })
+                  }
                   rows={2}
                 />
               </div>
             </div>
             <DialogFooter>
-              <Button variant="outline" onClick={() => setEditDialogOpen(false)}>
+              <Button
+                variant="outline"
+                onClick={() => setEditDialogOpen(false)}
+              >
                 取消
               </Button>
-              <Button onClick={handleSaveEdit} disabled={updateBooking.isPending}>
+              <Button
+                onClick={handleSaveEdit}
+                disabled={updateBooking.isPending}
+              >
                 {updateBooking.isPending ? "儲存中..." : "儲存變更"}
               </Button>
             </DialogFooter>
@@ -471,7 +567,11 @@ export function BookingManagement() {
             <AlertDialogHeader>
               <AlertDialogTitle>確認刪除預約？</AlertDialogTitle>
               <AlertDialogDescription>
-                您即將刪除預約編號 <span className="font-mono font-bold">{selectedBooking?.bookingNumber}</span>。
+                您即將刪除預約編號{" "}
+                <span className="font-mono font-bold">
+                  {selectedBooking?.bookingNumber}
+                </span>
+                。
                 <br />
                 此操作無法復原，預約紀錄將永久刪除。
               </AlertDialogDescription>

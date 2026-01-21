@@ -167,12 +167,13 @@ pnpm add twilio
 修改 `server/smsService.ts` 檔案：
 
 ```typescript
-import twilio from 'twilio';
+import twilio from "twilio";
 
 // 初始化Twilio客戶端
-const twilioClient = process.env.TWILIO_ACCOUNT_SID && process.env.TWILIO_AUTH_TOKEN
-  ? twilio(process.env.TWILIO_ACCOUNT_SID, process.env.TWILIO_AUTH_TOKEN)
-  : null;
+const twilioClient =
+  process.env.TWILIO_ACCOUNT_SID && process.env.TWILIO_AUTH_TOKEN
+    ? twilio(process.env.TWILIO_ACCOUNT_SID, process.env.TWILIO_AUTH_TOKEN)
+    : null;
 
 export async function sendDeliveryNotificationSMS(params: {
   recipientPhone: string;
@@ -182,16 +183,23 @@ export async function sendDeliveryNotificationSMS(params: {
   deliveryDate: Date;
   deliveryTime: string;
 }): Promise<{ success: boolean; message: string }> {
-  const { recipientPhone, recipientName, verificationCode, deliveryId, deliveryDate, deliveryTime } = params;
+  const {
+    recipientPhone,
+    recipientName,
+    verificationCode,
+    deliveryId,
+    deliveryDate,
+    deliveryTime,
+  } = params;
 
-  const confirmUrl = `${process.env.VITE_APP_URL || 'http://localhost:3000'}/confirm-receipt/${deliveryId}`;
+  const confirmUrl = `${process.env.VITE_APP_URL || "http://localhost:3000"}/confirm-receipt/${deliveryId}`;
 
   const smsContent = `
 【台東防災館送餐服務】
 親愛的 ${recipientName}，您好！
 
 您的送餐服務已安排：
-送達日期：${deliveryDate.toLocaleDateString('zh-TW')}
+送達日期：${deliveryDate.toLocaleDateString("zh-TW")}
 送達時段：${deliveryTime}
 
 驗證序號：${verificationCode}
@@ -213,33 +221,33 @@ export async function sendDeliveryNotificationSMS(params: {
       });
 
       console.log(`✅ SMS發送成功！Message SID: ${message.sid}`);
-      
-      return {
-        success: true,
-        message: 'SMS sent successfully',
-      };
-    } else {
-      // 模擬模式（開發環境）
-      console.log('='.repeat(60));
-      console.log('📱 SMS簡訊發送（模擬模式）');
-      console.log('='.repeat(60));
-      console.log(`收件人：${recipientName} (${recipientPhone})`);
-      console.log(`驗證序號：${verificationCode}`);
-      console.log(`送餐任務ID：${deliveryId}`);
-      console.log('-'.repeat(60));
-      console.log(smsContent);
-      console.log('='.repeat(60));
 
       return {
         success: true,
-        message: 'SMS sent successfully (simulated)',
+        message: "SMS sent successfully",
+      };
+    } else {
+      // 模擬模式（開發環境）
+      console.log("=".repeat(60));
+      console.log("📱 SMS簡訊發送（模擬模式）");
+      console.log("=".repeat(60));
+      console.log(`收件人：${recipientName} (${recipientPhone})`);
+      console.log(`驗證序號：${verificationCode}`);
+      console.log(`送餐任務ID：${deliveryId}`);
+      console.log("-".repeat(60));
+      console.log(smsContent);
+      console.log("=".repeat(60));
+
+      return {
+        success: true,
+        message: "SMS sent successfully (simulated)",
       };
     }
   } catch (error) {
-    console.error('[SMS Service] Failed to send SMS:', error);
+    console.error("[SMS Service] Failed to send SMS:", error);
     return {
       success: false,
-      message: error instanceof Error ? error.message : 'Unknown error',
+      message: error instanceof Error ? error.message : "Unknown error",
     };
   }
 }
@@ -295,7 +303,8 @@ export async function sendDeliveryNotificationSMS(params: {
 
 ### Q5：如何測試完整的簽收流程？
 
-**A：** 
+**A：**
+
 1. 建立送餐任務（記錄產生的驗證序號）
 2. 訪問收餐確認頁面 `/confirm-receipt/{deliveryId}`
 3. 輸入驗證序號
@@ -303,7 +312,8 @@ export async function sendDeliveryNotificationSMS(params: {
 
 ### Q6：SMS發送失敗怎麼辦？
 
-**A：** 
+**A：**
+
 1. 檢查環境變數是否正確設定
 2. 確認Twilio帳號餘額充足
 3. 驗證手機號碼格式正確
@@ -319,6 +329,7 @@ export async function sendDeliveryNotificationSMS(params: {
 ## 技術支援
 
 如有問題，請聯繫系統管理員或查看：
+
 - Twilio文件：https://www.twilio.com/docs
 - 專案GitHub：https://github.com/your-repo
 - 系統管理員Email：admin@example.com

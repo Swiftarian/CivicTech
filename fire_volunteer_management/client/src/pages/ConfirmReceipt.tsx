@@ -2,7 +2,13 @@ import { useEffect, useState } from "react";
 import { useParams } from "wouter";
 import { trpc } from "@/lib/trpc";
 import { Button } from "@/components/ui/button";
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
+import {
+  Card,
+  CardContent,
+  CardDescription,
+  CardHeader,
+  CardTitle,
+} from "@/components/ui/card";
 import { CheckCircle2, XCircle, Loader2, MapPin, Key } from "lucide-react";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -16,11 +22,14 @@ import { toast } from "sonner";
 export default function ConfirmReceipt() {
   const params = useParams();
   const deliveryId = params.deliveryId ? parseInt(params.deliveryId) : 0;
-  
+
   const [confirming, setConfirming] = useState(false);
   const [confirmed, setConfirmed] = useState(false);
   const [error, setError] = useState<string | null>(null);
-  const [location, setLocation] = useState<{ latitude: number; longitude: number } | null>(null);
+  const [location, setLocation] = useState<{
+    latitude: number;
+    longitude: number;
+  } | null>(null);
   const [verificationCode, setVerificationCode] = useState("");
 
   const { data: delivery, isLoading } = trpc.mealDeliveries.getById.useQuery(
@@ -34,7 +43,7 @@ export default function ConfirmReceipt() {
       setConfirming(false);
       toast.success("收餐確認成功！感謝您的配合");
     },
-    onError: (error) => {
+    onError: error => {
       setError(error.message);
       setConfirming(false);
       toast.error(`確認失敗：${error.message}`);
@@ -45,13 +54,13 @@ export default function ConfirmReceipt() {
   useEffect(() => {
     if (navigator.geolocation) {
       navigator.geolocation.getCurrentPosition(
-        (position) => {
+        position => {
           setLocation({
             latitude: position.coords.latitude,
             longitude: position.coords.longitude,
           });
         },
-        (error) => {
+        error => {
           console.warn("無法獲取GPS位置:", error);
           // GPS獲取失敗不影響確認流程
         }
@@ -109,7 +118,8 @@ export default function ConfirmReceipt() {
           </CardHeader>
           <CardContent>
             <p className="text-gray-600">
-              很抱歉，系統找不到此送餐記錄。請確認QR Code是否正確或聯繫客服人員。
+              很抱歉，系統找不到此送餐記錄。請確認QR
+              Code是否正確或聯繫客服人員。
             </p>
           </CardContent>
         </Card>
@@ -117,7 +127,7 @@ export default function ConfirmReceipt() {
     );
   }
 
-  if (delivery.status === 'delivered') {
+  if (delivery.status === "delivered") {
     return (
       <div className="min-h-screen flex items-center justify-center bg-gradient-to-br from-blue-50 to-cyan-100">
         <Card className="w-full max-w-md mx-4">
@@ -152,9 +162,18 @@ export default function ConfirmReceipt() {
             <div className="bg-green-50 border border-green-200 rounded-lg p-4">
               <h3 className="font-semibold text-green-900 mb-2">送餐資訊</h3>
               <div className="space-y-1 text-sm text-green-800">
-                <p><span className="font-medium">送餐編號：</span>{delivery.deliveryNumber}</p>
-                <p><span className="font-medium">收餐人：</span>{delivery.recipientName}</p>
-                <p><span className="font-medium">送餐地址：</span>{delivery.deliveryAddress}</p>
+                <p>
+                  <span className="font-medium">送餐編號：</span>
+                  {delivery.deliveryNumber}
+                </p>
+                <p>
+                  <span className="font-medium">收餐人：</span>
+                  {delivery.recipientName}
+                </p>
+                <p>
+                  <span className="font-medium">送餐地址：</span>
+                  {delivery.deliveryAddress}
+                </p>
               </div>
             </div>
             {location && (
@@ -206,7 +225,10 @@ export default function ConfirmReceipt() {
 
           {/* 驗證序號輸入 */}
           <div className="space-y-2">
-            <Label htmlFor="verificationCode" className="flex items-center gap-2">
+            <Label
+              htmlFor="verificationCode"
+              className="flex items-center gap-2"
+            >
               <Key className="h-4 w-4" />
               驗證序號
             </Label>
@@ -215,7 +237,7 @@ export default function ConfirmReceipt() {
               type="text"
               placeholder="請輸入6位數驗證序號"
               value={verificationCode}
-              onChange={(e) => setVerificationCode(e.target.value.toUpperCase())}
+              onChange={e => setVerificationCode(e.target.value.toUpperCase())}
               maxLength={6}
               className="text-center text-lg font-mono tracking-widest"
             />

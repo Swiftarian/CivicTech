@@ -2,11 +2,24 @@ import { useState } from "react";
 import { useLocation } from "wouter";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
-import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle } from "@/components/ui/dialog";
+import {
+  Dialog,
+  DialogContent,
+  DialogDescription,
+  DialogFooter,
+  DialogHeader,
+  DialogTitle,
+} from "@/components/ui/dialog";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select";
 import { Switch } from "@/components/ui/switch";
 import { Checkbox } from "@/components/ui/checkbox";
 import { trpc } from "@/lib/trpc";
@@ -48,7 +61,7 @@ export default function GalleryManagement() {
       utils.gallery.getPublished.invalidate();
       closeDialog();
     },
-    onError: (error) => {
+    onError: error => {
       toast.error("新增失敗：" + error.message);
     },
   });
@@ -60,7 +73,7 @@ export default function GalleryManagement() {
       utils.gallery.getPublished.invalidate();
       closeDialog();
     },
-    onError: (error) => {
+    onError: error => {
       toast.error("更新失敗：" + error.message);
     },
   });
@@ -71,7 +84,7 @@ export default function GalleryManagement() {
       utils.gallery.getAll.invalidate();
       utils.gallery.getPublished.invalidate();
     },
-    onError: (error) => {
+    onError: error => {
       toast.error("刪除失敗：" + error.message);
     },
   });
@@ -83,7 +96,7 @@ export default function GalleryManagement() {
       utils.gallery.getPublished.invalidate();
       setSelectedItems([]);
     },
-    onError: (error) => {
+    onError: error => {
       toast.error("批次刪除失敗：" + error.message);
     },
   });
@@ -121,7 +134,7 @@ export default function GalleryManagement() {
 
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
-    
+
     if (!formData.title.trim() || !formData.imageUrl.trim()) {
       toast.error("請填寫標題和圖片網址");
       return;
@@ -148,7 +161,7 @@ export default function GalleryManagement() {
       toast.error("請先選擇要刪除的照片");
       return;
     }
-    
+
     if (confirm(`確定要刪除選中的 ${selectedItems.length} 張照片嗎？`)) {
       batchDeleteMutation.mutate({ ids: selectedItems });
     }
@@ -173,12 +186,18 @@ export default function GalleryManagement() {
       <div className="space-y-6">
         <div className="flex justify-between items-center">
           <div className="flex items-center gap-4">
-            <Button variant="outline" size="icon" onClick={() => setLocation("/admin")}>
+            <Button
+              variant="outline"
+              size="icon"
+              onClick={() => setLocation("/admin")}
+            >
               <ArrowLeft className="h-4 w-4" />
             </Button>
             <div>
               <h1 className="text-3xl font-bold">服務花絮照片牆</h1>
-              <p className="text-muted-foreground mt-2">管理活動照片與設施環境圖片</p>
+              <p className="text-muted-foreground mt-2">
+                管理活動照片與設施環境圖片
+              </p>
             </div>
           </div>
           <div className="flex gap-2">
@@ -213,7 +232,7 @@ export default function GalleryManagement() {
 
         {isLoading ? (
           <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-4">
-            {[1, 2, 3, 4, 5, 6, 7, 8].map((i) => (
+            {[1, 2, 3, 4, 5, 6, 7, 8].map(i => (
               <Card key={i} className="animate-pulse">
                 <div className="aspect-video bg-muted"></div>
                 <CardContent className="p-4">
@@ -224,7 +243,7 @@ export default function GalleryManagement() {
           </div>
         ) : galleryItems && galleryItems.length > 0 ? (
           <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-4">
-            {galleryItems.map((item) => (
+            {galleryItems.map(item => (
               <Card key={item.id} className="overflow-hidden group relative">
                 <div className="absolute top-2 left-2 z-10">
                   <Checkbox
@@ -251,7 +270,9 @@ export default function GalleryManagement() {
                       </span>
                     )}
                   </div>
-                  <h3 className="font-semibold text-sm line-clamp-1 mb-2">{item.title}</h3>
+                  <h3 className="font-semibold text-sm line-clamp-1 mb-2">
+                    {item.title}
+                  </h3>
                   <div className="flex gap-2">
                     <Button
                       variant="outline"
@@ -303,14 +324,20 @@ export default function GalleryManagement() {
                 label="照片上傳"
                 description="支援 JPG、PNG、GIF、WebP 格式，檔案大小不超過 5MB"
                 currentImageUrl={formData.imageUrl}
-                onUploadSuccess={(url) => setFormData({ ...formData, imageUrl: url })}
+                onUploadSuccess={url =>
+                  setFormData({ ...formData, imageUrl: url })
+                }
               />
               <div className="mt-2">
-                <Label htmlFor="imageUrlInput">或手動輸入圖片網址（選填）</Label>
+                <Label htmlFor="imageUrlInput">
+                  或手動輸入圖片網址（選填）
+                </Label>
                 <Input
                   id="imageUrlInput"
                   value={formData.imageUrl}
-                  onChange={(e) => setFormData({ ...formData, imageUrl: e.target.value })}
+                  onChange={e =>
+                    setFormData({ ...formData, imageUrl: e.target.value })
+                  }
                   placeholder="https://example.com/image.jpg"
                 />
               </div>
@@ -321,7 +348,9 @@ export default function GalleryManagement() {
               <Input
                 id="title"
                 value={formData.title}
-                onChange={(e) => setFormData({ ...formData, title: e.target.value })}
+                onChange={e =>
+                  setFormData({ ...formData, title: e.target.value })
+                }
                 placeholder="輸入照片標題"
                 required
               />
@@ -331,7 +360,9 @@ export default function GalleryManagement() {
               <Label htmlFor="category">分類 *</Label>
               <Select
                 value={formData.category}
-                onValueChange={(value: any) => setFormData({ ...formData, category: value })}
+                onValueChange={(value: any) =>
+                  setFormData({ ...formData, category: value })
+                }
               >
                 <SelectTrigger>
                   <SelectValue />
@@ -351,7 +382,9 @@ export default function GalleryManagement() {
               <Textarea
                 id="description"
                 value={formData.description}
-                onChange={(e) => setFormData({ ...formData, description: e.target.value })}
+                onChange={e =>
+                  setFormData({ ...formData, description: e.target.value })
+                }
                 placeholder="照片描述（選填）"
                 rows={3}
               />
@@ -363,7 +396,12 @@ export default function GalleryManagement() {
                 id="displayOrder"
                 type="number"
                 value={formData.displayOrder}
-                onChange={(e) => setFormData({ ...formData, displayOrder: parseInt(e.target.value) || 0 })}
+                onChange={e =>
+                  setFormData({
+                    ...formData,
+                    displayOrder: parseInt(e.target.value) || 0,
+                  })
+                }
                 placeholder="0"
               />
               <p className="text-xs text-muted-foreground mt-1">
@@ -375,7 +413,9 @@ export default function GalleryManagement() {
               <Switch
                 id="isPublished"
                 checked={formData.isPublished}
-                onCheckedChange={(checked) => setFormData({ ...formData, isPublished: checked })}
+                onCheckedChange={checked =>
+                  setFormData({ ...formData, isPublished: checked })
+                }
               />
               <Label htmlFor="isPublished">發布到前台</Label>
             </div>
@@ -384,11 +424,15 @@ export default function GalleryManagement() {
               <Button type="button" variant="outline" onClick={closeDialog}>
                 取消
               </Button>
-              <Button 
-                type="submit" 
+              <Button
+                type="submit"
                 disabled={createMutation.isPending || updateMutation.isPending}
               >
-                {createMutation.isPending || updateMutation.isPending ? "處理中..." : editingItem ? "更新" : "新增"}
+                {createMutation.isPending || updateMutation.isPending
+                  ? "處理中..."
+                  : editingItem
+                    ? "更新"
+                    : "新增"}
               </Button>
             </DialogFooter>
           </form>

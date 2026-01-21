@@ -36,7 +36,11 @@ export async function optimizeDeliveryRoute(
       language: "zh-TW",
     });
 
-    if (response.status !== "OK" || !response.routes || response.routes.length === 0) {
+    if (
+      response.status !== "OK" ||
+      !response.routes ||
+      response.routes.length === 0
+    ) {
       throw new Error("無法計算路線");
     }
 
@@ -53,7 +57,7 @@ export async function optimizeDeliveryRoute(
 
   // 多個點：使用waypoints並啟用optimize:true
   const waypoints = deliveryPoints.map(p => p.address);
-  
+
   const response: any = await makeRequest("/maps/api/directions/json", {
     origin: startPoint,
     destination: startPoint, // 返回起點
@@ -62,17 +66,23 @@ export async function optimizeDeliveryRoute(
     language: "zh-TW",
   });
 
-  if (response.status !== "OK" || !response.routes || response.routes.length === 0) {
+  if (
+    response.status !== "OK" ||
+    !response.routes ||
+    response.routes.length === 0
+  ) {
     throw new Error(`路線優化失敗：${response.status}`);
   }
 
   const route = response.routes[0];
-  
+
   // waypoint_order 包含優化後的順序
   const optimizedOrder = route.waypoint_order || [];
-  
+
   // 根據優化順序重新排列送餐點
-  const orderedPoints = optimizedOrder.map((index: number) => deliveryPoints[index]);
+  const orderedPoints = optimizedOrder.map(
+    (index: number) => deliveryPoints[index]
+  );
 
   // 計算總距離和時間
   let totalDistance = 0;
@@ -104,11 +114,11 @@ export async function optimizeMultipleRoutes(
   pointsPerRoute: number = 7
 ): Promise<OptimizedRoute[]> {
   const routes: OptimizedRoute[] = [];
-  
+
   // 將送餐點分組
   for (let i = 0; i < allDeliveryPoints.length; i += pointsPerRoute) {
     const batch = allDeliveryPoints.slice(i, i + pointsPerRoute);
-    
+
     try {
       const optimizedRoute = await optimizeDeliveryRoute(startPoint, batch);
       routes.push(optimizedRoute);
@@ -122,13 +132,13 @@ export async function optimizeMultipleRoutes(
         polyline: "",
       });
     }
-    
+
     // 避免API速率限制，每次請求間隔200ms
     if (i + pointsPerRoute < allDeliveryPoints.length) {
       await new Promise(resolve => setTimeout(resolve, 200));
     }
   }
-  
+
   return routes;
 }
 

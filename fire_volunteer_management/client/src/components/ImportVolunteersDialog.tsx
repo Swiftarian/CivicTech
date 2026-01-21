@@ -19,7 +19,9 @@ interface ImportVolunteersDialogProps {
   onSuccess?: () => void;
 }
 
-export function ImportVolunteersDialog({ onSuccess }: ImportVolunteersDialogProps) {
+export function ImportVolunteersDialog({
+  onSuccess,
+}: ImportVolunteersDialogProps) {
   const [open, setOpen] = useState(false);
   const [file, setFile] = useState<File | null>(null);
   const [uploading, setUploading] = useState(false);
@@ -27,24 +29,24 @@ export function ImportVolunteersDialog({ onSuccess }: ImportVolunteersDialogProp
   const [showResult, setShowResult] = useState(false);
 
   const importMutation = trpc.volunteers.importFromExcel.useMutation({
-    onSuccess: (result) => {
+    onSuccess: result => {
       // 顯示簡單提示
       toast.success(
         `成功匯入 ${result.success} 位志工${result.failed > 0 ? `，失敗 ${result.failed} 位` : ""}`
       );
-      
+
       // 儲存結果並顯示詳細對話框
       setImportResult(result);
       setShowResult(true);
-      
+
       // 關閉上傳對話框
       setOpen(false);
       setFile(null);
-      
+
       // 通知父組件更新
       onSuccess?.();
     },
-    onError: (error) => {
+    onError: error => {
       toast.error(`匯入失敗：${error.message}`);
     },
   });
@@ -98,7 +100,7 @@ export function ImportVolunteersDialog({ onSuccess }: ImportVolunteersDialogProp
       }
 
       // 檢查必填欄位
-      const invalidRows = volunteers.filter((v) => !v.userId || isNaN(v.userId));
+      const invalidRows = volunteers.filter(v => !v.userId || isNaN(v.userId));
       if (invalidRows.length > 0) {
         toast.error("部分資料缺少使用者ID或格式錯誤");
         setUploading(false);
@@ -108,7 +110,9 @@ export function ImportVolunteersDialog({ onSuccess }: ImportVolunteersDialogProp
       // 呼叫API匯入
       await importMutation.mutateAsync({ volunteers });
     } catch (error) {
-      toast.error(`讀取檔案失敗：${error instanceof Error ? error.message : "未知錯誤"}`);
+      toast.error(
+        `讀取檔案失敗：${error instanceof Error ? error.message : "未知錯誤"}`
+      );
     } finally {
       setUploading(false);
     }
@@ -118,20 +122,20 @@ export function ImportVolunteersDialog({ onSuccess }: ImportVolunteersDialogProp
     // 建立範本資料
     const templateData = [
       {
-        "使用者ID": 2,
-        "員工編號": "V001",
-        "部門": "導覽組",
-        "職位": "導覽員",
-        "專長技能": "防災知識、導覽解說",
-        "可服務時段": "週一至週五 09:00-17:00",
+        使用者ID: 2,
+        員工編號: "V001",
+        部門: "導覽組",
+        職位: "導覽員",
+        專長技能: "防災知識、導覽解說",
+        可服務時段: "週一至週五 09:00-17:00",
       },
       {
-        "使用者ID": 3,
-        "員工編號": "V002",
-        "部門": "送餐組",
-        "職位": "送餐員",
-        "專長技能": "駕駛、路線規劃",
-        "可服務時段": "週一至週五 11:00-14:00",
+        使用者ID: 3,
+        員工編號: "V002",
+        部門: "送餐組",
+        職位: "送餐員",
+        專長技能: "駕駛、路線規劃",
+        可服務時段: "週一至週五 11:00-14:00",
       },
     ];
 

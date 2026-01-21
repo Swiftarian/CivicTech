@@ -7,11 +7,13 @@
 ## 📋 前置準備
 
 ### 1. 註冊 Railway 帳號
+
 - 前往 [railway.app](https://railway.app)
 - 使用 GitHub 帳號註冊（推薦）
 - 免費方案提供 $5 美元額度/月
 
 ### 2. 準備 GitHub Repository
+
 ```bash
 # 1. 下載程式碼（從管理介面的 Code 標籤）
 # 2. 解壓縮到本地資料夾
@@ -83,14 +85,14 @@ AWS_S3_BUCKET=your-bucket-name
 
 #### 環境變數說明
 
-| 變數名稱 | 說明 | 如何取得 |
-|---------|------|---------|
-| `DATABASE_URL` | MySQL 連線字串 | Railway 自動提供 |
-| `JWT_SECRET` | JWT 簽名密鑰 | 自行生成隨機字串（至少32字元） |
-| `VITE_APP_ID` | Manus OAuth 應用ID | 需重新申請 OAuth 應用 |
-| `OWNER_OPEN_ID` | 擁有者的 OpenID | 從 Manus 個人資料取得 |
-| `BUILT_IN_FORGE_API_KEY` | Manus API 金鑰 | 從 Manus 平台取得 |
-| `AWS_*` | S3 儲存憑證 | 從 AWS 控制台取得 |
+| 變數名稱                 | 說明               | 如何取得                       |
+| ------------------------ | ------------------ | ------------------------------ |
+| `DATABASE_URL`           | MySQL 連線字串     | Railway 自動提供               |
+| `JWT_SECRET`             | JWT 簽名密鑰       | 自行生成隨機字串（至少32字元） |
+| `VITE_APP_ID`            | Manus OAuth 應用ID | 需重新申請 OAuth 應用          |
+| `OWNER_OPEN_ID`          | 擁有者的 OpenID    | 從 Manus 個人資料取得          |
+| `BUILT_IN_FORGE_API_KEY` | Manus API 金鑰     | 從 Manus 平台取得              |
+| `AWS_*`                  | S3 儲存憑證        | 從 AWS 控制台取得              |
 
 ### 步驟四：執行資料庫遷移
 
@@ -120,8 +122,8 @@ pnpm db:push
 
 登入 Hostinger 控制台，新增以下 DNS 記錄：
 
-| 類型 | 名稱 | 值 | TTL |
-|------|------|-----|-----|
+| 類型  | 名稱     | 值                      | TTL  |
+| ----- | -------- | ----------------------- | ---- |
 | CNAME | disaster | your-app.up.railway.app | 3600 |
 
 **注意：** Railway 會提供實際的 CNAME 值，請從 Railway Dashboard 複製。
@@ -154,6 +156,7 @@ pnpm db:push
 ### 2. 資料庫連線失敗
 
 **解決方法：** 確認 `DATABASE_URL` 環境變數正確設定，格式應為：
+
 ```
 mysql://user:password@host:port/database
 ```
@@ -163,6 +166,7 @@ mysql://user:password@host:port/database
 **原因：** Manus OAuth 回調 URL 需要更新
 
 **解決方法：**
+
 1. 前往 Manus 開發者平台
 2. 更新 OAuth 應用的回調 URL 為：
    ```
@@ -174,6 +178,7 @@ mysql://user:password@host:port/database
 **原因：** S3 憑證未設定或不正確
 
 **解決方法：**
+
 1. 確認 AWS S3 憑證已正確設定
 2. 確認 S3 bucket 的 CORS 設定允許您的網域
 3. 測試 S3 連線：
@@ -186,6 +191,7 @@ mysql://user:password@host:port/database
 ## 💰 成本估算
 
 ### Railway 免費方案
+
 - **免費額度：** $5 美元/月
 - **包含：**
   - 500 小時執行時間
@@ -193,6 +199,7 @@ mysql://user:password@host:port/database
   - 1 GB MySQL 儲存空間
 
 ### 預估月費用
+
 - **小型網站（<1000 訪客/月）：** 免費方案足夠
 - **中型網站（1000-10000 訪客/月）：** 約 $5-20 美元/月
 - **大型網站（>10000 訪客/月）：** 約 $20-50 美元/月
@@ -202,19 +209,23 @@ mysql://user:password@host:port/database
 ## 📊 監控與維護
 
 ### 查看日誌
+
 1. 在 Railway Dashboard 點擊您的服務
 2. 進入「**Deployments**」標籤
 3. 點擊最新的部署
 4. 查看即時日誌
 
 ### 效能監控
+
 Railway 提供內建的效能監控：
+
 - CPU 使用率
 - 記憶體使用率
 - 網路流量
 - 回應時間
 
 ### 自動重啟
+
 如果應用程式崩潰，Railway 會自動重啟（最多重試10次）。
 
 ---
@@ -222,6 +233,7 @@ Railway 提供內建的效能監控：
 ## 🔄 更新部署
 
 ### 方法一：自動部署（推薦）
+
 1. 推送程式碼到 GitHub
    ```bash
    git add .
@@ -231,6 +243,7 @@ Railway 提供內建的效能監控：
 2. Railway 會自動偵測並部署
 
 ### 方法二：手動部署
+
 1. 在 Railway Dashboard 點擊「**Deploy**」按鈕
 2. 等待部署完成
 
@@ -239,6 +252,7 @@ Railway 提供內建的效能監控：
 ## 🆘 需要協助？
 
 如果遇到問題，可以：
+
 1. 查看 Railway 官方文件：https://docs.railway.app
 2. 加入 Railway Discord 社群
 3. 聯繫 Railway 支援團隊
@@ -249,23 +263,25 @@ Railway 提供內建的效能監控：
 
 ### 與 Manus 部署的差異
 
-| 功能 | Manus 部署 | Railway 部署 |
-|------|-----------|-------------|
-| 資料庫 | ✅ 自動配置 | ⚠️ 需手動設定 |
-| 環境變數 | ✅ 自動注入 | ⚠️ 需手動設定 |
-| OAuth | ✅ 自動配置 | ⚠️ 需重新申請 |
-| S3 儲存 | ✅ 自動配置 | ⚠️ 需手動設定 |
-| 部署速度 | ✅ 一鍵部署 | ⚠️ 需多步驟 |
-| 成本 | ✅ 包含在方案中 | 💰 需額外付費 |
+| 功能     | Manus 部署      | Railway 部署  |
+| -------- | --------------- | ------------- |
+| 資料庫   | ✅ 自動配置     | ⚠️ 需手動設定 |
+| 環境變數 | ✅ 自動注入     | ⚠️ 需手動設定 |
+| OAuth    | ✅ 自動配置     | ⚠️ 需重新申請 |
+| S3 儲存  | ✅ 自動配置     | ⚠️ 需手動設定 |
+| 部署速度 | ✅ 一鍵部署     | ⚠️ 需多步驟   |
+| 成本     | ✅ 包含在方案中 | 💰 需額外付費 |
 
 ### 建議
 
 如果您只是想要快速上線，**強烈建議使用 Manus 內建部署**：
+
 1. 點擊管理介面的「Publish」按鈕
 2. 在「Settings → Domains」綁定 Hostinger 網域
 3. 完成！
 
 Railway 部署適合：
+
 - 需要完全掌控基礎設施
 - 需要自訂伺服器配置
 - 需要整合其他 Railway 服務

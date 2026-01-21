@@ -46,7 +46,7 @@ export default function MealDeliveryAdmin() {
 
   const { data: deliveries, refetch } = trpc.mealDeliveries.getAll.useQuery();
   const { data: volunteers } = trpc.volunteers.getAll.useQuery();
-  
+
   const createMutation = trpc.mealDeliveries.create.useMutation({
     onSuccess: () => {
       toast.success("送餐任務建立成功");
@@ -81,7 +81,7 @@ export default function MealDeliveryAdmin() {
   });
 
   const batchDeleteMutation = trpc.mealDeliveries.batchDelete.useMutation({
-    onSuccess: (data) => {
+    onSuccess: data => {
       toast.success(`已刪除 ${data.count} 筆送餐任務`);
       setBatchDeleteDialogOpen(false);
       setSelectedIds(new Set());
@@ -95,19 +95,20 @@ export default function MealDeliveryAdmin() {
   const handleCreate = (e: React.FormEvent<HTMLFormElement>) => {
     e.preventDefault();
     const formData = new FormData(e.currentTarget);
-    
+
     const dateTimeStr = formData.get("scheduledDate") as string;
     const dateTime = new Date(dateTimeStr);
-    const timeStr = `${dateTime.getHours().toString().padStart(2, '0')}:${dateTime.getMinutes().toString().padStart(2, '0')}`;
-    
+    const timeStr = `${dateTime.getHours().toString().padStart(2, "0")}:${dateTime.getMinutes().toString().padStart(2, "0")}`;
+
     createMutation.mutate({
       recipientName: formData.get("recipientName") as string,
       recipientPhone: formData.get("recipientPhone") as string,
       deliveryAddress: formData.get("deliveryAddress") as string,
       deliveryDate: dateTime,
       deliveryTime: timeStr,
-      mealType: formData.get("mealType") as string || undefined,
-      specialInstructions: formData.get("specialInstructions") as string || undefined,
+      mealType: (formData.get("mealType") as string) || undefined,
+      specialInstructions:
+        (formData.get("specialInstructions") as string) || undefined,
     });
   };
 
@@ -157,7 +158,10 @@ export default function MealDeliveryAdmin() {
   };
 
   const getStatusBadge = (status: string) => {
-    const variants: Record<string, "default" | "secondary" | "destructive" | "outline"> = {
+    const variants: Record<
+      string,
+      "default" | "secondary" | "destructive" | "outline"
+    > = {
       pending: "secondary",
       assigned: "default",
       in_progress: "default",
@@ -186,13 +190,21 @@ export default function MealDeliveryAdmin() {
       <nav className="bg-primary text-primary-foreground shadow-lg sticky top-0 z-50">
         <div className="container">
           <div className="flex items-center justify-between h-16">
-            <Link href="/admin" className="flex items-center space-x-3 hover:opacity-90 transition-opacity">
+            <Link
+              href="/admin"
+              className="flex items-center space-x-3 hover:opacity-90 transition-opacity"
+            >
               <Utensils className="h-8 w-8" />
               <span className="text-xl font-bold">送餐服務管理</span>
             </Link>
-            
+
             <div className="flex items-center space-x-6">
-              <Link href="/admin" className="hover:opacity-80 transition-opacity">返回後台</Link>
+              <Link
+                href="/admin"
+                className="hover:opacity-80 transition-opacity"
+              >
+                返回後台
+              </Link>
             </div>
           </div>
         </div>
@@ -203,7 +215,9 @@ export default function MealDeliveryAdmin() {
         <div className="flex justify-between items-center mb-8">
           <div>
             <h1 className="text-3xl font-bold mb-2">送餐服務管理</h1>
-            <p className="text-muted-foreground">管理送餐任務、指派志工、追蹤配送進度</p>
+            <p className="text-muted-foreground">
+              管理送餐任務、指派志工、追蹤配送進度
+            </p>
           </div>
           <Button onClick={() => setShowCreateForm(true)}>
             <Plus className="h-4 w-4 mr-2" />
@@ -226,7 +240,12 @@ export default function MealDeliveryAdmin() {
                   </div>
                   <div>
                     <Label htmlFor="recipientPhone">收餐人電話</Label>
-                    <Input id="recipientPhone" name="recipientPhone" type="tel" required />
+                    <Input
+                      id="recipientPhone"
+                      name="recipientPhone"
+                      type="tel"
+                      required
+                    />
                   </div>
                 </div>
 
@@ -289,11 +308,7 @@ export default function MealDeliveryAdmin() {
             <h2 className="text-2xl font-bold">送餐任務列表</h2>
             {deliveries && deliveries.length > 0 && (
               <div className="flex items-center gap-2">
-                <Button
-                  variant="outline"
-                  size="sm"
-                  onClick={handleSelectAll}
-                >
+                <Button variant="outline" size="sm" onClick={handleSelectAll}>
                   {selectedIds.size === deliveries.length ? "取消全選" : "全選"}
                 </Button>
                 {selectedIds.size > 0 && (
@@ -309,7 +324,7 @@ export default function MealDeliveryAdmin() {
               </div>
             )}
           </div>
-          
+
           {!deliveries || deliveries.length === 0 ? (
             <Card>
               <CardContent className="py-12 text-center text-muted-foreground">
@@ -331,61 +346,75 @@ export default function MealDeliveryAdmin() {
                           className="mt-1 h-4 w-4 rounded border-gray-300 text-primary focus:ring-primary"
                         />
                         <div className="flex-1">
-                        <div className="flex items-center gap-3 mb-2">
-                          <h3 className="text-lg font-semibold">{delivery.recipientName}</h3>
-                          {getStatusBadge(delivery.status)}
-                        </div>
-                        <div className="space-y-1 text-sm text-muted-foreground">
-                          <div className="flex items-center gap-2">
-                            <MapPin className="h-4 w-4" />
-                            <span>{delivery.deliveryAddress}</span>
+                          <div className="flex items-center gap-3 mb-2">
+                            <h3 className="text-lg font-semibold">
+                              {delivery.recipientName}
+                            </h3>
+                            {getStatusBadge(delivery.status)}
                           </div>
-                          <div className="flex items-center gap-2">
-                            <Calendar className="h-4 w-4" />
-                            <span>
-                              預定時間：{format(new Date(delivery.deliveryDate), "yyyy-MM-dd")} {delivery.deliveryTime}
-                            </span>
-                          </div>
-                          <div className="flex items-center gap-2">
-                            <Utensils className="h-4 w-4" />
-                            <span>餐點類型：{delivery.mealType}</span>
-                          </div>
-                          {delivery.volunteerId && (
+                          <div className="space-y-1 text-sm text-muted-foreground">
                             <div className="flex items-center gap-2">
-                            <User className="h-4 w-4" />
-                            <span>
-                              配送志工：
-                              {volunteers?.find((v) => v.volunteer.id === delivery.volunteerId)?.user?.name || "未知"}
-                            </span>
+                              <MapPin className="h-4 w-4" />
+                              <span>{delivery.deliveryAddress}</span>
                             </div>
+                            <div className="flex items-center gap-2">
+                              <Calendar className="h-4 w-4" />
+                              <span>
+                                預定時間：
+                                {format(
+                                  new Date(delivery.deliveryDate),
+                                  "yyyy-MM-dd"
+                                )}{" "}
+                                {delivery.deliveryTime}
+                              </span>
+                            </div>
+                            <div className="flex items-center gap-2">
+                              <Utensils className="h-4 w-4" />
+                              <span>餐點類型：{delivery.mealType}</span>
+                            </div>
+                            {delivery.volunteerId && (
+                              <div className="flex items-center gap-2">
+                                <User className="h-4 w-4" />
+                                <span>
+                                  配送志工：
+                                  {volunteers?.find(
+                                    v => v.volunteer.id === delivery.volunteerId
+                                  )?.user?.name || "未知"}
+                                </span>
+                              </div>
+                            )}
+                          </div>
+                          {delivery.specialInstructions && (
+                            <p className="mt-2 text-sm text-muted-foreground">
+                              特殊說明：{delivery.specialInstructions}
+                            </p>
                           )}
-                        </div>
-                        {delivery.specialInstructions && (
-                          <p className="mt-2 text-sm text-muted-foreground">
-                            特殊說明：{delivery.specialInstructions}
-                          </p>
-                        )}
                         </div>
                       </div>
 
                       <div className="flex gap-2">
                         {delivery.status === "pending" && volunteers && (
                           <Select
-                            onValueChange={(value) => handleAssign(delivery.id, parseInt(value))}
+                            onValueChange={value =>
+                              handleAssign(delivery.id, parseInt(value))
+                            }
                           >
                             <SelectTrigger className="w-[180px]">
                               <SelectValue placeholder="指派志工" />
                             </SelectTrigger>
                             <SelectContent>
-                              {volunteers.map((volunteer) => (
-                                <SelectItem key={volunteer.volunteer.id} value={volunteer.volunteer.id.toString()}>
+                              {volunteers.map(volunteer => (
+                                <SelectItem
+                                  key={volunteer.volunteer.id}
+                                  value={volunteer.volunteer.id.toString()}
+                                >
                                   {volunteer.user?.name || "志工"}
                                 </SelectItem>
                               ))}
                             </SelectContent>
                           </Select>
                         )}
-                        
+
                         {delivery.verificationCode && (
                           <Button
                             variant="outline"
@@ -398,7 +427,7 @@ export default function MealDeliveryAdmin() {
                             查看 QR Code
                           </Button>
                         )}
-                        
+
                         <Button
                           variant="ghost"
                           size="sm"
@@ -428,7 +457,8 @@ export default function MealDeliveryAdmin() {
               <>
                 <QRCode
                   value={
-                    deliveries.find((d: any) => d.id === selectedDelivery)?.verificationCode || ""
+                    deliveries.find((d: any) => d.id === selectedDelivery)
+                      ?.verificationCode || ""
                   }
                   size={256}
                 />
@@ -437,7 +467,10 @@ export default function MealDeliveryAdmin() {
                 </p>
                 <p className="text-xs text-muted-foreground font-mono">
                   驗證碼：
-                  {deliveries.find((d: any) => d.id === selectedDelivery)?.verificationCode}
+                  {
+                    deliveries.find((d: any) => d.id === selectedDelivery)
+                      ?.verificationCode
+                  }
                 </p>
               </>
             )}
@@ -467,10 +500,15 @@ export default function MealDeliveryAdmin() {
       </AlertDialog>
 
       {/* 批次刪除確認對話框 */}
-      <AlertDialog open={batchDeleteDialogOpen} onOpenChange={setBatchDeleteDialogOpen}>
+      <AlertDialog
+        open={batchDeleteDialogOpen}
+        onOpenChange={setBatchDeleteDialogOpen}
+      >
         <AlertDialogContent>
           <AlertDialogHeader>
-            <AlertDialogTitle>確認批次刪除 {selectedIds.size} 筆送餐任務？</AlertDialogTitle>
+            <AlertDialogTitle>
+              確認批次刪除 {selectedIds.size} 筆送餐任務？
+            </AlertDialogTitle>
             <AlertDialogDescription>
               此操作無法復原。刪除後，這些送餐任務的所有資料將會永久刪除。
             </AlertDialogDescription>

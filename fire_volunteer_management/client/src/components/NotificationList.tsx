@@ -13,15 +13,17 @@ import { toast } from "sonner";
 
 export function NotificationList() {
   const utils = trpc.useUtils();
-  
+
   // 取得未讀通知
-  const { data: unreadNotifications = [] } = trpc.notifications.getUnread.useQuery(undefined, {
-    refetchInterval: 30000, // 每30秒自動刷新
-  });
-  
+  const { data: unreadNotifications = [] } =
+    trpc.notifications.getUnread.useQuery(undefined, {
+      refetchInterval: 30000, // 每30秒自動刷新
+    });
+
   // 取得所有通知
-  const { data: allNotifications = [] } = trpc.notifications.getMyNotifications.useQuery();
-  
+  const { data: allNotifications = [] } =
+    trpc.notifications.getMyNotifications.useQuery();
+
   // 標記單一通知為已讀
   const markAsRead = trpc.notifications.markAsRead.useMutation({
     onSuccess: () => {
@@ -29,7 +31,7 @@ export function NotificationList() {
       utils.notifications.getMyNotifications.invalidate();
     },
   });
-  
+
   // 標記所有通知為已讀
   const markAllAsRead = trpc.notifications.markAllAsRead.useMutation({
     onSuccess: () => {
@@ -38,15 +40,15 @@ export function NotificationList() {
       utils.notifications.getMyNotifications.invalidate();
     },
   });
-  
+
   const handleNotificationClick = (id: number, isRead: boolean) => {
     if (!isRead) {
       markAsRead.mutate({ id });
     }
   };
-  
+
   const unreadCount = unreadNotifications.length;
-  
+
   return (
     <Popover>
       <PopoverTrigger asChild>
@@ -54,7 +56,7 @@ export function NotificationList() {
           <Bell className="h-5 w-5" />
           {unreadCount > 0 && (
             <span className="absolute -top-1 -right-1 h-5 w-5 rounded-full bg-red-500 text-white text-xs flex items-center justify-center">
-              {unreadCount > 9 ? '9+' : unreadCount}
+              {unreadCount > 9 ? "9+" : unreadCount}
             </span>
           )}
         </Button>
@@ -74,7 +76,7 @@ export function NotificationList() {
             </Button>
           )}
         </div>
-        
+
         <ScrollArea className="h-[400px]">
           {allNotifications.length === 0 ? (
             <div className="p-8 text-center text-muted-foreground">
@@ -83,13 +85,18 @@ export function NotificationList() {
             </div>
           ) : (
             <div className="divide-y">
-              {allNotifications.map((notification) => (
+              {allNotifications.map(notification => (
                 <div
                   key={notification.id}
                   className={`p-4 hover:bg-muted/50 cursor-pointer transition-colors ${
-                    !notification.isRead ? 'bg-blue-50' : ''
+                    !notification.isRead ? "bg-blue-50" : ""
                   }`}
-                  onClick={() => handleNotificationClick(notification.id, notification.isRead)}
+                  onClick={() =>
+                    handleNotificationClick(
+                      notification.id,
+                      notification.isRead
+                    )
+                  }
                 >
                   <div className="flex items-start gap-3">
                     <div className="flex-1 min-w-0">
@@ -105,7 +112,9 @@ export function NotificationList() {
                         {notification.message}
                       </p>
                       <p className="text-xs text-muted-foreground mt-2">
-                        {format(new Date(notification.createdAt), "PPP HH:mm", { locale: zhTW })}
+                        {format(new Date(notification.createdAt), "PPP HH:mm", {
+                          locale: zhTW,
+                        })}
                       </p>
                     </div>
                     {!notification.isRead && (
@@ -113,7 +122,7 @@ export function NotificationList() {
                         variant="ghost"
                         size="icon"
                         className="flex-shrink-0"
-                        onClick={(e) => {
+                        onClick={e => {
                           e.stopPropagation();
                           markAsRead.mutate({ id: notification.id });
                         }}

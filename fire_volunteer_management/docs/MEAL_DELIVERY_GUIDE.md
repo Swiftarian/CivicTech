@@ -7,21 +7,25 @@
 ## 功能特色
 
 ### 1. 送餐任務管理
+
 - **建立送餐任務**：管理員可以建立新的送餐任務，包含收餐人資訊、送餐地址、預定時間等
 - **任務列表查看**：查看所有送餐任務的狀態和詳細資訊
 - **任務狀態追蹤**：即時追蹤任務狀態（待指派、已指派、配送中、已完成、已取消）
 
 ### 2. 志工指派系統
+
 - **志工選擇**：從可用志工列表中選擇適合的配送人員
 - **自動通知**：指派後系統自動通知志工
 - **工作量分配**：合理分配送餐任務給不同志工
 
 ### 3. QR Code 驗證機制
+
 - **自動生成**：系統為每個送餐任務自動生成唯一的 QR Code
 - **掃描驗證**：志工送達時掃描 QR Code 確認送達
 - **防偽機制**：每個驗證碼具有唯一性，防止偽造
 
 ### 4. 路徑追蹤（規劃中）
+
 - **即時定位**：追蹤志工的配送路徑
 - **預計到達時間**：計算並顯示預計送達時間
 - **歷史軌跡**：保存配送路徑歷史記錄
@@ -29,6 +33,7 @@
 ## 使用者角色
 
 ### 管理員
+
 - 建立送餐任務
 - 指派志工
 - 查看所有任務
@@ -36,6 +41,7 @@
 - 查看 QR Code
 
 ### 志工
+
 - 查看指派給自己的任務
 - 開始配送
 - 掃描 QR Code 確認送達
@@ -43,6 +49,7 @@
 - 追蹤配送記錄
 
 ### 收餐人
+
 - 接收送餐通知
 - 確認送達（透過 QR Code）
 
@@ -82,6 +89,7 @@
 #### 4. 任務狀態管理
 
 任務狀態會自動更新：
+
 - **待指派**：剛建立的任務
 - **已指派**：已指派給志工但尚未開始配送
 - **配送中**：志工已開始配送
@@ -129,6 +137,7 @@
 ### 送餐任務管理
 
 #### 建立送餐任務
+
 ```typescript
 trpc.mealDeliveries.create.useMutation({
   recipientName: string;      // 收餐人姓名
@@ -142,16 +151,19 @@ trpc.mealDeliveries.create.useMutation({
 ```
 
 #### 查詢所有送餐任務（管理員）
+
 ```typescript
-trpc.mealDeliveries.getAll.useQuery()
+trpc.mealDeliveries.getAll.useQuery();
 ```
 
 #### 查詢我的送餐任務（志工）
+
 ```typescript
-trpc.mealDeliveries.getMyDeliveries.useQuery()
+trpc.mealDeliveries.getMyDeliveries.useQuery();
 ```
 
 #### 指派志工
+
 ```typescript
 trpc.mealDeliveries.assignVolunteer.useMutation({
   deliveryId: number;   // 送餐任務 ID
@@ -160,6 +172,7 @@ trpc.mealDeliveries.assignVolunteer.useMutation({
 ```
 
 #### 開始配送
+
 ```typescript
 trpc.mealDeliveries.start.useMutation({
   deliveryId: number;   // 送餐任務 ID
@@ -167,6 +180,7 @@ trpc.mealDeliveries.start.useMutation({
 ```
 
 #### 完成配送
+
 ```typescript
 trpc.mealDeliveries.complete.useMutation({
   deliveryId: number;   // 送餐任務 ID
@@ -174,6 +188,7 @@ trpc.mealDeliveries.complete.useMutation({
 ```
 
 #### 驗證 QR Code
+
 ```typescript
 trpc.mealDeliveries.verify.useMutation({
   deliveryId: number;        // 送餐任務 ID
@@ -182,6 +197,7 @@ trpc.mealDeliveries.verify.useMutation({
 ```
 
 #### 追蹤配送路徑
+
 ```typescript
 trpc.mealDeliveries.track.useMutation({
   deliveryId: number;   // 送餐任務 ID
@@ -193,6 +209,7 @@ trpc.mealDeliveries.track.useMutation({
 ## 資料庫結構
 
 ### mealDeliveries 表（送餐任務）
+
 - `id`: 主鍵
 - `deliveryNumber`: 送餐編號（唯一）
 - `recipientName`: 收餐人姓名
@@ -212,6 +229,7 @@ trpc.mealDeliveries.track.useMutation({
 - `updatedAt`: 更新時間
 
 ### deliveryTracking 表（配送追蹤）
+
 - `id`: 主鍵
 - `deliveryId`: 送餐任務 ID
 - `latitude`: 緯度
@@ -221,17 +239,20 @@ trpc.mealDeliveries.track.useMutation({
 ## 注意事項
 
 ### 安全性
+
 1. **驗證碼保密**：QR Code 和驗證碼應妥善保管，避免洩露
 2. **權限控制**：只有管理員可以建立任務和指派志工
 3. **資料加密**：敏感資訊（如電話號碼）應加密儲存
 
 ### 操作建議
+
 1. **提前建立任務**：建議提前一天建立送餐任務
 2. **合理分配**：避免同一志工在同一時段有多個任務
 3. **確認資訊**：建立任務前仔細確認收餐人資訊和地址
 4. **保持聯繫**：志工應保持手機暢通，方便聯繫
 
 ### 故障排除
+
 1. **QR Code 掃描失敗**：
    - 檢查網路連線
    - 確認 QR Code 清晰可見
@@ -257,6 +278,7 @@ trpc.mealDeliveries.track.useMutation({
 ## 技術支援
 
 如有任何問題或建議，請聯繫：
+
 - 電話：(089) XXX-XXXX
 - Email: support@taitung-disaster.gov.tw
 - 系統管理員：透過後台「聯絡管理員」功能
@@ -264,6 +286,7 @@ trpc.mealDeliveries.track.useMutation({
 ---
 
 **版本資訊**
+
 - 文件版本：1.0
 - 最後更新：2024-11-22
 - 系統版本：台東防災館綜合管理系統 v1.0

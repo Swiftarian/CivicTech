@@ -1,12 +1,31 @@
 import { useState } from "react";
 import { useLocation } from "wouter";
 import { Button } from "@/components/ui/button";
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
-import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle } from "@/components/ui/dialog";
+import {
+  Card,
+  CardContent,
+  CardDescription,
+  CardHeader,
+  CardTitle,
+} from "@/components/ui/card";
+import {
+  Dialog,
+  DialogContent,
+  DialogDescription,
+  DialogFooter,
+  DialogHeader,
+  DialogTitle,
+} from "@/components/ui/dialog";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select";
 import { Switch } from "@/components/ui/switch";
 import { trpc } from "@/lib/trpc";
 import { Plus, Edit, Trash2, Eye, ArrowLeft } from "lucide-react";
@@ -48,7 +67,7 @@ export default function NewsManagement() {
       utils.news.getPublished.invalidate();
       closeDialog();
     },
-    onError: (error) => {
+    onError: error => {
       toast.error("新增失敗：" + error.message);
     },
   });
@@ -60,7 +79,7 @@ export default function NewsManagement() {
       utils.news.getPublished.invalidate();
       closeDialog();
     },
-    onError: (error) => {
+    onError: error => {
       toast.error("更新失敗：" + error.message);
     },
   });
@@ -71,7 +90,7 @@ export default function NewsManagement() {
       utils.news.getAll.invalidate();
       utils.news.getPublished.invalidate();
     },
-    onError: (error) => {
+    onError: error => {
       toast.error("刪除失敗：" + error.message);
     },
   });
@@ -109,7 +128,7 @@ export default function NewsManagement() {
 
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
-    
+
     if (!formData.title.trim() || !formData.content.trim()) {
       toast.error("請填寫標題和內容");
       return;
@@ -136,12 +155,18 @@ export default function NewsManagement() {
       <div className="space-y-6">
         <div className="flex justify-between items-center">
           <div className="flex items-center gap-4">
-            <Button variant="outline" size="icon" onClick={() => setLocation("/admin")}>
+            <Button
+              variant="outline"
+              size="icon"
+              onClick={() => setLocation("/admin")}
+            >
               <ArrowLeft className="h-4 w-4" />
             </Button>
             <div>
               <h1 className="text-3xl font-bold">最新消息管理</h1>
-              <p className="text-muted-foreground mt-2">管理防災宣導、活動公告與新聞稿</p>
+              <p className="text-muted-foreground mt-2">
+                管理防災宣導、活動公告與新聞稿
+              </p>
             </div>
           </div>
           <Button onClick={openCreateDialog}>
@@ -152,7 +177,7 @@ export default function NewsManagement() {
 
         {isLoading ? (
           <div className="grid gap-4">
-            {[1, 2, 3].map((i) => (
+            {[1, 2, 3].map(i => (
               <Card key={i} className="animate-pulse">
                 <CardHeader>
                   <div className="h-6 bg-muted rounded w-3/4"></div>
@@ -163,34 +188,49 @@ export default function NewsManagement() {
           </div>
         ) : newsList && newsList.length > 0 ? (
           <div className="grid gap-4">
-            {newsList.map((news) => (
+            {newsList.map(news => (
               <Card key={news.id}>
                 <CardHeader>
                   <div className="flex items-start justify-between">
                     <div className="flex-1">
                       <div className="flex items-center gap-2 mb-2">
-                        <span className={`inline-flex items-center px-2 py-1 rounded-full text-xs font-medium ${
-                          news.category === "防災宣導" ? "bg-red-100 text-red-800" :
-                          news.category === "活動公告" ? "bg-blue-100 text-blue-800" :
-                          news.category === "新聞稿" ? "bg-green-100 text-green-800" :
-                          "bg-gray-100 text-gray-800"
-                        }`}>
+                        <span
+                          className={`inline-flex items-center px-2 py-1 rounded-full text-xs font-medium ${
+                            news.category === "防災宣導"
+                              ? "bg-red-100 text-red-800"
+                              : news.category === "活動公告"
+                                ? "bg-blue-100 text-blue-800"
+                                : news.category === "新聞稿"
+                                  ? "bg-green-100 text-green-800"
+                                  : "bg-gray-100 text-gray-800"
+                          }`}
+                        >
                           {news.category}
                         </span>
-                        <span className={`inline-flex items-center px-2 py-1 rounded-full text-xs font-medium ${
-                          news.isPublished ? "bg-green-100 text-green-800" : "bg-gray-100 text-gray-800"
-                        }`}>
+                        <span
+                          className={`inline-flex items-center px-2 py-1 rounded-full text-xs font-medium ${
+                            news.isPublished
+                              ? "bg-green-100 text-green-800"
+                              : "bg-gray-100 text-gray-800"
+                          }`}
+                        >
                           {news.isPublished ? "已發布" : "草稿"}
                         </span>
                         {news.publishedAt && (
                           <span className="text-sm text-muted-foreground">
-                            {format(new Date(news.publishedAt), "yyyy/MM/dd HH:mm", { locale: zhTW })}
+                            {format(
+                              new Date(news.publishedAt),
+                              "yyyy/MM/dd HH:mm",
+                              { locale: zhTW }
+                            )}
                           </span>
                         )}
                       </div>
                       <CardTitle>{news.title}</CardTitle>
                       {news.summary && (
-                        <CardDescription className="mt-2">{news.summary}</CardDescription>
+                        <CardDescription className="mt-2">
+                          {news.summary}
+                        </CardDescription>
                       )}
                       <div className="flex items-center gap-4 mt-2 text-sm text-muted-foreground">
                         <span className="flex items-center gap-1">
@@ -248,7 +288,9 @@ export default function NewsManagement() {
               <Input
                 id="title"
                 value={formData.title}
-                onChange={(e) => setFormData({ ...formData, title: e.target.value })}
+                onChange={e =>
+                  setFormData({ ...formData, title: e.target.value })
+                }
                 placeholder="輸入消息標題"
                 required
               />
@@ -258,7 +300,9 @@ export default function NewsManagement() {
               <Label htmlFor="category">分類 *</Label>
               <Select
                 value={formData.category}
-                onValueChange={(value: any) => setFormData({ ...formData, category: value })}
+                onValueChange={(value: any) =>
+                  setFormData({ ...formData, category: value })
+                }
               >
                 <SelectTrigger>
                   <SelectValue />
@@ -277,7 +321,9 @@ export default function NewsManagement() {
               <Textarea
                 id="summary"
                 value={formData.summary}
-                onChange={(e) => setFormData({ ...formData, summary: e.target.value })}
+                onChange={e =>
+                  setFormData({ ...formData, summary: e.target.value })
+                }
                 placeholder="簡短摘要（選填）"
                 rows={2}
               />
@@ -288,7 +334,9 @@ export default function NewsManagement() {
               <Textarea
                 id="content"
                 value={formData.content}
-                onChange={(e) => setFormData({ ...formData, content: e.target.value })}
+                onChange={e =>
+                  setFormData({ ...formData, content: e.target.value })
+                }
                 placeholder="輸入消息內容"
                 rows={8}
                 required
@@ -300,14 +348,20 @@ export default function NewsManagement() {
                 label="封面圖片"
                 description="支援 JPG、PNG、GIF、WebP 格式，檔案大小不超過 5MB"
                 currentImageUrl={formData.coverImage}
-                onUploadSuccess={(url) => setFormData({ ...formData, coverImage: url })}
+                onUploadSuccess={url =>
+                  setFormData({ ...formData, coverImage: url })
+                }
               />
               <div className="mt-2">
-                <Label htmlFor="coverImageUrl">或手動輸入圖片網址（選填）</Label>
+                <Label htmlFor="coverImageUrl">
+                  或手動輸入圖片網址（選填）
+                </Label>
                 <Input
                   id="coverImageUrl"
                   value={formData.coverImage}
-                  onChange={(e) => setFormData({ ...formData, coverImage: e.target.value })}
+                  onChange={e =>
+                    setFormData({ ...formData, coverImage: e.target.value })
+                  }
                   placeholder="https://example.com/image.jpg"
                 />
               </div>
@@ -317,7 +371,9 @@ export default function NewsManagement() {
               <Switch
                 id="isPublished"
                 checked={formData.isPublished}
-                onCheckedChange={(checked) => setFormData({ ...formData, isPublished: checked })}
+                onCheckedChange={checked =>
+                  setFormData({ ...formData, isPublished: checked })
+                }
               />
               <Label htmlFor="isPublished">立即發布</Label>
             </div>
@@ -326,11 +382,15 @@ export default function NewsManagement() {
               <Button type="button" variant="outline" onClick={closeDialog}>
                 取消
               </Button>
-              <Button 
-                type="submit" 
+              <Button
+                type="submit"
                 disabled={createMutation.isPending || updateMutation.isPending}
               >
-                {createMutation.isPending || updateMutation.isPending ? "處理中..." : editingNews ? "更新" : "新增"}
+                {createMutation.isPending || updateMutation.isPending
+                  ? "處理中..."
+                  : editingNews
+                    ? "更新"
+                    : "新增"}
               </Button>
             </DialogFooter>
           </form>

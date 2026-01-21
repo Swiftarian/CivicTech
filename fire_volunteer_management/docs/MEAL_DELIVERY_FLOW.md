@@ -3,6 +3,7 @@
 ## 流程圖說明
 
 本文件詳細說明送餐服務的完整流程，包含三個主要角色：
+
 - **管理員**：建立送餐任務、指派志工
 - **送餐志工**：執行送餐、上傳GPS、顯示驗證碼
 - **收餐人**：接收通知、確認收餐
@@ -26,10 +27,10 @@ sequenceDiagram
     Admin->>System: 3. 點擊「新增送餐任務」
     Admin->>System: 4. 填寫收餐人資訊<br/>- 姓名<br/>- 手機號碼<br/>- 地址<br/>- 送餐時間<br/>- 餐點類型
     System->>System: 5. 自動產生<br/>- 送餐編號 (MD1234567890)<br/>- 驗證碼 (ABC123)
-    
+
     Note over System,SMS: 階段二：發送通知給收餐人
     System->>System: 6. 檢查收餐人是否綁定LINE
-    
+
     alt 收餐人已綁定LINE
         System->>LINE: 7a. 發送LINE訊息
         LINE->>Recipient: 📱 收到LINE通知<br/>「您的送餐將於XX時送達」<br/>「驗證碼：ABC123」<br/>「點擊確認收餐」
@@ -58,7 +59,7 @@ sequenceDiagram
         Volunteer->>System: 19. 自動上傳GPS位置
         System->>System: 20. 記錄到deliveryTracking表
     end
-    
+
     Note over Admin: 管理員可即時查看
     Admin->>System: 21. 進入「送餐追蹤頁面」
     System->>Admin: 22. 顯示地圖和志工當前位置
@@ -68,7 +69,7 @@ sequenceDiagram
     Volunteer->>System: 24. 點擊「顯示驗證碼」
     System->>Volunteer: 25. 顯示驗證碼 (ABC123)
     Volunteer->>Recipient: 26. 告知收餐人驗證碼
-    
+
     alt 方式A：收餐人點擊LINE連結
         Recipient->>System: 27a. 點擊LINE訊息中的連結
         System->>Recipient: 28a. 自動開啟確認頁面<br/>（驗證碼已預填）
@@ -77,7 +78,7 @@ sequenceDiagram
         System->>Recipient: 28b. 開啟收餐確認頁面
         Recipient->>System: 29b. 手動輸入驗證碼
     end
-    
+
     Recipient->>System: 30. 點擊「確認收餐」
     System->>System: 31. 驗證驗證碼
     System->>System: 32. 更新任務狀態為「已送達」
@@ -106,6 +107,7 @@ sequenceDiagram
 **頁面**：`/meal-delivery`（送餐服務管理）
 
 **操作步驟**：
+
 1. 點擊「新增送餐任務」按鈕
 2. 填寫表單：
    - 收餐人姓名：例如「王小明」
@@ -117,12 +119,13 @@ sequenceDiagram
 3. 點擊「確認建立」
 
 **系統自動執行**：
+
 ```javascript
 // 1. 產生送餐編號
-deliveryNumber = `MD${Date.now()}`  // 例如：MD1732770000000
+deliveryNumber = `MD${Date.now()}`; // 例如：MD1732770000000
 
 // 2. 產生驗證碼
-verificationCode = Math.random().toString(36).substring(2, 8).toUpperCase()
+verificationCode = Math.random().toString(36).substring(2, 8).toUpperCase();
 // 例如：ABC123
 
 // 3. 檢查收餐人是否綁定LINE
@@ -131,11 +134,11 @@ const recipient = await getRecipientByPhone(recipientPhone);
 if (recipient && recipient.lineUserId) {
   // 發送LINE訊息
   await sendLineMessage(recipient.lineUserId, {
-    type: 'text',
+    type: "text",
     text: `【送餐通知】
 您的送餐將於 ${deliveryTime} 送達
 驗證碼：${verificationCode}
-點擊確認收餐：https://taitungaibookingsystem.cc/meal-confirm`
+點擊確認收餐：https://taitungaibookingsystem.cc/meal-confirm`,
   });
 } else {
   // 發送SMS簡訊（目前為模擬模式）
@@ -143,7 +146,7 @@ if (recipient && recipient.lineUserId) {
     message: `【送餐通知】
 您的送餐將於 ${deliveryTime} 送達
 驗證碼：${verificationCode}
-確認連結：https://taitungaibookingsystem.cc/meal-confirm`
+確認連結：https://taitungaibookingsystem.cc/meal-confirm`,
   });
 }
 ```
@@ -155,24 +158,26 @@ if (recipient && recipient.lineUserId) {
 **頁面**：`/meal-delivery`（送餐服務管理）
 
 **操作步驟**：
+
 1. 在送餐任務列表中找到待指派的任務
 2. 點擊「指派志工」按鈕
 3. 從下拉選單選擇志工
 4. 點擊「確認指派」
 
 **系統自動執行**：
+
 ```javascript
 // 更新送餐任務
 await updateMealDelivery(deliveryId, {
   volunteerId: selectedVolunteerId,
-  status: 'assigned'
+  status: "assigned",
 });
 
 // 發送通知給志工（系統內通知）
 await createNotification({
   userId: volunteer.userId,
-  title: '新的送餐任務',
-  content: `您有一筆新的送餐任務：${deliveryAddress}，預計送達時間：${deliveryTime}`
+  title: "新的送餐任務",
+  content: `您有一筆新的送餐任務：${deliveryAddress}，預計送達時間：${deliveryTime}`,
 });
 ```
 
@@ -183,27 +188,29 @@ await createNotification({
 **頁面**：`/volunteer-delivery`（志工送餐頁面）
 
 **操作步驟**：
+
 1. 志工登入系統
 2. 進入「志工送餐頁面」
 3. 查看今日送餐任務列表
 4. 點擊「開始配送」按鈕
 
 **系統自動執行**：
+
 ```javascript
 // 1. 更新任務狀態
 await updateMealDelivery(deliveryId, {
-  status: 'in_transit',
-  startTime: new Date()
+  status: "in_transit",
+  startTime: new Date(),
 });
 
 // 2. 開始GPS追蹤（每30秒上傳一次）
 const gpsInterval = setInterval(async () => {
-  navigator.geolocation.getCurrentPosition(async (position) => {
+  navigator.geolocation.getCurrentPosition(async position => {
     await uploadGPS({
       deliveryId,
       latitude: position.coords.latitude,
       longitude: position.coords.longitude,
-      timestamp: new Date()
+      timestamp: new Date(),
     });
   });
 }, 30000);
@@ -216,12 +223,14 @@ const gpsInterval = setInterval(async () => {
 **頁面**：`/volunteer-delivery`（志工送餐頁面）
 
 **操作步驟**：
+
 1. 志工抵達收餐地點
 2. 點擊「顯示驗證碼」按鈕
 3. 系統顯示大字體驗證碼（例如：ABC123）
 4. 志工告知收餐人驗證碼
 
 **畫面顯示**：
+
 ```
 ┌─────────────────────────┐
 │   收餐驗證碼              │
@@ -239,12 +248,14 @@ const gpsInterval = setInterval(async () => {
 **頁面**：`/meal-confirm`（收餐確認頁面）
 
 **方式A：點擊LINE訊息中的連結**
+
 1. 收餐人點擊LINE訊息中的「點擊確認收餐」連結
 2. 自動開啟確認頁面
 3. 輸入驗證碼（志工告知的ABC123）
 4. 點擊「確認收餐」按鈕
 
 **方式B：透過LINE Rich Menu**
+
 1. 收餐人打開LINE聊天室
 2. 點擊下方Rich Menu的「送餐服務」按鈕
 3. 開啟確認頁面
@@ -252,19 +263,20 @@ const gpsInterval = setInterval(async () => {
 5. 點擊「確認收餐」按鈕
 
 **系統驗證流程**：
+
 ```javascript
 // 1. 透過驗證碼查詢送餐任務
 const delivery = await findDeliveryByVerificationCode(verificationCode);
 
 // 2. 驗證任務狀態
-if (delivery.status === 'delivered') {
-  throw new Error('此送餐任務已經確認收餐');
+if (delivery.status === "delivered") {
+  throw new Error("此送餐任務已經確認收餐");
 }
 
 // 3. 更新任務狀態
 await updateMealDelivery(delivery.id, {
-  status: 'delivered',
-  confirmedAt: new Date()
+  status: "delivered",
+  confirmedAt: new Date(),
 });
 
 // 4. 回傳成功訊息
@@ -272,7 +284,7 @@ return {
   success: true,
   deliveryNumber: delivery.deliveryNumber,
   volunteerName: volunteer.name,
-  message: '收餐確認成功！感謝您的配合。'
+  message: "收餐確認成功！感謝您的配合。",
 };
 ```
 
@@ -283,10 +295,12 @@ return {
 **頁面**：`/volunteer-delivery`（志工送餐頁面）
 
 **操作步驟**：
+
 1. 收到「已確認收餐」通知
 2. 點擊「完成送餐」按鈕
 
 **系統自動執行**：
+
 ```javascript
 // 1. 停止GPS追蹤
 clearInterval(gpsInterval);
@@ -299,7 +313,7 @@ await updateVolunteerPerformance({
   volunteerId,
   totalDeliveries: +1,
   totalDeliveryTime: +deliveryTime,
-  onTimeDeliveries: isOnTime ? +1 : 0
+  onTimeDeliveries: isOnTime ? +1 : 0,
 });
 ```
 
@@ -321,7 +335,7 @@ export async function sendDeliveryNotification(
   }
 ) {
   const message = {
-    type: 'text',
+    type: "text",
     text: `【台東防災館送餐通知】
 
 您的送餐將於 ${deliveryInfo.deliveryTime} 送達
@@ -331,7 +345,7 @@ export async function sendDeliveryNotification(
 點擊下方連結確認收餐：
 https://taitungaibookingsystem.cc/meal-confirm
 
-如有任何問題，請聯絡客服人員。`
+如有任何問題，請聯絡客服人員。`,
   };
 
   await sendLineMessage(lineUserId, message);
@@ -344,9 +358,11 @@ https://taitungaibookingsystem.cc/meal-confirm
 
 ```typescript
 confirmReceiptByCode: publicProcedure
-  .input(z.object({
-    verificationCode: z.string().length(6),
-  }))
+  .input(
+    z.object({
+      verificationCode: z.string().length(6),
+    })
+  )
   .mutation(async ({ input }) => {
     // 1. 透過驗證碼查詢送餐任務
     const deliveryResult = await database
@@ -362,34 +378,35 @@ confirmReceiptByCode: publicProcedure
       .limit(1);
 
     if (deliveryResult.length === 0) {
-      throw new TRPCError({ 
-        code: "NOT_FOUND", 
-        message: "驗證碼錯誤或送餐任務不存在" 
+      throw new TRPCError({
+        code: "NOT_FOUND",
+        message: "驗證碼錯誤或送餐任務不存在",
       });
     }
 
     const { delivery, user } = deliveryResult[0];
 
     // 2. 檢查是否已經確認過
-    if (delivery.status === 'delivered') {
-      throw new TRPCError({ 
-        code: "BAD_REQUEST", 
-        message: "此送餐任務已經確認收餐" 
+    if (delivery.status === "delivered") {
+      throw new TRPCError({
+        code: "BAD_REQUEST",
+        message: "此送餐任務已經確認收餐",
       });
     }
 
     // 3. 更新送餐任務狀態
-    await database.update(mealDeliveries)
-      .set({ status: 'delivered' })
+    await database
+      .update(mealDeliveries)
+      .set({ status: "delivered" })
       .where(eq(mealDeliveries.id, delivery.id));
 
     return {
       success: true,
       message: "收餐確認成功！感謝您的配合。",
       deliveryNumber: delivery.deliveryNumber,
-      volunteerName: user?.name || '未知志工',
+      volunteerName: user?.name || "未知志工",
     };
-  })
+  });
 ```
 
 ---
@@ -397,18 +414,23 @@ confirmReceiptByCode: publicProcedure
 ## 常見問題 FAQ
 
 ### Q1: 收餐人沒有加入LINE好友怎麼辦？
+
 **A**: 系統會自動降級使用SMS簡訊發送驗證碼。目前SMS為模擬模式，可整合Twilio發送真實簡訊。
 
 ### Q2: 驗證碼會重複嗎？
+
 **A**: 驗證碼使用`Math.random().toString(36)`產生，理論上重複機率極低（36^6 = 2,176,782,336種組合）。
 
 ### Q3: 收餐人可以重複確認嗎？
+
 **A**: 不行。系統會檢查任務狀態，如果已經是`delivered`狀態，會拒絕重複確認。
 
 ### Q4: 志工如何知道收餐人已確認？
+
 **A**: 系統會發送通知給志工，志工頁面也會即時更新任務狀態。
 
 ### Q5: 管理員可以即時追蹤志工位置嗎？
+
 **A**: 可以。管理員可進入「送餐追蹤頁面」查看志工當前位置和完整路徑軌跡。
 
 ---
@@ -427,6 +449,7 @@ confirmReceiptByCode: publicProcedure
 ## 資料表結構
 
 ### mealDeliveries（送餐任務表）
+
 ```sql
 - id: 任務ID
 - deliveryNumber: 送餐編號 (MD1234567890)
@@ -444,6 +467,7 @@ confirmReceiptByCode: publicProcedure
 ```
 
 ### recipients（收餐人表）
+
 ```sql
 - id: 收餐人ID
 - name: 姓名
@@ -454,6 +478,7 @@ confirmReceiptByCode: publicProcedure
 ```
 
 ### deliveryTracking（GPS追蹤表）
+
 ```sql
 - id: 記錄ID
 - deliveryId: 送餐任務ID

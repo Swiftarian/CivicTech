@@ -87,12 +87,8 @@
           "name": "attendances_volunteerId_volunteers_id_fk",
           "tableFrom": "attendances",
           "tableTo": "volunteers",
-          "columnsFrom": [
-            "volunteerId"
-          ],
-          "columnsTo": [
-            "id"
-          ],
+          "columnsFrom": ["volunteerId"],
+          "columnsTo": ["id"],
           "onDelete": "no action",
           "onUpdate": "no action"
         },
@@ -100,12 +96,8 @@
           "name": "attendances_scheduleId_schedules_id_fk",
           "tableFrom": "attendances",
           "tableTo": "schedules",
-          "columnsFrom": [
-            "scheduleId"
-          ],
-          "columnsTo": [
-            "id"
-          ],
+          "columnsFrom": ["scheduleId"],
+          "columnsTo": ["id"],
           "onDelete": "no action",
           "onUpdate": "no action"
         }
@@ -113,9 +105,7 @@
       "compositePrimaryKeys": {
         "attendances_id": {
           "name": "attendances_id",
-          "columns": [
-            "id"
-          ]
+          "columns": ["id"]
         }
       },
       "uniqueConstraints": {},
@@ -261,12 +251,8 @@
           "name": "bookings_userId_users_id_fk",
           "tableFrom": "bookings",
           "tableTo": "users",
-          "columnsFrom": [
-            "userId"
-          ],
-          "columnsTo": [
-            "id"
-          ],
+          "columnsFrom": ["userId"],
+          "columnsTo": ["id"],
           "onDelete": "no action",
           "onUpdate": "no action"
         },
@@ -274,12 +260,8 @@
           "name": "bookings_assignedVolunteerId_volunteers_id_fk",
           "tableFrom": "bookings",
           "tableTo": "volunteers",
-          "columnsFrom": [
-            "assignedVolunteerId"
-          ],
-          "columnsTo": [
-            "id"
-          ],
+          "columnsFrom": ["assignedVolunteerId"],
+          "columnsTo": ["id"],
           "onDelete": "no action",
           "onUpdate": "no action"
         }
@@ -287,17 +269,13 @@
       "compositePrimaryKeys": {
         "bookings_id": {
           "name": "bookings_id",
-          "columns": [
-            "id"
-          ]
+          "columns": ["id"]
         }
       },
       "uniqueConstraints": {
         "bookings_bookingNumber_unique": {
           "name": "bookings_bookingNumber_unique",
-          "columns": [
-            "bookingNumber"
-          ]
+          "columns": ["bookingNumber"]
         }
       },
       "checkConstraint": {}
@@ -369,12 +347,8 @@
           "name": "caseProgress_caseId_cases_id_fk",
           "tableFrom": "caseProgress",
           "tableTo": "cases",
-          "columnsFrom": [
-            "caseId"
-          ],
-          "columnsTo": [
-            "id"
-          ],
+          "columnsFrom": ["caseId"],
+          "columnsTo": ["id"],
           "onDelete": "no action",
           "onUpdate": "no action"
         },
@@ -382,12 +356,8 @@
           "name": "caseProgress_updatedBy_users_id_fk",
           "tableFrom": "caseProgress",
           "tableTo": "users",
-          "columnsFrom": [
-            "updatedBy"
-          ],
-          "columnsTo": [
-            "id"
-          ],
+          "columnsFrom": ["updatedBy"],
+          "columnsTo": ["id"],
           "onDelete": "no action",
           "onUpdate": "no action"
         }
@@ -395,9 +365,7 @@
       "compositePrimaryKeys": {
         "caseProgress_id": {
           "name": "caseProgress_id",
-          "columns": [
-            "id"
-          ]
+          "columns": ["id"]
         }
       },
       "uniqueConstraints": {},
@@ -551,12 +519,8 @@
           "name": "cases_userId_users_id_fk",
           "tableFrom": "cases",
           "tableTo": "users",
-          "columnsFrom": [
-            "userId"
-          ],
-          "columnsTo": [
-            "id"
-          ],
+          "columnsFrom": ["userId"],
+          "columnsTo": ["id"],
           "onDelete": "no action",
           "onUpdate": "no action"
         },
@@ -564,12 +528,8 @@
           "name": "cases_assignedTo_users_id_fk",
           "tableFrom": "cases",
           "tableTo": "users",
-          "columnsFrom": [
-            "assignedTo"
-          ],
-          "columnsTo": [
-            "id"
-          ],
+          "columnsFrom": ["assignedTo"],
+          "columnsTo": ["id"],
           "onDelete": "no action",
           "onUpdate": "no action"
         }
@@ -577,17 +537,13 @@
       "compositePrimaryKeys": {
         "cases_id": {
           "name": "cases_id",
-          "columns": [
-            "id"
-          ]
+          "columns": ["id"]
         }
       },
       "uniqueConstraints": {
         "cases_caseNumber_unique": {
           "name": "cases_caseNumber_unique",
-          "columns": [
-            "caseNumber"
-          ]
+          "columns": ["caseNumber"]
         }
       },
       "checkConstraint": {}
@@ -659,12 +615,8 @@
           "name": "deliveryTracking_deliveryId_mealDeliveries_id_fk",
           "tableFrom": "deliveryTracking",
           "tableTo": "mealDeliveries",
-          "columnsFrom": [
-            "deliveryId"
-          ],
-          "columnsTo": [
-            "id"
-          ],
+          "columnsFrom": ["deliveryId"],
+          "columnsTo": ["id"],
           "onDelete": "no action",
           "onUpdate": "no action"
         }
@@ -672,9 +624,7 @@
       "compositePrimaryKeys": {
         "deliveryTracking_id": {
           "name": "deliveryTracking_id",
-          "columns": [
-            "id"
-          ]
+          "columns": ["id"]
         }
       },
       "uniqueConstraints": {},
@@ -778,12 +728,8 @@
           "name": "leaveRequests_volunteerId_volunteers_id_fk",
           "tableFrom": "leaveRequests",
           "tableTo": "volunteers",
-          "columnsFrom": [
-            "volunteerId"
-          ],
-          "columnsTo": [
-            "id"
-          ],
+          "columnsFrom": ["volunteerId"],
+          "columnsTo": ["id"],
           "onDelete": "no action",
           "onUpdate": "no action"
         },
@@ -791,12 +737,8 @@
           "name": "leaveRequests_scheduleId_schedules_id_fk",
           "tableFrom": "leaveRequests",
           "tableTo": "schedules",
-          "columnsFrom": [
-            "scheduleId"
-          ],
-          "columnsTo": [
-            "id"
-          ],
+          "columnsFrom": ["scheduleId"],
+          "columnsTo": ["id"],
           "onDelete": "no action",
           "onUpdate": "no action"
         },
@@ -804,12 +746,8 @@
           "name": "leaveRequests_targetVolunteerId_volunteers_id_fk",
           "tableFrom": "leaveRequests",
           "tableTo": "volunteers",
-          "columnsFrom": [
-            "targetVolunteerId"
-          ],
-          "columnsTo": [
-            "id"
-          ],
+          "columnsFrom": ["targetVolunteerId"],
+          "columnsTo": ["id"],
           "onDelete": "no action",
           "onUpdate": "no action"
         },
@@ -817,12 +755,8 @@
           "name": "leaveRequests_reviewedBy_users_id_fk",
           "tableFrom": "leaveRequests",
           "tableTo": "users",
-          "columnsFrom": [
-            "reviewedBy"
-          ],
-          "columnsTo": [
-            "id"
-          ],
+          "columnsFrom": ["reviewedBy"],
+          "columnsTo": ["id"],
           "onDelete": "no action",
           "onUpdate": "no action"
         }
@@ -830,9 +764,7 @@
       "compositePrimaryKeys": {
         "leaveRequests_id": {
           "name": "leaveRequests_id",
-          "columns": [
-            "id"
-          ]
+          "columns": ["id"]
         }
       },
       "uniqueConstraints": {},
@@ -992,12 +924,8 @@
           "name": "mealDeliveries_volunteerId_volunteers_id_fk",
           "tableFrom": "mealDeliveries",
           "tableTo": "volunteers",
-          "columnsFrom": [
-            "volunteerId"
-          ],
-          "columnsTo": [
-            "id"
-          ],
+          "columnsFrom": ["volunteerId"],
+          "columnsTo": ["id"],
           "onDelete": "no action",
           "onUpdate": "no action"
         }
@@ -1005,17 +933,13 @@
       "compositePrimaryKeys": {
         "mealDeliveries_id": {
           "name": "mealDeliveries_id",
-          "columns": [
-            "id"
-          ]
+          "columns": ["id"]
         }
       },
       "uniqueConstraints": {
         "mealDeliveries_deliveryNumber_unique": {
           "name": "mealDeliveries_deliveryNumber_unique",
-          "columns": [
-            "deliveryNumber"
-          ]
+          "columns": ["deliveryNumber"]
         }
       },
       "checkConstraint": {}
@@ -1102,12 +1026,8 @@
           "name": "notifications_userId_users_id_fk",
           "tableFrom": "notifications",
           "tableTo": "users",
-          "columnsFrom": [
-            "userId"
-          ],
-          "columnsTo": [
-            "id"
-          ],
+          "columnsFrom": ["userId"],
+          "columnsTo": ["id"],
           "onDelete": "no action",
           "onUpdate": "no action"
         }
@@ -1115,9 +1035,7 @@
       "compositePrimaryKeys": {
         "notifications_id": {
           "name": "notifications_id",
-          "columns": [
-            "id"
-          ]
+          "columns": ["id"]
         }
       },
       "uniqueConstraints": {},
@@ -1207,12 +1125,8 @@
           "name": "schedules_volunteerId_volunteers_id_fk",
           "tableFrom": "schedules",
           "tableTo": "volunteers",
-          "columnsFrom": [
-            "volunteerId"
-          ],
-          "columnsTo": [
-            "id"
-          ],
+          "columnsFrom": ["volunteerId"],
+          "columnsTo": ["id"],
           "onDelete": "no action",
           "onUpdate": "no action"
         },
@@ -1220,12 +1134,8 @@
           "name": "schedules_bookingId_bookings_id_fk",
           "tableFrom": "schedules",
           "tableTo": "bookings",
-          "columnsFrom": [
-            "bookingId"
-          ],
-          "columnsTo": [
-            "id"
-          ],
+          "columnsFrom": ["bookingId"],
+          "columnsTo": ["id"],
           "onDelete": "no action",
           "onUpdate": "no action"
         }
@@ -1233,9 +1143,7 @@
       "compositePrimaryKeys": {
         "schedules_id": {
           "name": "schedules_id",
-          "columns": [
-            "id"
-          ]
+          "columns": ["id"]
         }
       },
       "uniqueConstraints": {},
@@ -1325,17 +1233,13 @@
       "compositePrimaryKeys": {
         "users_id": {
           "name": "users_id",
-          "columns": [
-            "id"
-          ]
+          "columns": ["id"]
         }
       },
       "uniqueConstraints": {
         "users_openId_unique": {
           "name": "users_openId_unique",
-          "columns": [
-            "openId"
-          ]
+          "columns": ["openId"]
         }
       },
       "checkConstraint": {}
@@ -1440,12 +1344,8 @@
           "name": "volunteers_userId_users_id_fk",
           "tableFrom": "volunteers",
           "tableTo": "users",
-          "columnsFrom": [
-            "userId"
-          ],
-          "columnsTo": [
-            "id"
-          ],
+          "columnsFrom": ["userId"],
+          "columnsTo": ["id"],
           "onDelete": "no action",
           "onUpdate": "no action"
         }
@@ -1453,9 +1353,7 @@
       "compositePrimaryKeys": {
         "volunteers_id": {
           "name": "volunteers_id",
-          "columns": [
-            "id"
-          ]
+          "columns": ["id"]
         }
       },
       "uniqueConstraints": {},

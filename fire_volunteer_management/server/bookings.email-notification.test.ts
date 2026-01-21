@@ -80,8 +80,12 @@ describe("bookings.create - Email notification", () => {
     expect(result.bookingNumber).toMatch(/^BK\d+$/);
 
     // 驗證Email發送函數被正確調用
-    expect(emailService.sendPublicBookingConfirmationEmail).toHaveBeenCalledTimes(1);
-    expect(emailService.sendPublicBookingConfirmationEmail).toHaveBeenCalledWith(
+    expect(
+      emailService.sendPublicBookingConfirmationEmail
+    ).toHaveBeenCalledTimes(1);
+    expect(
+      emailService.sendPublicBookingConfirmationEmail
+    ).toHaveBeenCalledWith(
       "zhang@example.com",
       "張三",
       result.bookingNumber,
@@ -113,7 +117,9 @@ describe("bookings.create - Email notification", () => {
     expect(result.bookingNumber).toBeDefined();
 
     // 驗證團體預約Email發送函數被正確調用
-    expect(emailService.sendGroupBookingConfirmationEmail).toHaveBeenCalledTimes(1);
+    expect(
+      emailService.sendGroupBookingConfirmationEmail
+    ).toHaveBeenCalledTimes(1);
     expect(emailService.sendGroupBookingConfirmationEmail).toHaveBeenCalledWith(
       "li@school.edu.tw",
       "台東國小",
@@ -145,13 +151,19 @@ describe("bookings.create - Email notification", () => {
     expect(result.bookingNumber).toBeDefined();
 
     // 驗證Email發送函數沒有被調用
-    expect(emailService.sendPublicBookingConfirmationEmail).not.toHaveBeenCalled();
-    expect(emailService.sendGroupBookingConfirmationEmail).not.toHaveBeenCalled();
+    expect(
+      emailService.sendPublicBookingConfirmationEmail
+    ).not.toHaveBeenCalled();
+    expect(
+      emailService.sendGroupBookingConfirmationEmail
+    ).not.toHaveBeenCalled();
   });
 
   it("Email發送失敗時，預約仍應成功建立", async () => {
     // Mock Email發送失敗
-    vi.mocked(emailService.sendPublicBookingConfirmationEmail).mockResolvedValueOnce(false);
+    vi.mocked(
+      emailService.sendPublicBookingConfirmationEmail
+    ).mockResolvedValueOnce(false);
 
     const ctx = createAuthContext();
     const caller = appRouter.createCaller(ctx);
@@ -171,7 +183,9 @@ describe("bookings.create - Email notification", () => {
 
     expect(result.success).toBe(true);
     expect(result.bookingNumber).toBeDefined();
-    expect(emailService.sendPublicBookingConfirmationEmail).toHaveBeenCalledTimes(1);
+    expect(
+      emailService.sendPublicBookingConfirmationEmail
+    ).toHaveBeenCalledTimes(1);
   });
 
   it("團體預約但未提供組織名稱時，應使用民眾預約Email範本", async () => {
@@ -194,7 +208,11 @@ describe("bookings.create - Email notification", () => {
     expect(result.success).toBe(true);
 
     // 應該使用民眾預約Email範本（因為沒有組織名稱）
-    expect(emailService.sendPublicBookingConfirmationEmail).toHaveBeenCalledTimes(1);
-    expect(emailService.sendGroupBookingConfirmationEmail).not.toHaveBeenCalled();
+    expect(
+      emailService.sendPublicBookingConfirmationEmail
+    ).toHaveBeenCalledTimes(1);
+    expect(
+      emailService.sendGroupBookingConfirmationEmail
+    ).not.toHaveBeenCalled();
   });
 });

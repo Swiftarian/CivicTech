@@ -8,16 +8,16 @@
 
 所有網站圖片都存放在專案的 `client/public/images/` 目錄下：
 
-| 圖片類型 | 檔案路徑 | 建議尺寸 | 檔案格式 |
-|---------|---------|---------|---------|
-| 網站Logo | `/images/taitung-fire-dept-logo.png` | 高度 40-60px | PNG（透明背景） |
-| 首頁Banner背景 | `/images/taitung-culture.jpg` | 1920x800px | JPG |
-| 團體預約icon | `/images/icons/group-booking.png` | 80x80px | PNG |
-| 一般民眾預約icon | `/images/icons/individual-booking.png` | 80x80px | PNG |
-| 導覽預約icon | `/images/icons/tour-guide.jpg` | 128x96px | JPG |
-| 案件查詢icon | `/images/icons/case-query.jpg` | 128x96px | JPG |
-| 送餐服務icon | `/images/icons/meal-delivery.jpg` | 128x96px | JPG |
-| 關於我們圖片 | `/images/about.jpg` | 600x400px | JPG |
+| 圖片類型         | 檔案路徑                               | 建議尺寸     | 檔案格式        |
+| ---------------- | -------------------------------------- | ------------ | --------------- |
+| 網站Logo         | `/images/taitung-fire-dept-logo.png`   | 高度 40-60px | PNG（透明背景） |
+| 首頁Banner背景   | `/images/taitung-culture.jpg`          | 1920x800px   | JPG             |
+| 團體預約icon     | `/images/icons/group-booking.png`      | 80x80px      | PNG             |
+| 一般民眾預約icon | `/images/icons/individual-booking.png` | 80x80px      | PNG             |
+| 導覽預約icon     | `/images/icons/tour-guide.jpg`         | 128x96px     | JPG             |
+| 案件查詢icon     | `/images/icons/case-query.jpg`         | 128x96px     | JPG             |
+| 送餐服務icon     | `/images/icons/meal-delivery.jpg`      | 128x96px     | JPG             |
+| 關於我們圖片     | `/images/about.jpg`                    | 600x400px    | JPG             |
 
 ---
 
@@ -58,6 +58,7 @@ const heroBackground = "/images/taitung-culture.jpg";
 ```
 
 **替換步驟**：
+
 1. 準備新的背景圖片（建議寬度至少1920px）
 2. 將圖片命名為 `taitung-culture.jpg` 並放入 `/images/` 目錄
 3. 或修改程式碼中的檔案路徑指向新圖片
@@ -69,6 +70,7 @@ const heroBackground = "/images/taitung-culture.jpg";
 **檔案**：`/images/taitung-fire-dept-logo.png`
 
 **程式碼位置**：
+
 - `client/src/const.ts` 第5行
 - `client/src/pages/Home.tsx` 導覽列區塊
 
@@ -78,6 +80,7 @@ export const APP_LOGO = "/images/taitung-fire-dept-logo.png";
 ```
 
 **替換步驟**：
+
 1. 準備新的Logo圖片（建議使用PNG透明背景）
 2. 將圖片命名為 `taitung-fire-dept-logo.png` 並放入 `/images/` 目錄
 3. 或修改 `const.ts` 中的 `APP_LOGO` 路徑
@@ -88,14 +91,15 @@ export const APP_LOGO = "/images/taitung-fire-dept-logo.png";
 
 **檔案位置**：`/images/icons/`
 
-| 項目 | 檔案名稱 |
-|-----|---------|
-| 團體預約 | `group-booking.png` |
+| 項目         | 檔案名稱                 |
+| ------------ | ------------------------ |
+| 團體預約     | `group-booking.png`      |
 | 一般民眾預約 | `individual-booking.png` |
 
 **程式碼位置**：`client/src/pages/Home.tsx` 第118-160行
 
 **替換步驟**：
+
 1. 準備新的icon圖片（建議80x80px，PNG格式）
 2. 使用相同檔名替換 `/images/icons/` 目錄下的檔案
 
@@ -105,15 +109,16 @@ export const APP_LOGO = "/images/taitung-fire-dept-logo.png";
 
 **檔案位置**：`/images/icons/`
 
-| 項目 | 檔案名稱 |
-|-----|---------|
-| 導覽預約 | `tour-guide.jpg` |
-| 案件查詢 | `case-query.jpg` |
+| 項目     | 檔案名稱            |
+| -------- | ------------------- |
+| 導覽預約 | `tour-guide.jpg`    |
+| 案件查詢 | `case-query.jpg`    |
 | 送餐服務 | `meal-delivery.jpg` |
 
 **程式碼位置**：`client/src/pages/Home.tsx` 第166-225行
 
 **替換步驟**：
+
 1. 準備新的icon圖片（建議128x96px或相近比例）
 2. 使用相同檔名替換 `/images/icons/` 目錄下的檔案
 
@@ -125,12 +130,12 @@ export const APP_LOGO = "/images/taitung-fire-dept-logo.png";
 
 為了確保網站載入速度，建議圖片檔案大小：
 
-| 圖片類型 | 建議大小上限 |
-|---------|-------------|
-| Logo | 50KB |
-| Icon | 100KB |
-| Banner背景 | 500KB |
-| 一般圖片 | 200KB |
+| 圖片類型   | 建議大小上限 |
+| ---------- | ------------ |
+| Logo       | 50KB         |
+| Icon       | 100KB        |
+| Banner背景 | 500KB        |
+| 一般圖片   | 200KB        |
 
 ### 圖片壓縮工具
 
@@ -142,12 +147,12 @@ export const APP_LOGO = "/images/taitung-fire-dept-logo.png";
 
 ### 圖片格式選擇
 
-| 情境 | 建議格式 |
-|-----|---------|
-| 需要透明背景 | PNG |
-| 照片類圖片 | JPG |
-| 簡單圖形/icon | PNG 或 SVG |
-| 動畫 | GIF 或 WebP |
+| 情境          | 建議格式    |
+| ------------- | ----------- |
+| 需要透明背景  | PNG         |
+| 照片類圖片    | JPG         |
+| 簡單圖形/icon | PNG 或 SVG  |
+| 動畫          | GIF 或 WebP |
 
 ---
 
@@ -156,6 +161,7 @@ export const APP_LOGO = "/images/taitung-fire-dept-logo.png";
 ### Q: 替換圖片後網站沒有更新？
 
 **A**: 可能是瀏覽器快取問題，請嘗試：
+
 1. 按 `Ctrl + F5`（Windows）或 `Cmd + Shift + R`（Mac）強制重新整理
 2. 清除瀏覽器快取
 3. 使用無痕模式開啟網站
@@ -166,7 +172,8 @@ export const APP_LOGO = "/images/taitung-fire-dept-logo.png";
 
 ### Q: 如何新增更多icon？
 
-**A**: 
+**A**:
+
 1. 將新圖片放入 `/images/icons/` 目錄
 2. 在對應的程式碼中新增 `<img>` 標籤引用新圖片
 
@@ -184,11 +191,11 @@ export const APP_LOGO = "/images/taitung-fire-dept-logo.png";
 
 ### 目前的輪播圖片
 
-| 檔案名稱 | 說明 | 建議尺寸 |
-|---------|------|----------|
-| building-exterior.jpg | 台東防災館外觀 | 1200x900px (4:3) |
-| earthquake-simulation.jpg | 地震模擬區 | 1200x900px (4:3) |
-| climate-globe.jpg | 即時氣候投影球 | 1200x900px (4:3) |
+| 檔案名稱                   | 說明               | 建議尺寸         |
+| -------------------------- | ------------------ | ---------------- |
+| building-exterior.jpg      | 台東防災館外觀     | 1200x900px (4:3) |
+| earthquake-simulation.jpg  | 地震模擬區         | 1200x900px (4:3) |
+| climate-globe.jpg          | 即時氣候投影球     | 1200x900px (4:3) |
 | fire-rescue-experience.jpg | 消防救災飛行體驗區 | 1200x900px (4:3) |
 
 ### 如何替換輪播圖片
@@ -224,4 +231,4 @@ export const APP_LOGO = "/images/taitung-fire-dept-logo.png";
 
 ---
 
-*文件更新日期：2025年12月*
+_文件更新日期：2025年12月_

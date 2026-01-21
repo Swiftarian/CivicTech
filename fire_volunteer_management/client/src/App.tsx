@@ -49,8 +49,14 @@ function Router() {
       <Route path="/delivery-tracking" component={DeliveryTracking} />
       <Route path="/volunteer-delivery" component={VolunteerDelivery} />
       <Route path="/batch-import-delivery" component={BatchImportDelivery} />
-      <Route path="/delivery-verification/:deliveryId" component={DeliveryVerification} />
-      <Route path="/volunteer-performance" component={VolunteerPerformanceDashboard} />
+      <Route
+        path="/delivery-verification/:deliveryId"
+        component={DeliveryVerification}
+      />
+      <Route
+        path="/volunteer-performance"
+        component={VolunteerPerformanceDashboard}
+      />
       <Route path="/confirm-receipt/:deliveryId" component={ConfirmReceipt} />
       <Route path="/meal-confirm" component={MealConfirm} />
       <Route path="/admin/recipients" component={RecipientManagement} />

@@ -5,6 +5,7 @@
 ## 🌟 主要功能
 
 ### 公開功能（所有訪客可用）
+
 - **首頁展示**：輪播圖、服務項目介紹、參訪流程說明
 - **團體預約**：20-50人團體預約服務
 - **一般民眾預約**：1-19人個人/家庭預約服務
@@ -13,6 +14,7 @@
 - **交通指引**：館址資訊、交通路線、大眾運輸指南
 
 ### 管理功能（需登入）
+
 - **管理員後台**：
   - 預約管理（審核、指派志工、狀態更新）
   - 志工管理（新增、查詢、排班）
@@ -30,6 +32,7 @@
 ## 🛠️ 技術架構
 
 ### 前端
+
 - **框架**：React 19 + TypeScript
 - **路由**：Wouter
 - **UI 組件**：shadcn/ui + Tailwind CSS 4
@@ -40,6 +43,7 @@
 - **QR Code**：react-qr-code
 
 ### 後端
+
 - **框架**：Express 4 + Node.js
 - **API**：tRPC 11（端到端型別安全）
 - **認證**：Manus OAuth + JWT
@@ -48,6 +52,7 @@
 - **檔案儲存**：AWS S3
 
 ### 開發工具
+
 - **建置工具**：Vite
 - **測試框架**：Vitest
 - **程式碼風格**：ESLint + Prettier
@@ -89,27 +94,32 @@ taitung-disaster-system/
 系統包含 11 個資料表：
 
 ### 核心資料表
+
 - **users**：使用者資料（支援 admin、volunteer、user 三種角色）
 - **volunteers**：志工資料擴展表
 - **notifications**：系統通知
 
 ### 導覽預約模組
+
 - **bookings**：預約記錄（團體與個人）
 - **schedules**：志工排班表
 - **attendances**：打卡記錄
 - **leaveRequests**：換班/請假申請
 
 ### 案件查詢模組
+
 - **cases**：案件申請表
 - **caseProgress**：案件進度記錄
 
 ### 送餐服務模組
+
 - **mealDeliveries**：送餐任務表
 - **deliveryTracking**：路徑追蹤記錄
 
 ## 🚀 快速開始
 
 ### 環境需求
+
 - Node.js 22.x
 - pnpm 9.x
 - MySQL 8.x 或 TiDB
@@ -117,12 +127,14 @@ taitung-disaster-system/
 ### 安裝步驟
 
 1. **克隆專案**
+
 ```bash
 git clone https://github.com/Eddycollab/taitung-community.git
 cd taitung-community
 ```
 
 2. **安裝依賴**
+
 ```bash
 pnpm install
 ```
@@ -130,6 +142,7 @@ pnpm install
 3. **配置環境變數**
 
 系統使用 Manus 平台提供的環境變數，包括：
+
 - `DATABASE_URL`：資料庫連線字串
 - `JWT_SECRET`：JWT 簽章密鑰
 - `VITE_APP_ID`：OAuth 應用程式 ID
@@ -137,11 +150,13 @@ pnpm install
 - 其他 S3、通知等服務的環境變數
 
 4. **初始化資料庫**
+
 ```bash
 pnpm db:push
 ```
 
 5. **啟動開發伺服器**
+
 ```bash
 pnpm dev
 ```
@@ -174,6 +189,7 @@ pnpm lint
 ## 👥 使用者角色與權限
 
 ### 管理員 (admin)
+
 - 完整的系統管理權限
 - 預約審核與志工指派
 - 案件管理與進度更新
@@ -182,6 +198,7 @@ pnpm lint
 - 查看所有統計資料
 
 ### 志工 (volunteer)
+
 - 查看個人班表
 - 打卡簽到/簽退
 - 查看指派的送餐任務
@@ -189,6 +206,7 @@ pnpm lint
 - 查看個人服務時數
 
 ### 一般使用者 (user)
+
 - 建立預約
 - 查詢預約狀態
 - 建立案件申請
@@ -197,6 +215,7 @@ pnpm lint
 ## 📱 主要頁面
 
 ### 公開頁面
+
 - `/` - 首頁
 - `/booking/group` - 團體預約
 - `/booking/individual` - 一般民眾預約
@@ -205,6 +224,7 @@ pnpm lint
 - `/traffic` - 交通指引
 
 ### 管理頁面（需登入）
+
 - `/admin` - 管理員後台
 - `/meal-delivery` - 送餐服務管理
 - `/volunteer` - 志工專區（規劃中）
@@ -225,6 +245,7 @@ pnpm lint
 系統使用 tRPC 提供端到端型別安全的 API：
 
 ### 主要 Router
+
 - `auth`：認證相關（me、logout）
 - `users`：使用者管理
 - `volunteers`：志工管理
@@ -237,6 +258,7 @@ pnpm lint
 - `notifications`：通知管理
 
 ### 權限控制
+
 - `publicProcedure`：公開 API
 - `protectedProcedure`：需登入
 - `volunteerProcedure`：需志工權限
@@ -320,6 +342,7 @@ pnpm test --watch
 ## 👨‍💻 作者
 
 **EDDIE LIN**
+
 - GitHub: [@Eddycollab](https://github.com/Eddycollab)
 - Email: huanchenlin@gmail.com
 

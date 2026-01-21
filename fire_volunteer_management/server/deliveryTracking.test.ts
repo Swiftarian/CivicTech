@@ -98,7 +98,7 @@ describe("送餐路徑追蹤功能", () => {
 
     expect(Array.isArray(trackingData)).toBe(true);
     expect(trackingData.length).toBeGreaterThan(0);
-    
+
     // 驗證追蹤點包含必要欄位
     if (trackingData.length > 0) {
       const point = trackingData[0];

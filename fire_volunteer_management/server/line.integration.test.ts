@@ -43,7 +43,9 @@ describe("LINE Integration", () => {
     expect(result.qrCodeUrl).toContain("line.me/R/ti/p/");
     expect(result.addFriendUrl).toContain("line.me/R/ti/p/");
 
-    console.log("[LINE Integration Test] ✅ LINE bot info retrieved successfully");
+    console.log(
+      "[LINE Integration Test] ✅ LINE bot info retrieved successfully"
+    );
     console.log(`[LINE Integration Test] Bot Basic ID: ${result.basicId}`);
     console.log(`[LINE Integration Test] QR Code URL: ${result.qrCodeUrl}`);
   });
@@ -53,7 +55,7 @@ describe("LINE Integration", () => {
     const caller = appRouter.createCaller(ctx);
 
     const testPhone = `0912${Date.now().toString().slice(-6)}`;
-    
+
     const result = await caller.recipients.create({
       name: "測試收餐人",
       phone: testPhone,
@@ -82,6 +84,8 @@ describe("LINE Integration", () => {
     const result = await caller.recipients.getAll();
 
     expect(Array.isArray(result)).toBe(true);
-    console.log(`[LINE Integration Test] ✅ Retrieved ${result.length} recipients`);
+    console.log(
+      `[LINE Integration Test] ✅ Retrieved ${result.length} recipients`
+    );
   });
 });

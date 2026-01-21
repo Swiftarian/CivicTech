@@ -1,4 +1,14 @@
-import { MapPin, Bus, Car, Train, Navigation, Clock, FileText, AlertCircle, Phone } from "lucide-react";
+import {
+  MapPin,
+  Bus,
+  Car,
+  Train,
+  Navigation,
+  Clock,
+  FileText,
+  AlertCircle,
+  Phone,
+} from "lucide-react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Link } from "wouter";
 
@@ -9,13 +19,18 @@ export default function Traffic() {
       <nav className="bg-primary text-primary-foreground shadow-lg sticky top-0 z-50">
         <div className="container">
           <div className="flex items-center justify-between h-16">
-            <Link href="/" className="flex items-center space-x-3 hover:opacity-90 transition-opacity">
+            <Link
+              href="/"
+              className="flex items-center space-x-3 hover:opacity-90 transition-opacity"
+            >
               <MapPin className="h-8 w-8" />
               <span className="text-xl font-bold">臺東災害警覺教育館</span>
             </Link>
-            
+
             <div className="flex items-center space-x-6">
-              <Link href="/" className="hover:opacity-80 transition-opacity">返回首頁</Link>
+              <Link href="/" className="hover:opacity-80 transition-opacity">
+                返回首頁
+              </Link>
             </div>
           </div>
         </div>
@@ -24,7 +39,9 @@ export default function Traffic() {
       {/* 頁首 */}
       <section className="bg-primary text-primary-foreground py-16">
         <div className="container text-center">
-          <h1 className="text-4xl md:text-5xl font-bold mb-4">交通指引與參訪資訊</h1>
+          <h1 className="text-4xl md:text-5xl font-bold mb-4">
+            交通指引與參訪資訊
+          </h1>
           <p className="text-xl opacity-90">臺東災害警覺教育館完整參訪指南</p>
         </div>
       </section>
@@ -32,7 +49,6 @@ export default function Traffic() {
       {/* 主要內容 */}
       <section className="py-12">
         <div className="container">
-          
           {/* 開放時間與聯絡資訊 */}
           <div className="grid md:grid-cols-2 gap-6 mb-8">
             {/* 開放時間 */}
@@ -81,7 +97,9 @@ export default function Traffic() {
               <CardContent>
                 <div className="space-y-4">
                   <div>
-                    <p className="text-lg font-semibold mb-2">臺東災害警覺教育館</p>
+                    <p className="text-lg font-semibold mb-2">
+                      臺東災害警覺教育館
+                    </p>
                     <div className="space-y-2 text-muted-foreground">
                       <p className="flex items-start gap-2">
                         <MapPin className="h-5 w-5 mt-0.5 text-primary" />
@@ -89,13 +107,20 @@ export default function Traffic() {
                       </p>
                       <p className="flex items-center gap-2">
                         <Phone className="h-5 w-5 text-primary" />
-                        <span>服務電話：<span className="font-semibold text-foreground">(089)334547、348138</span></span>
+                        <span>
+                          服務電話：
+                          <span className="font-semibold text-foreground">
+                            (089)334547、348138
+                          </span>
+                        </span>
                       </p>
                       <p className="text-sm">傳真：(089)346747</p>
                     </div>
                   </div>
                   <div className="bg-muted/50 rounded-lg p-3 text-sm">
-                    <p className="text-muted-foreground">網路預約如有任何問題，可來電洽詢</p>
+                    <p className="text-muted-foreground">
+                      網路預約如有任何問題，可來電洽詢
+                    </p>
                   </div>
                 </div>
               </CardContent>
@@ -118,7 +143,13 @@ export default function Traffic() {
                     <ul className="space-y-2 text-muted-foreground">
                       <li className="flex items-start gap-2">
                         <span className="text-primary mt-1">•</span>
-                        <span>本館預約採<span className="font-semibold text-foreground">網路線上申請</span>（預約服務）</span>
+                        <span>
+                          本館預約採
+                          <span className="font-semibold text-foreground">
+                            網路線上申請
+                          </span>
+                          （預約服務）
+                        </span>
                       </li>
                       <li className="flex items-start gap-2">
                         <span className="text-primary mt-1">•</span>
@@ -135,7 +166,13 @@ export default function Traffic() {
                     <ul className="space-y-2 text-muted-foreground">
                       <li className="flex items-start gap-2">
                         <span className="text-primary mt-1">•</span>
-                        <span>為利本館安排導覽事宜，請於<span className="font-semibold text-foreground">5日前</span>（不含週六、日及例假日）提出申請</span>
+                        <span>
+                          為利本館安排導覽事宜，請於
+                          <span className="font-semibold text-foreground">
+                            5日前
+                          </span>
+                          （不含週六、日及例假日）提出申請
+                        </span>
                       </li>
                       <li className="flex items-start gap-2">
                         <span className="text-primary mt-1">•</span>
@@ -150,11 +187,22 @@ export default function Traffic() {
                     <ul className="space-y-2 text-muted-foreground">
                       <li className="flex items-start gap-2">
                         <span className="text-primary mt-1">•</span>
-                        <span>本館僅受理<span className="font-semibold text-foreground">團體預約</span>申請</span>
+                        <span>
+                          本館僅受理
+                          <span className="font-semibold text-foreground">
+                            團體預約
+                          </span>
+                          申請
+                        </span>
                       </li>
                       <li className="flex items-start gap-2">
                         <span className="text-primary mt-1">•</span>
-                        <span>人數須滿<span className="font-semibold text-foreground">10人以上，50人以下</span></span>
+                        <span>
+                          人數須滿
+                          <span className="font-semibold text-foreground">
+                            10人以上，50人以下
+                          </span>
+                        </span>
                       </li>
                       <li className="flex items-start gap-2">
                         <span className="text-primary mt-1">•</span>
@@ -184,25 +232,35 @@ export default function Traffic() {
                 <div className="space-y-3">
                   <div className="flex items-start gap-2">
                     <span className="text-orange-600 mt-1 font-bold">1.</span>
-                    <span className="text-muted-foreground">本館僅投保公共意外責任險，如有其他需求請自行投保。</span>
+                    <span className="text-muted-foreground">
+                      本館僅投保公共意外責任險，如有其他需求請自行投保。
+                    </span>
                   </div>
                   <div className="flex items-start gap-2">
                     <span className="text-orange-600 mt-1 font-bold">2.</span>
-                    <span className="text-muted-foreground">為維護參觀品質及活動安全，請依館方人員指示進行參觀活動。</span>
+                    <span className="text-muted-foreground">
+                      為維護參觀品質及活動安全，請依館方人員指示進行參觀活動。
+                    </span>
                   </div>
                   <div className="flex items-start gap-2">
                     <span className="text-orange-600 mt-1 font-bold">3.</span>
-                    <span className="text-muted-foreground">參觀人員如有破壞本館設施器材者，應負賠償責任。</span>
+                    <span className="text-muted-foreground">
+                      參觀人員如有破壞本館設施器材者，應負賠償責任。
+                    </span>
                   </div>
                 </div>
                 <div className="space-y-3">
                   <div className="flex items-start gap-2">
                     <span className="text-orange-600 mt-1 font-bold">4.</span>
-                    <span className="text-muted-foreground">館內嚴格禁止嬉鬧、奔跑、喧嘩、飲食、抽菸、嚼食檳榔、攜帶寵物（視障者攜帶之導盲犬除外）等。</span>
+                    <span className="text-muted-foreground">
+                      館內嚴格禁止嬉鬧、奔跑、喧嘩、飲食、抽菸、嚼食檳榔、攜帶寵物（視障者攜帶之導盲犬除外）等。
+                    </span>
                   </div>
                   <div className="flex items-start gap-2">
                     <span className="text-orange-600 mt-1 font-bold">5.</span>
-                    <span className="text-muted-foreground">十二歲以下孩童，應有家長或成人陪同入館，並隨時注意孩童安全。</span>
+                    <span className="text-muted-foreground">
+                      十二歲以下孩童，應有家長或成人陪同入館，並隨時注意孩童安全。
+                    </span>
                   </div>
                 </div>
               </div>
@@ -235,7 +293,7 @@ export default function Traffic() {
 
           {/* 交通方式 */}
           <h2 className="text-3xl font-bold mb-6 text-center">交通方式</h2>
-          
+
           <div className="grid md:grid-cols-2 gap-6 mb-8">
             {/* 自行開車 */}
             <Card className="hover-lift">
@@ -265,7 +323,9 @@ export default function Traffic() {
                   </div>
                   <div className="pt-3 border-t">
                     <p className="font-semibold">停車資訊</p>
-                    <p className="text-muted-foreground">館內設有免費停車場，提供汽車及機車停車位</p>
+                    <p className="text-muted-foreground">
+                      館內設有免費停車場，提供汽車及機車停車位
+                    </p>
                   </div>
                 </div>
               </CardContent>
@@ -299,7 +359,9 @@ export default function Traffic() {
                   </div>
                   <div className="pt-3 border-t">
                     <p className="font-semibold">建議事項</p>
-                    <p className="text-muted-foreground">團體預約可提前聯繫，我們將協助安排交通事宜</p>
+                    <p className="text-muted-foreground">
+                      團體預約可提前聯繫，我們將協助安排交通事宜
+                    </p>
                   </div>
                 </div>
               </CardContent>
@@ -364,7 +426,6 @@ export default function Traffic() {
               </CardContent>
             </Card>
           </div>
-
         </div>
       </section>
 
@@ -373,14 +434,19 @@ export default function Traffic() {
         <div className="container">
           <div className="flex flex-col md:flex-row justify-between items-center gap-6">
             <div className="flex items-center">
-              <img 
-                src="/images/taitung-fire-dept-logo.png" 
-                alt="台東縣消防局" 
-                className="h-12" 
+              <img
+                src="/images/taitung-fire-dept-logo.png"
+                alt="台東縣消防局"
+                className="h-12"
               />
             </div>
             <div className="text-center md:text-right">
-              <p className="text-gray-600">服務電話：<span className="font-semibold text-gray-900">(089)334547、348138</span></p>
+              <p className="text-gray-600">
+                服務電話：
+                <span className="font-semibold text-gray-900">
+                  (089)334547、348138
+                </span>
+              </p>
               <p className="text-gray-500 text-sm">傳真：(089)346747</p>
             </div>
           </div>

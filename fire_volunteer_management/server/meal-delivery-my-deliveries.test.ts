@@ -118,7 +118,14 @@ describe("mealDeliveries.getMyDeliveries - 志工送餐任務權限控制", () =
     const deliveriesB = await callerB.mealDeliveries.getMyDeliveries();
 
     // 驗證：志工A只能看到自己的任務
-    console.log("志工A的送餐任務：", deliveriesA.map(d => ({ id: d.id, recipientName: d.recipientName, volunteerId: d.volunteerId })));
+    console.log(
+      "志工A的送餐任務：",
+      deliveriesA.map(d => ({
+        id: d.id,
+        recipientName: d.recipientName,
+        volunteerId: d.volunteerId,
+      }))
+    );
     console.log("志工A的ID：", volunteerA!.id);
     expect(deliveriesA.length).toBe(1);
     expect(deliveriesA[0]?.recipientName).toBe("收餐人A");

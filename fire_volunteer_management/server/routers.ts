@@ -5,34 +5,53 @@ import { publicProcedure, protectedProcedure, router } from "./_core/trpc";
 import { z } from "zod";
 import { TRPCError } from "@trpc/server";
 import * as db from "./db";
-import { getEmailLogs, getEmailStats, getVolunteerPerformanceStats, getAllVolunteersPerformance } from "./db";
-import { sendPublicBookingConfirmationEmail, sendGroupBookingConfirmationEmail } from "./emailService";
+import {
+  getEmailLogs,
+  getEmailStats,
+  getVolunteerPerformanceStats,
+  getAllVolunteersPerformance,
+} from "./db";
+import {
+  sendPublicBookingConfirmationEmail,
+  sendGroupBookingConfirmationEmail,
+} from "./emailService";
 import { triggerBookingReminders } from "./scheduledTasks";
-import { optimizeDeliveryRoute, formatDistance, formatDuration } from "./routeOptimization";
-import { generateVerificationCode, sendDeliveryNotificationSMS } from "./smsService";
+import {
+  optimizeDeliveryRoute,
+  formatDistance,
+  formatDuration,
+} from "./routeOptimization";
+import {
+  generateVerificationCode,
+  sendDeliveryNotificationSMS,
+} from "./smsService";
 import QRCode from "qrcode";
 import * as recipientsDb from "./recipientsDb";
-import { getLineUserProfile, sendLineMessage, createDeliveryNotificationMessage } from "./_core/lineMessaging";
+import {
+  getLineUserProfile,
+  sendLineMessage,
+  createDeliveryNotificationMessage,
+} from "./_core/lineMessaging";
 
 // 管理員專用 procedure
 const adminProcedure = protectedProcedure.use(({ ctx, next }) => {
-  if (ctx.user.role !== 'admin') {
-    throw new TRPCError({ code: 'FORBIDDEN', message: '需要管理員權限' });
+  if (ctx.user.role !== "admin") {
+    throw new TRPCError({ code: "FORBIDDEN", message: "需要管理員權限" });
   }
   return next({ ctx });
 });
 
 // 志工專用 procedure（志工和管理員都可使用）
 const volunteerProcedure = protectedProcedure.use(({ ctx, next }) => {
-  if (ctx.user.role !== 'volunteer' && ctx.user.role !== 'admin') {
-    throw new TRPCError({ code: 'FORBIDDEN', message: '需要志工或管理員權限' });
+  if (ctx.user.role !== "volunteer" && ctx.user.role !== "admin") {
+    throw new TRPCError({ code: "FORBIDDEN", message: "需要志工或管理員權限" });
   }
   return next({ ctx });
 });
 
 export const appRouter = router({
   system: systemRouter,
-  
+
   auth: router({
     me: publicProcedure.query(opts => opts.ctx.user),
     logout: publicProcedure.mutation(({ ctx }) => {
@@ -40,97 +59,137 @@ export const appRouter = router({
       ctx.res.clearCookie(COOKIE_NAME, { ...cookieOptions, maxAge: -1 });
       return { success: true } as const;
     }),
-    
+
     // ⚠️ 測試專用登入功能 - 僅供資安掃描使用，測試完成後必須刪除
     testLogin: publicProcedure
-      .input(z.object({
-        email: z.string().email(),
-        password: z.string(),
-      }))
+      .input(
+        z.object({
+          email: z.string().email(),
+          password: z.string(),
+        })
+      )
       .mutation(async ({ input, ctx }) => {
         try {
-          console.log('[Test Login] Starting test login for:', input.email);
-          
+          console.log("[Test Login] Starting test login for:", input.email);
+
           // 檢查是否啟用測試登入功能
-          const isEnabled = process.env.ENABLE_TEST_LOGIN === 'true';
-          console.log('[Test Login] ENABLE_TEST_LOGIN:', process.env.ENABLE_TEST_LOGIN, 'isEnabled:', isEnabled);
-        
-        if (!isEnabled) {
-          throw new TRPCError({ code: 'FORBIDDEN', message: '測試登入功能已停用' });
-        }
+          const isEnabled = process.env.ENABLE_TEST_LOGIN === "true";
+          console.log(
+            "[Test Login] ENABLE_TEST_LOGIN:",
+            process.env.ENABLE_TEST_LOGIN,
+            "isEnabled:",
+            isEnabled
+          );
 
-        // 固定的測試帳號
-        const testAccounts = [
-          { email: 'jacky.hsieh@insight.ntu.edu.tw', password: 'SecurityTest2024!', role: 'admin' as const },
-          { email: 'chelsea.juan@udngroup.com.tw', password: 'SecurityTest2024!', role: 'admin' as const },
-          { email: 'vol1@taitung.gov.tw', password: 'Volunteer2024!', role: 'volunteer' as const },
-          { email: 'vol2@taitung.gov.tw', password: 'Volunteer2024!', role: 'volunteer' as const },
-          { email: 'vol3@taitung.gov.tw', password: 'Volunteer2024!', role: 'volunteer' as const },
-        ];
+          if (!isEnabled) {
+            throw new TRPCError({
+              code: "FORBIDDEN",
+              message: "測試登入功能已停用",
+            });
+          }
 
-        const account = testAccounts.find(acc => acc.email === input.email && acc.password === input.password);
-        
-        if (!account) {
-          throw new TRPCError({ code: 'UNAUTHORIZED', message: '帳號或密碼錯誤' });
-        }
+          // 固定的測試帳號
+          const testAccounts = [
+            {
+              email: "jacky.hsieh@insight.ntu.edu.tw",
+              password: "SecurityTest2024!",
+              role: "admin" as const,
+            },
+            {
+              email: "chelsea.juan@udngroup.com.tw",
+              password: "SecurityTest2024!",
+              role: "admin" as const,
+            },
+            {
+              email: "vol1@taitung.gov.tw",
+              password: "Volunteer2024!",
+              role: "volunteer" as const,
+            },
+            {
+              email: "vol2@taitung.gov.tw",
+              password: "Volunteer2024!",
+              role: "volunteer" as const,
+            },
+            {
+              email: "vol3@taitung.gov.tw",
+              password: "Volunteer2024!",
+              role: "volunteer" as const,
+            },
+          ];
 
-        // 查詢或建立測試用戶
-        console.log('[Test Login] Querying user by email:', input.email);
-        let user = await db.getUserByEmail(input.email);
-        console.log('[Test Login] User found:', !!user);
-        
-        if (!user) {
-          // 建立測試用戶
-          const testOpenId = `test-${input.email.replace('@', '-at-')}`;
-          await db.upsertUser({
-            openId: testOpenId,
-            email: input.email,
-            name: input.email.split('@')[0],
-            loginMethod: 'test',
-            role: account.role,
-            lastSignedIn: new Date(),
+          const account = testAccounts.find(
+            acc => acc.email === input.email && acc.password === input.password
+          );
+
+          if (!account) {
+            throw new TRPCError({
+              code: "UNAUTHORIZED",
+              message: "帳號或密碼錯誤",
+            });
+          }
+
+          // 查詢或建立測試用戶
+          console.log("[Test Login] Querying user by email:", input.email);
+          let user = await db.getUserByEmail(input.email);
+          console.log("[Test Login] User found:", !!user);
+
+          if (!user) {
+            // 建立測試用戶
+            const testOpenId = `test-${input.email.replace("@", "-at-")}`;
+            await db.upsertUser({
+              openId: testOpenId,
+              email: input.email,
+              name: input.email.split("@")[0],
+              loginMethod: "test",
+              role: account.role,
+              lastSignedIn: new Date(),
+            });
+            user = await db.getUserByEmail(input.email);
+          }
+
+          if (!user) {
+            throw new TRPCError({
+              code: "INTERNAL_SERVER_ERROR",
+              message: "建立測試用戶失敗",
+            });
+          }
+
+          // 建立 session - 使用Manus SDK格式的JWT payload
+          // 必須包含 openId, appId, name 三個欄位才能通過Manus SDK的verifySession驗證
+          const { ENV } = await import("./_core/env");
+          const { SignJWT } = await import("jose");
+          const secretKey = new TextEncoder().encode(
+            process.env.JWT_SECRET || "test-secret"
+          );
+
+          const token = await new SignJWT({
+            openId: user.openId,
+            appId: ENV.appId,
+            name: user.name || user.email || "Test User",
+          })
+            .setProtectedHeader({ alg: "HS256", typ: "JWT" })
+            .setExpirationTime("7d")
+            .sign(secretKey);
+
+          // 設定 cookie
+          const cookieOptions = getSessionCookieOptions(ctx.req);
+          ctx.res.cookie(COOKIE_NAME, token, {
+            ...cookieOptions,
+            maxAge: 7 * 24 * 60 * 60 * 1000, // 7 days
           });
-          user = await db.getUserByEmail(input.email);
-        }
 
-        if (!user) {
-          throw new TRPCError({ code: 'INTERNAL_SERVER_ERROR', message: '建立測試用戶失敗' });
-        }
-
-        // 建立 session - 使用Manus SDK格式的JWT payload
-        // 必須包含 openId, appId, name 三個欄位才能通過Manus SDK的verifySession驗證
-        const { ENV } = await import('./_core/env');
-        const { SignJWT } = await import('jose');
-        const secretKey = new TextEncoder().encode(process.env.JWT_SECRET || 'test-secret');
-        
-        const token = await new SignJWT({
-          openId: user.openId,
-          appId: ENV.appId,
-          name: user.name || user.email || 'Test User',
-        })
-          .setProtectedHeader({ alg: 'HS256', typ: 'JWT' })
-          .setExpirationTime('7d')
-          .sign(secretKey);
-
-        // 設定 cookie
-        const cookieOptions = getSessionCookieOptions(ctx.req);
-        ctx.res.cookie(COOKIE_NAME, token, {
-          ...cookieOptions,
-          maxAge: 7 * 24 * 60 * 60 * 1000, // 7 days
-        });
-
-        console.log('[Test Login] Login successful for:', user.email);
-        return {
-          success: true,
-          user: {
-            id: user.id,
-            email: user.email,
-            name: user.name,
-            role: user.role,
-          },
-        };
+          console.log("[Test Login] Login successful for:", user.email);
+          return {
+            success: true,
+            user: {
+              id: user.id,
+              email: user.email,
+              name: user.name,
+              role: user.role,
+            },
+          };
         } catch (error) {
-          console.error('[Test Login] Error:', error);
+          console.error("[Test Login] Error:", error);
           throw error;
         }
       }),
@@ -141,12 +200,14 @@ export const appRouter = router({
     getAll: adminProcedure.query(async () => {
       return await db.getAllUsers();
     }),
-    
+
     updateRole: adminProcedure
-      .input(z.object({
-        userId: z.number(),
-        role: z.enum(["user", "volunteer", "admin"])
-      }))
+      .input(
+        z.object({
+          userId: z.number(),
+          role: z.enum(["user", "volunteer", "admin"]),
+        })
+      )
       .mutation(async ({ input }) => {
         await db.updateUserRole(input.userId, input.role);
         return { success: true };
@@ -187,7 +248,7 @@ export const appRouter = router({
           try {
             await db.createVolunteer(volunteerData);
             await db.updateUserRole(volunteerData.userId, "volunteer");
-            
+
             // 取得使用者資訊以顯示在結果中
             const user = await db.getUserById(volunteerData.userId);
             results.successDetails.push({
@@ -196,13 +257,13 @@ export const appRouter = router({
               name: user?.name || undefined,
               email: user?.email || undefined,
             });
-            
+
             results.success++;
           } catch (error) {
             results.failed++;
-            const employeeId = volunteerData.employeeId || '未知';
+            const employeeId = volunteerData.employeeId || "未知";
             results.errors.push(
-              `員工編號 ${employeeId}: ${error instanceof Error ? error.message : '未知錯誤'}`
+              `員工編號 ${employeeId}: ${error instanceof Error ? error.message : "未知錯誤"}`
             );
           }
         }
@@ -211,43 +272,48 @@ export const appRouter = router({
       }),
 
     create: adminProcedure
-      .input(z.object({
-        name: z.string(),
-        email: z.string().email().optional(),
-        phone: z.string().optional(),
-        employeeId: z.string().optional(),
-        department: z.string().optional(),
-        position: z.string().optional(),
-        category: z.enum(["導覽館志工", "送餐志工"]).default("導覽館志工"),
-        skills: z.string().optional(),
-        availability: z.string().optional(),
-      }))
+      .input(
+        z.object({
+          name: z.string(),
+          email: z.string().email().optional(),
+          phone: z.string().optional(),
+          employeeId: z.string().optional(),
+          department: z.string().optional(),
+          position: z.string().optional(),
+          category: z.enum(["導覽館志工", "送餐志工"]).default("導覽館志工"),
+          skills: z.string().optional(),
+          availability: z.string().optional(),
+        })
+      )
       .mutation(async ({ input }) => {
         const { name, email, phone, ...volunteerData } = input;
-        
+
         // 自動建立使用者帳號
         const openId = `volunteer-${Date.now()}-${Math.random().toString(36).substring(2, 9)}`;
         const userData = {
           openId,
           name,
           email: email || null,
-          loginMethod: 'manual',
-          role: 'user' as const,
+          loginMethod: "manual",
+          role: "user" as const,
         };
-        
+
         await db.upsertUser(userData);
         const user = await db.getUserByOpenId(openId);
-        
+
         if (!user) {
-          throw new TRPCError({ code: 'INTERNAL_SERVER_ERROR', message: '建立使用者失敗' });
+          throw new TRPCError({
+            code: "INTERNAL_SERVER_ERROR",
+            message: "建立使用者失敗",
+          });
         }
-        
+
         // 建立志工記錄
         await db.createVolunteer({
           userId: user.id,
           ...volunteerData,
         });
-        
+
         return { success: true, userId: user.id };
       }),
 
@@ -260,16 +326,18 @@ export const appRouter = router({
     }),
 
     update: adminProcedure
-      .input(z.object({
-        id: z.number(),
-        userId: z.number().optional(),
-        employeeId: z.string().optional(),
-        department: z.string().optional(),
-        position: z.string().optional(),
-        skills: z.string().optional(),
-        availability: z.string().optional(),
-        status: z.enum(["active", "inactive", "leave"]).optional(),
-      }))
+      .input(
+        z.object({
+          id: z.number(),
+          userId: z.number().optional(),
+          employeeId: z.string().optional(),
+          department: z.string().optional(),
+          position: z.string().optional(),
+          skills: z.string().optional(),
+          availability: z.string().optional(),
+          status: z.enum(["active", "inactive", "leave"]).optional(),
+        })
+      )
       .mutation(async ({ input }) => {
         const { id, ...data } = input;
         await db.updateVolunteer(id, data);
@@ -277,9 +345,11 @@ export const appRouter = router({
       }),
 
     delete: adminProcedure
-      .input(z.object({
-        id: z.number(),
-      }))
+      .input(
+        z.object({
+          id: z.number(),
+        })
+      )
       .mutation(async ({ input }) => {
         await db.deleteVolunteer(input.id);
         return { success: true };
@@ -287,71 +357,74 @@ export const appRouter = router({
 
     // 查詢單一志工績效統計
     getPerformance: adminProcedure
-      .input(z.object({
-        volunteerId: z.number(),
-      }))
+      .input(
+        z.object({
+          volunteerId: z.number(),
+        })
+      )
       .query(async ({ input }) => {
         return await getVolunteerPerformanceStats(input.volunteerId);
       }),
 
     // 查詢所有志工績效統計
-    getAllPerformance: adminProcedure
-      .query(async () => {
-        return await getAllVolunteersPerformance();
-      }),
+    getAllPerformance: adminProcedure.query(async () => {
+      return await getAllVolunteersPerformance();
+    }),
   }),
 
   // ============ 排程任務管理 ============
   scheduledTasks: router({
     // 手動觸發發送預約提醒Email（管理員專用）
-    triggerBookingReminders: adminProcedure
-      .mutation(async () => {
-        const results = await triggerBookingReminders();
-        return results;
-      }),
+    triggerBookingReminders: adminProcedure.mutation(async () => {
+      const results = await triggerBookingReminders();
+      return results;
+    }),
   }),
 
   // ============ Email歷史記錄 ============
   emailLogs: router({
     // 查詢Email發送歷史（管理員專用）
     list: adminProcedure
-      .input(z.object({
-        limit: z.number().optional(),
-        offset: z.number().optional(),
-        emailType: z.string().optional(),
-        isTest: z.boolean().optional(),
-      }))
+      .input(
+        z.object({
+          limit: z.number().optional(),
+          offset: z.number().optional(),
+          emailType: z.string().optional(),
+          isTest: z.boolean().optional(),
+        })
+      )
       .query(async ({ input }) => {
         const logs = await getEmailLogs(input);
         return logs;
       }),
 
     // 統計Email發送狀況（管理員專用）
-    stats: adminProcedure
-      .query(async () => {
-        const stats = await getEmailStats();
-        return stats;
-      }),
+    stats: adminProcedure.query(async () => {
+      const stats = await getEmailStats();
+      return stats;
+    }),
   }),
 
   // ============ Email測試 ============
   emailTest: router({
     // 測試預約確認Email（管理員專用）
     testBookingConfirmation: adminProcedure
-      .input(z.object({
-        recipientEmail: z.string().email(),
-        recipientName: z.string(),
-        bookingType: z.enum(["public", "group"]),
-        organizationName: z.string().optional(),
-      }))
+      .input(
+        z.object({
+          recipientEmail: z.string().email(),
+          recipientName: z.string(),
+          bookingType: z.enum(["public", "group"]),
+          organizationName: z.string().optional(),
+        })
+      )
       .mutation(async ({ input }) => {
         const testBookingNumber = `TEST${Date.now()}`;
         const testVisitDate = new Date();
         testVisitDate.setDate(testVisitDate.getDate() + 7);
-        const visitDate = testVisitDate.toLocaleDateString('zh-TW', {
-          year: 'numeric',
-          month: '2-digit',
-          day: '2-digit'
+        const visitDate = testVisitDate.toLocaleDateString("zh-TW", {
+          year: "numeric",
+          month: "2-digit",
+          day: "2-digit",
         });
         const testVisitTime = "10:00-12:00";
         const testVisitorCount = input.bookingType === "group" ? 30 : 5;
@@ -381,33 +454,38 @@ export const appRouter = router({
         return {
           success,
           bookingNumber: testBookingNumber,
-          message: success ? 'Email發送成功！請檢查收件匣（可能在垃圾郵件中）' : 'Email發送失敗，請檢查Email設定'
+          message: success
+            ? "Email發送成功！請檢查收件匣（可能在垃圾郵件中）"
+            : "Email發送失敗，請檢查Email設定",
         };
       }),
 
     // 測試預約提醒Email（管理員專用）
     testBookingReminder: adminProcedure
-      .input(z.object({
-        recipientEmail: z.string().email(),
-        recipientName: z.string(),
-        bookingType: z.enum(["public", "group"]),
-        organizationName: z.string().optional(),
-      }))
+      .input(
+        z.object({
+          recipientEmail: z.string().email(),
+          recipientName: z.string(),
+          bookingType: z.enum(["public", "group"]),
+          organizationName: z.string().optional(),
+        })
+      )
       .mutation(async ({ input }) => {
         const testBookingNumber = `TEST${Date.now()}`;
         const testVisitDate = new Date();
         testVisitDate.setDate(testVisitDate.getDate() + 3);
-        const visitDate = testVisitDate.toLocaleDateString('zh-TW', {
-          year: 'numeric',
-          month: '2-digit',
-          day: '2-digit'
+        const visitDate = testVisitDate.toLocaleDateString("zh-TW", {
+          year: "numeric",
+          month: "2-digit",
+          day: "2-digit",
         });
         const testVisitTime = "14:00-16:00";
         const testVisitorCount = input.bookingType === "group" ? 25 : 4;
 
         let success = false;
         if (input.bookingType === "group" && input.organizationName) {
-          const { sendGroupBookingReminderEmail } = await import("./emailService");
+          const { sendGroupBookingReminderEmail } =
+            await import("./emailService");
           success = await sendGroupBookingReminderEmail(
             input.recipientEmail,
             input.organizationName,
@@ -418,7 +496,8 @@ export const appRouter = router({
             testVisitorCount
           );
         } else {
-          const { sendPublicBookingReminderEmail } = await import("./emailService");
+          const { sendPublicBookingReminderEmail } =
+            await import("./emailService");
           success = await sendPublicBookingReminderEmail(
             input.recipientEmail,
             input.recipientName,
@@ -432,7 +511,9 @@ export const appRouter = router({
         return {
           success,
           bookingNumber: testBookingNumber,
-          message: success ? 'Email發送成功！請檢查收件匣（可能在垃圾郵件中）' : 'Email發送失敗，請檢查Email設定'
+          message: success
+            ? "Email發送成功！請檢查收件匣（可能在垃圾郵件中）"
+            : "Email發送失敗，請檢查Email設定",
         };
       }),
   }),
@@ -441,10 +522,12 @@ export const appRouter = router({
   smsTest: router({
     // 測試送餐SMS通知（管理員專用）
     testDeliveryNotification: adminProcedure
-      .input(z.object({
-        recipientPhone: z.string(),
-        recipientName: z.string(),
-      }))
+      .input(
+        z.object({
+          recipientPhone: z.string(),
+          recipientName: z.string(),
+        })
+      )
       .mutation(async ({ input }) => {
         const testDeliveryNumber = `TEST${Date.now()}`;
         const testVerificationCode = generateVerificationCode();
@@ -468,7 +551,7 @@ export const appRouter = router({
 親愛的 ${input.recipientName}，您好！
 
 您的送餐服務已安排：
-送達日期：${testDeliveryDate.toLocaleDateString('zh-TW')}
+送達日期：${testDeliveryDate.toLocaleDateString("zh-TW")}
 送達時段：${testDeliveryTime}
 
 驗證序號：${testVerificationCode}
@@ -485,9 +568,9 @@ export const appRouter = router({
           verificationCode: testVerificationCode,
           deliveryNumber: testDeliveryNumber,
           smsContent,
-          message: result.success 
-            ? 'SMS發送成功！（模擬模式，請查看console輸出）' 
-            : 'SMS發送失敗，請檢查SMS設定'
+          message: result.success
+            ? "SMS發送成功！（模擬模式，請查看console輸出）"
+            : "SMS發送失敗，請檢查SMS設定",
         };
       }),
   }),
@@ -495,38 +578,40 @@ export const appRouter = router({
   // ============ 預約管理 ============
   bookings: router({
     create: publicProcedure
-      .input(z.object({
-        type: z.enum(["group", "individual"]),
-        contactName: z.string(),
-        contactPhone: z.string(),
-        contactEmail: z.string().email("請輸入有效的Email地址"),
-        organizationName: z.string().optional(),
-        numberOfPeople: z.number(),
-        adultCount: z.number(),
-        childCount: z.number(),
-        visitDate: z.date(),
-        visitTime: z.string(),
-        arrivalTime: z.string().optional(),
-        notes: z.string().optional(),
-      }))
+      .input(
+        z.object({
+          type: z.enum(["group", "individual"]),
+          contactName: z.string(),
+          contactPhone: z.string(),
+          contactEmail: z.string().email("請輸入有效的Email地址"),
+          organizationName: z.string().optional(),
+          numberOfPeople: z.number(),
+          adultCount: z.number(),
+          childCount: z.number(),
+          visitDate: z.date(),
+          visitTime: z.string(),
+          arrivalTime: z.string().optional(),
+          notes: z.string().optional(),
+        })
+      )
       .mutation(async ({ input, ctx }) => {
         const bookingNumber = `BK${Date.now()}`;
         await db.createBooking({
           ...input,
           bookingNumber,
           userId: ctx.user?.id,
-          status: "pending"
+          status: "pending",
         });
-        
+
         // 發送Email通知（如果有提供Email）
         if (input.contactEmail) {
-          const visitDate = input.visitDate.toLocaleDateString('zh-TW', {
-            year: 'numeric',
-            month: '2-digit',
-            day: '2-digit'
+          const visitDate = input.visitDate.toLocaleDateString("zh-TW", {
+            year: "numeric",
+            month: "2-digit",
+            day: "2-digit",
           });
-          
-          if (input.type === 'group' && input.organizationName) {
+
+          if (input.type === "group" && input.organizationName) {
             // 團體預約
             await sendGroupBookingConfirmationEmail(
               input.contactEmail,
@@ -549,7 +634,7 @@ export const appRouter = router({
             );
           }
         }
-        
+
         return { success: true, bookingNumber };
       }),
 
@@ -571,19 +656,23 @@ export const appRouter = router({
       }),
 
     getByDateRange: adminProcedure
-      .input(z.object({
-        startDate: z.date(),
-        endDate: z.date()
-      }))
+      .input(
+        z.object({
+          startDate: z.date(),
+          endDate: z.date(),
+        })
+      )
       .query(async ({ input }) => {
         return await db.getBookingsByDateRange(input.startDate, input.endDate);
       }),
 
     getByMonth: publicProcedure
-      .input(z.object({
-        year: z.number(),
-        month: z.number().min(1).max(12)
-      }))
+      .input(
+        z.object({
+          year: z.number(),
+          month: z.number().min(1).max(12),
+        })
+      )
       .query(async ({ input }) => {
         // 計算該月份的開始和結束日期
         const startDate = new Date(input.year, input.month - 1, 1);
@@ -593,67 +682,96 @@ export const appRouter = router({
 
     // 只查詢個人預約
     getIndividualByMonth: publicProcedure
-      .input(z.object({
-        year: z.number(),
-        month: z.number().min(1).max(12)
-      }))
+      .input(
+        z.object({
+          year: z.number(),
+          month: z.number().min(1).max(12),
+        })
+      )
       .query(async ({ input }) => {
         // 使用 UTC 時間建立日期範圍，避免時區轉換問題
         // 計算該月份的第一天
         const firstDay = new Date(Date.UTC(input.year, input.month - 1, 1));
-        const startDate = new Date(Date.UTC(
-          firstDay.getUTCFullYear(),
-          firstDay.getUTCMonth(),
-          firstDay.getUTCDate(),
-          0, 0, 0, 0
-        ));
+        const startDate = new Date(
+          Date.UTC(
+            firstDay.getUTCFullYear(),
+            firstDay.getUTCMonth(),
+            firstDay.getUTCDate(),
+            0,
+            0,
+            0,
+            0
+          )
+        );
 
         // 計算該月份的最後一天
         const lastDay = new Date(Date.UTC(input.year, input.month, 0));
-        const endDate = new Date(Date.UTC(
-          lastDay.getUTCFullYear(),
-          lastDay.getUTCMonth(),
-          lastDay.getUTCDate(),
-          23, 59, 59, 999
-        ));
-        
+        const endDate = new Date(
+          Date.UTC(
+            lastDay.getUTCFullYear(),
+            lastDay.getUTCMonth(),
+            lastDay.getUTCDate(),
+            23,
+            59,
+            59,
+            999
+          )
+        );
+
         return await db.getIndividualBookingsByDateRange(startDate, endDate);
       }),
 
     // 只查詢團體預約
     getGroupByMonth: publicProcedure
-      .input(z.object({
-        year: z.number(),
-        month: z.number().min(1).max(12)
-      }))
+      .input(
+        z.object({
+          year: z.number(),
+          month: z.number().min(1).max(12),
+        })
+      )
       .query(async ({ input }) => {
         // 使用 UTC 時間建立日期範圍，避免時區轉換問題
         // 計算該月份的第一天
         const firstDay = new Date(Date.UTC(input.year, input.month - 1, 1));
-        const startDate = new Date(Date.UTC(
-          firstDay.getUTCFullYear(),
-          firstDay.getUTCMonth(),
-          firstDay.getUTCDate(),
-          0, 0, 0, 0
-        ));
+        const startDate = new Date(
+          Date.UTC(
+            firstDay.getUTCFullYear(),
+            firstDay.getUTCMonth(),
+            firstDay.getUTCDate(),
+            0,
+            0,
+            0,
+            0
+          )
+        );
 
         // 計算該月份的最後一天
         const lastDay = new Date(Date.UTC(input.year, input.month, 0));
-        const endDate = new Date(Date.UTC(
-          lastDay.getUTCFullYear(),
-          lastDay.getUTCMonth(),
-          lastDay.getUTCDate(),
-          23, 59, 59, 999
-        ));
-        
+        const endDate = new Date(
+          Date.UTC(
+            lastDay.getUTCFullYear(),
+            lastDay.getUTCMonth(),
+            lastDay.getUTCDate(),
+            23,
+            59,
+            59,
+            999
+          )
+        );
+
         return await db.getGroupBookingsByDateRange(startDate, endDate);
       }),
 
     getAvailableTimeSlots: publicProcedure
-      .input(z.object({
-        date: z.date(),
-        type: z.enum(['individual', 'group']).optional().default('individual')
-      }))
+      .input(
+        z.object({
+          date: z.date(),
+          type: z
+            .enum(["individual", "group"])
+            .optional()
+            .default("individual"),
+        })
+      )
       .query(async ({ input }) => {
         // 所有可用時段
         const allTimeSlots = [
@@ -662,39 +780,54 @@ export const appRouter = router({
           "11:00-12:00",
           "14:00-15:00",
           "15:00-16:00",
-          "16:00-17:00"
+          "16:00-17:00",
         ];
 
         // 查詢該日的預約（根據類型查詢對應的表）
         // 使用 UTC 時間建立日期範圍，避免時區轉換問題
         // 必須使用 getUTCFullYear/getUTCMonth/getUTCDate 來取得 UTC 時間的年月日
         const inputDate = new Date(input.date);
-        const startOfDay = new Date(Date.UTC(
-          inputDate.getUTCFullYear(),
-          inputDate.getUTCMonth(),
-          inputDate.getUTCDate(),
-          0, 0, 0, 0
-        ));
-        const endOfDay = new Date(Date.UTC(
-          inputDate.getUTCFullYear(),
-          inputDate.getUTCMonth(),
-          inputDate.getUTCDate(),
-          23, 59, 59, 999
-        ));
+        const startOfDay = new Date(
+          Date.UTC(
+            inputDate.getUTCFullYear(),
+            inputDate.getUTCMonth(),
+            inputDate.getUTCDate(),
+            0,
+            0,
+            0,
+            0
+          )
+        );
+        const endOfDay = new Date(
+          Date.UTC(
+            inputDate.getUTCFullYear(),
+            inputDate.getUTCMonth(),
+            inputDate.getUTCDate(),
+            23,
+            59,
+            59,
+            999
+          )
+        );
 
         // 根據類型查詢對應的表
         let bookings;
-        if (input.type === 'individual') {
-          bookings = await db.getIndividualBookingsByDateRange(startOfDay, endOfDay);
+        if (input.type === "individual") {
+          bookings = await db.getIndividualBookingsByDateRange(
+            startOfDay,
+            endOfDay
+          );
         } else {
           bookings = await db.getGroupBookingsByDateRange(startOfDay, endOfDay);
         }
-        
+
         // 篩選出非取消狀態的預約
-        const activeBookings = bookings.filter(b => b.status !== 'cancelled');
-        
+        const activeBookings = bookings.filter(b => b.status !== "cancelled");
+
         // 取得已被預約的時段（使用Set去除重複）
-        const bookedTimeSlotsSet = new Set(activeBookings.map(b => b.visitTime));
+        const bookedTimeSlotsSet = new Set(
+          activeBookings.map(b => b.visitTime)
+        );
         const bookedTimeSlots = Array.from(bookedTimeSlotsSet);
 
         // 計算可用時段
@@ -707,16 +840,18 @@ export const appRouter = router({
           allTimeSlots,
           bookedTimeSlots,
           availableTimeSlots,
-          isFull: availableTimeSlots.length === 0
+          isFull: availableTimeSlots.length === 0,
         };
       }),
 
     updateStatus: adminProcedure
-      .input(z.object({
-        id: z.number(),
-        status: z.enum(["pending", "confirmed", "cancelled", "completed"]),
-        type: z.enum(["individual", "group"]).optional()
-      }))
+      .input(
+        z.object({
+          id: z.number(),
+          status: z.enum(["pending", "confirmed", "cancelled", "completed"]),
+          type: z.enum(["individual", "group"]).optional(),
+        })
+      )
       .mutation(async ({ input }) => {
         await db.updateBookingStatus(input.id, input.status, input.type);
         return { success: true };
@@ -724,20 +859,24 @@ export const appRouter = router({
 
     // 編輯預約資料
     update: adminProcedure
-      .input(z.object({
-        id: z.number(),
-        type: z.enum(["individual", "group"]),
-        contactName: z.string().optional(),
-        contactPhone: z.string().optional(),
-        contactEmail: z.string().email().optional(),
-        numberOfPeople: z.number().optional(),
-        visitDate: z.date().optional(),
-        visitTime: z.string().optional(),
-        purpose: z.string().optional(),
-        specialNeeds: z.string().optional(),
-        status: z.enum(["pending", "confirmed", "cancelled", "completed"]).optional(),
-        organizationName: z.string().optional()
-      }))
+      .input(
+        z.object({
+          id: z.number(),
+          type: z.enum(["individual", "group"]),
+          contactName: z.string().optional(),
+          contactPhone: z.string().optional(),
+          contactEmail: z.string().email().optional(),
+          numberOfPeople: z.number().optional(),
+          visitDate: z.date().optional(),
+          visitTime: z.string().optional(),
+          purpose: z.string().optional(),
+          specialNeeds: z.string().optional(),
+          status: z
+            .enum(["pending", "confirmed", "cancelled", "completed"])
+            .optional(),
+          organizationName: z.string().optional(),
+        })
+      )
       .mutation(async ({ input }) => {
         const { id, type, ...data } = input;
         await db.updateBooking(id, type, data);
@@ -746,56 +885,75 @@ export const appRouter = router({
 
     // 刪除預約
     delete: adminProcedure
-      .input(z.object({
-        id: z.number(),
-        type: z.enum(["individual", "group"])
-      }))
+      .input(
+        z.object({
+          id: z.number(),
+          type: z.enum(["individual", "group"]),
+        })
+      )
       .mutation(async ({ input }) => {
         await db.deleteBooking(input.id, input.type);
         return { success: true };
       }),
 
     assignVolunteer: adminProcedure
-      .input(z.object({
-        bookingId: z.number(),
-        volunteerId: z.number()
-      }))
+      .input(
+        z.object({
+          bookingId: z.number(),
+          volunteerId: z.number(),
+        })
+      )
       .mutation(async ({ input }) => {
         await db.assignVolunteerToBooking(input.bookingId, input.volunteerId);
         return { success: true };
       }),
 
     cancel: publicProcedure
-      .input(z.object({
-        bookingNumber: z.string()
-      }))
+      .input(
+        z.object({
+          bookingNumber: z.string(),
+        })
+      )
       .mutation(async ({ input }) => {
         // 查詢預約是否存在
         const booking = await db.getBookingByNumber(input.bookingNumber);
         if (!booking) {
-          throw new TRPCError({ code: 'NOT_FOUND', message: '找不到該預約' });
+          throw new TRPCError({ code: "NOT_FOUND", message: "找不到該預約" });
         }
 
         // 檢查預約狀態
-        if (booking.status === 'cancelled') {
-          throw new TRPCError({ code: 'BAD_REQUEST', message: '該預約已經取消' });
+        if (booking.status === "cancelled") {
+          throw new TRPCError({
+            code: "BAD_REQUEST",
+            message: "該預約已經取消",
+          });
         }
-        if (booking.status === 'completed') {
-          throw new TRPCError({ code: 'BAD_REQUEST', message: '已完成的預約無法取消' });
+        if (booking.status === "completed") {
+          throw new TRPCError({
+            code: "BAD_REQUEST",
+            message: "已完成的預約無法取消",
+          });
         }
 
         // 更新狀態為取消（傳遞預約類型以更新正確的表）
-        const bookingType = (booking as any).type as 'individual' | 'group' | undefined;
-        await db.updateBookingStatus(booking.id, 'cancelled', bookingType);
+        const bookingType = (booking as any).type as
+          | "individual"
+          | "group"
+          | undefined;
+        await db.updateBookingStatus(booking.id, "cancelled", bookingType);
 
         // 發送取消通知Email（如果有提供Email）
         if (booking.contactEmail) {
-          const { sendBookingCancellationEmail } = await import('./emailService');
-          const visitDate = new Date(booking.visitDate).toLocaleDateString('zh-TW', {
-            year: 'numeric',
-            month: '2-digit',
-            day: '2-digit'
-          });
+          const { sendBookingCancellationEmail } =
+            await import("./emailService");
+          const visitDate = new Date(booking.visitDate).toLocaleDateString(
+            "zh-TW",
+            {
+              year: "numeric",
+              month: "2-digit",
+              day: "2-digit",
+            }
+          );
           await sendBookingCancellationEmail(
             booking.contactEmail,
             booking.contactName,
@@ -812,14 +970,16 @@ export const appRouter = router({
   // ============ 排班管理 ============
   schedules: router({
     create: adminProcedure
-      .input(z.object({
-        volunteerId: z.number(),
-        shiftDate: z.date(),
-        shiftTime: z.string(),
-        shiftType: z.enum(["morning", "afternoon", "fullday"]),
-        bookingId: z.number().optional(),
-        notes: z.string().optional(),
-      }))
+      .input(
+        z.object({
+          volunteerId: z.number(),
+          shiftDate: z.date(),
+          shiftTime: z.string(),
+          shiftType: z.enum(["morning", "afternoon", "fullday"]),
+          bookingId: z.number().optional(),
+          notes: z.string().optional(),
+        })
+      )
       .mutation(async ({ input }) => {
         await db.createSchedule({ ...input, status: "scheduled" });
         return { success: true };
@@ -838,19 +998,23 @@ export const appRouter = router({
     }),
 
     getByDateRange: adminProcedure
-      .input(z.object({
-        startDate: z.date(),
-        endDate: z.date()
-      }))
+      .input(
+        z.object({
+          startDate: z.date(),
+          endDate: z.date(),
+        })
+      )
       .query(async ({ input }) => {
         return await db.getSchedulesByDateRange(input.startDate, input.endDate);
       }),
 
     updateStatus: adminProcedure
-      .input(z.object({
-        id: z.number(),
-        status: z.enum(["scheduled", "completed", "absent", "leave"])
-      }))
+      .input(
+        z.object({
+          id: z.number(),
+          status: z.enum(["scheduled", "completed", "absent", "leave"]),
+        })
+      )
       .mutation(async ({ input }) => {
         await db.updateScheduleStatus(input.id, input.status);
         return { success: true };
@@ -860,15 +1024,17 @@ export const appRouter = router({
   // ============ 打卡管理 ============
   attendances: router({
     checkIn: volunteerProcedure
-      .input(z.object({
-        scheduleId: z.number().optional(),
-        location: z.string().optional(),
-        notes: z.string().optional(),
-      }))
+      .input(
+        z.object({
+          scheduleId: z.number().optional(),
+          location: z.string().optional(),
+          notes: z.string().optional(),
+        })
+      )
       .mutation(async ({ input, ctx }) => {
         const volunteer = await db.getVolunteerByUserId(ctx.user.id);
         if (!volunteer) {
-          throw new TRPCError({ code: 'NOT_FOUND', message: '找不到志工資料' });
+          throw new TRPCError({ code: "NOT_FOUND", message: "找不到志工資料" });
         }
         await db.createAttendance({
           volunteerId: volunteer.id,
@@ -881,35 +1047,45 @@ export const appRouter = router({
       }),
 
     checkOut: volunteerProcedure
-      .input(z.object({
-        attendanceId: z.number(),
-      }))
+      .input(
+        z.object({
+          attendanceId: z.number(),
+        })
+      )
       .mutation(async ({ input }) => {
         const database = await db.getDb();
         if (!database) {
-          throw new TRPCError({ code: 'INTERNAL_SERVER_ERROR', message: '資料庫連線失敗' });
+          throw new TRPCError({
+            code: "INTERNAL_SERVER_ERROR",
+            message: "資料庫連線失敗",
+          });
         }
-        
-        const { attendances } = await import('../drizzle/schema');
-        const { eq } = await import('drizzle-orm');
-        
-        const attendance = await database.select().from(attendances)
-          .where(eq(attendances.id, input.attendanceId)).limit(1);
-        
+
+        const { attendances } = await import("../drizzle/schema");
+        const { eq } = await import("drizzle-orm");
+
+        const attendance = await database
+          .select()
+          .from(attendances)
+          .where(eq(attendances.id, input.attendanceId))
+          .limit(1);
+
         if (!attendance || attendance.length === 0) {
-          throw new TRPCError({ code: 'NOT_FOUND', message: '找不到打卡記錄' });
+          throw new TRPCError({ code: "NOT_FOUND", message: "找不到打卡記錄" });
         }
         const checkInTime = attendance[0].checkInTime;
         if (!checkInTime) {
-          throw new TRPCError({ code: 'BAD_REQUEST', message: '尚未簽到' });
+          throw new TRPCError({ code: "BAD_REQUEST", message: "尚未簽到" });
         }
         const checkOutTime = new Date();
-        const workHours = Math.floor((checkOutTime.getTime() - checkInTime.getTime()) / 60000);
+        const workHours = Math.floor(
+          (checkOutTime.getTime() - checkInTime.getTime()) / 60000
+        );
         await db.checkOut(input.attendanceId, checkOutTime, workHours);
-        
+
         const volunteerId = attendance[0].volunteerId;
         await db.updateVolunteerHours(volunteerId, Math.floor(workHours / 60));
-        
+
         return { success: true, workHours };
       }),
 
@@ -923,21 +1099,23 @@ export const appRouter = router({
   // ============ 請假/換班管理 ============
   leaveRequests: router({
     create: volunteerProcedure
-      .input(z.object({
-        scheduleId: z.number(),
-        type: z.enum(["leave", "swap"]),
-        targetVolunteerId: z.number().optional(),
-        reason: z.string(),
-      }))
+      .input(
+        z.object({
+          scheduleId: z.number(),
+          type: z.enum(["leave", "swap"]),
+          targetVolunteerId: z.number().optional(),
+          reason: z.string(),
+        })
+      )
       .mutation(async ({ input, ctx }) => {
         const volunteer = await db.getVolunteerByUserId(ctx.user.id);
         if (!volunteer) {
-          throw new TRPCError({ code: 'NOT_FOUND', message: '找不到志工資料' });
+          throw new TRPCError({ code: "NOT_FOUND", message: "找不到志工資料" });
         }
         await db.createLeaveRequest({
           volunteerId: volunteer.id,
           ...input,
-          status: "pending"
+          status: "pending",
         });
         return { success: true };
       }),
@@ -953,48 +1131,64 @@ export const appRouter = router({
     }),
 
     approve: adminProcedure
-      .input(z.object({
-        id: z.number(),
-        reviewNotes: z.string().optional(),
-      }))
+      .input(
+        z.object({
+          id: z.number(),
+          reviewNotes: z.string().optional(),
+        })
+      )
       .mutation(async ({ input, ctx }) => {
-        const result = await db.updateLeaveRequestStatus(input.id, "approved", ctx.user.id, input.reviewNotes);
-        
+        const result = await db.updateLeaveRequestStatus(
+          input.id,
+          "approved",
+          ctx.user.id,
+          input.reviewNotes
+        );
+
         // 發送Email通知
         if (result && result.userEmail) {
-          const { sendLeaveRequestReviewEmail } = await import('./emailService');
+          const { sendLeaveRequestReviewEmail } =
+            await import("./emailService");
           await sendLeaveRequestReviewEmail(
             result.userEmail,
             result.userName,
             result.requestType,
-            'approved',
+            "approved",
             input.reviewNotes
           );
         }
-        
+
         return { success: true };
       }),
 
     reject: adminProcedure
-      .input(z.object({
-        id: z.number(),
-        reviewNotes: z.string().optional(),
-      }))
+      .input(
+        z.object({
+          id: z.number(),
+          reviewNotes: z.string().optional(),
+        })
+      )
       .mutation(async ({ input, ctx }) => {
-        const result = await db.updateLeaveRequestStatus(input.id, "rejected", ctx.user.id, input.reviewNotes);
-        
+        const result = await db.updateLeaveRequestStatus(
+          input.id,
+          "rejected",
+          ctx.user.id,
+          input.reviewNotes
+        );
+
         // 發送Email通知
         if (result && result.userEmail) {
-          const { sendLeaveRequestReviewEmail } = await import('./emailService');
+          const { sendLeaveRequestReviewEmail } =
+            await import("./emailService");
           await sendLeaveRequestReviewEmail(
             result.userEmail,
             result.userName,
             result.requestType,
-            'rejected',
+            "rejected",
             input.reviewNotes
           );
         }
-        
+
         return { success: true };
       }),
   }),
@@ -1002,16 +1196,18 @@ export const appRouter = router({
   // ============ 案件管理 ============
   cases: router({
     create: publicProcedure
-      .input(z.object({
-        applicantName: z.string(),
-        applicantPhone: z.string(),
-        applicantEmail: z.string().optional(),
-        caseType: z.string(),
-        title: z.string(),
-        description: z.string(),
-        attachments: z.string().optional(),
-        priority: z.enum(["low", "medium", "high", "urgent"]).optional(),
-      }))
+      .input(
+        z.object({
+          applicantName: z.string(),
+          applicantPhone: z.string(),
+          applicantEmail: z.string().optional(),
+          caseType: z.string(),
+          title: z.string(),
+          description: z.string(),
+          attachments: z.string().optional(),
+          priority: z.enum(["low", "medium", "high", "urgent"]).optional(),
+        })
+      )
       .mutation(async ({ input, ctx }) => {
         const caseNumber = `CS${Date.now()}`;
         await db.createCase({
@@ -1019,7 +1215,7 @@ export const appRouter = router({
           caseNumber,
           userId: ctx.user?.id,
           status: "submitted",
-          priority: input.priority || "medium"
+          priority: input.priority || "medium",
         });
         return { success: true, caseNumber };
       }),
@@ -1035,37 +1231,49 @@ export const appRouter = router({
       }),
 
     updateStatus: adminProcedure
-      .input(z.object({
-        id: z.number(),
-        status: z.enum(["submitted", "reviewing", "processing", "completed", "rejected"])
-      }))
+      .input(
+        z.object({
+          id: z.number(),
+          status: z.enum([
+            "submitted",
+            "reviewing",
+            "processing",
+            "completed",
+            "rejected",
+          ]),
+        })
+      )
       .mutation(async ({ input }) => {
         await db.updateCaseStatus(input.id, input.status);
         return { success: true };
       }),
 
     assign: adminProcedure
-      .input(z.object({
-        caseId: z.number(),
-        assignedTo: z.number()
-      }))
+      .input(
+        z.object({
+          caseId: z.number(),
+          assignedTo: z.number(),
+        })
+      )
       .mutation(async ({ input }) => {
         await db.assignCaseTo(input.caseId, input.assignedTo);
         return { success: true };
       }),
 
     addProgress: adminProcedure
-      .input(z.object({
-        caseId: z.number(),
-        step: z.string(),
-        description: z.string(),
-        status: z.enum(["pending", "in_progress", "completed"]),
-        notes: z.string().optional(),
-      }))
+      .input(
+        z.object({
+          caseId: z.number(),
+          step: z.string(),
+          description: z.string(),
+          status: z.enum(["pending", "in_progress", "completed"]),
+          notes: z.string().optional(),
+        })
+      )
       .mutation(async ({ input, ctx }) => {
         await db.createCaseProgress({
           ...input,
-          updatedBy: ctx.user.id
+          updatedBy: ctx.user.id,
         });
         return { success: true };
       }),
@@ -1080,51 +1288,67 @@ export const appRouter = router({
   // ============ 送餐服務管理 ============
   mealDeliveries: router({
     create: adminProcedure
-      .input(z.object({
-        recipientName: z.string(),
-        recipientPhone: z.string(),
-        deliveryAddress: z.string(),
-        deliveryDate: z.date(),
-        deliveryTime: z.string(),
-        mealType: z.string().optional(),
-        specialInstructions: z.string().optional(),
-      }))
+      .input(
+        z.object({
+          recipientName: z.string(),
+          recipientPhone: z.string(),
+          deliveryAddress: z.string(),
+          deliveryDate: z.date(),
+          deliveryTime: z.string(),
+          mealType: z.string().optional(),
+          specialInstructions: z.string().optional(),
+        })
+      )
       .mutation(async ({ input }) => {
         const deliveryNumber = `MD${Date.now()}`;
         // 生成6位純數字驗證碼 (000000-999999)
-        const verificationCode = Math.floor(Math.random() * 1000000).toString().padStart(6, '0');
+        const verificationCode = Math.floor(Math.random() * 1000000)
+          .toString()
+          .padStart(6, "0");
         const qrCode = JSON.stringify({ deliveryNumber, verificationCode });
-        
+
         const delivery = await db.createMealDelivery({
           ...input,
           deliveryNumber,
           verificationCode,
           qrCode,
-          status: "pending"
+          status: "pending",
         });
-        
+
         if (!delivery) {
-          throw new TRPCError({ code: "INTERNAL_SERVER_ERROR", message: "建立送餐任務失敗" });
+          throw new TRPCError({
+            code: "INTERNAL_SERVER_ERROR",
+            message: "建立送餐任務失敗",
+          });
         }
-        
+
         // 查詢收餐人是否有LINE綁定
-        const recipient = await recipientsDb.getRecipientByPhone(input.recipientPhone);
-        
+        const recipient = await recipientsDb.getRecipientByPhone(
+          input.recipientPhone
+        );
+
         // 如果收餐人已綁定LINE，優先使用LINE通知
-        if (recipient?.lineUserId && recipient.preferredNotificationMethod !== 'sms') {
-          const confirmUrl = `${process.env.VITE_FRONTEND_FORGE_API_URL || 'https://taitungaibookingsystem.cc'}/meal-delivery-confirm/${delivery.id}?code=${verificationCode}`;
+        if (
+          recipient?.lineUserId &&
+          recipient.preferredNotificationMethod !== "sms"
+        ) {
+          const confirmUrl = `${process.env.VITE_FRONTEND_FORGE_API_URL || "https://taitungaibookingsystem.cc"}/meal-delivery-confirm/${delivery.id}?code=${verificationCode}`;
           const messages = createDeliveryNotificationMessage(
             input.recipientName,
-            input.deliveryDate.toLocaleDateString('zh-TW'),
+            input.deliveryDate.toLocaleDateString("zh-TW"),
             input.deliveryTime,
             confirmUrl
           );
-          
+
           const result = await sendLineMessage(recipient.lineUserId, messages);
           if (result.success) {
-            console.log(`[Meal Delivery] LINE notification sent to ${input.recipientName}`);
+            console.log(
+              `[Meal Delivery] LINE notification sent to ${input.recipientName}`
+            );
           } else {
-            console.error(`[Meal Delivery] Failed to send LINE notification, falling back to SMS`);
+            console.error(
+              `[Meal Delivery] Failed to send LINE notification, falling back to SMS`
+            );
             // LINE發送失敗，備用SMS
             await sendDeliveryNotificationSMS({
               recipientPhone: input.recipientPhone,
@@ -1146,36 +1370,40 @@ export const appRouter = router({
             deliveryTime: input.deliveryTime,
           });
         }
-        
+
         return delivery;
       }),
 
     createBatch: adminProcedure
-      .input(z.object({
-        deliveries: z.array(z.object({
-          recipientName: z.string(),
-          recipientPhone: z.string(),
-          deliveryAddress: z.string(),
-          deliveryDate: z.date(),
-          deliveryTime: z.string(),
-          mealType: z.string().optional(),
-        }))
-      }))
+      .input(
+        z.object({
+          deliveries: z.array(
+            z.object({
+              recipientName: z.string(),
+              recipientPhone: z.string(),
+              deliveryAddress: z.string(),
+              deliveryDate: z.date(),
+              deliveryTime: z.string(),
+              mealType: z.string().optional(),
+            })
+          ),
+        })
+      )
       .mutation(async ({ input }) => {
         const results = [];
         for (const delivery of input.deliveries) {
           const deliveryNumber = `D${Date.now()}${Math.floor(Math.random() * 1000)}`;
           const verificationCode = generateVerificationCode();
           const qrCode = JSON.stringify({ deliveryNumber, verificationCode });
-          
+
           const createdDelivery = await db.createMealDelivery({
             ...delivery,
             deliveryNumber,
             verificationCode,
             qrCode,
-            status: "pending"
+            status: "pending",
           });
-          
+
           // 發送SMS通知收餐人
           if (createdDelivery) {
             await sendDeliveryNotificationSMS({
@@ -1187,7 +1415,7 @@ export const appRouter = router({
               deliveryTime: delivery.deliveryTime,
             });
           }
-          
+
           results.push({ deliveryNumber, verificationCode });
         }
         return { success: true, count: results.length, deliveries: results };
@@ -1202,32 +1430,32 @@ export const appRouter = router({
       .query(async ({ input }) => {
         const delivery = await db.getMealDeliveryById(input.id);
         if (!delivery) {
-          throw new TRPCError({ code: 'NOT_FOUND', message: '找不到送餐記錄' });
+          throw new TRPCError({ code: "NOT_FOUND", message: "找不到送餐記錄" });
         }
         return delivery;
       }),
 
     getMyDeliveries: protectedProcedure.query(async ({ ctx }) => {
       // 管理員可以查看所有送餐任務
-      if (ctx.user.role === 'admin') {
+      if (ctx.user.role === "admin") {
         return await db.getAllMealDeliveries();
       }
-      
+
       // 一般志工只能查看自己的任務
       const volunteers = await db.getVolunteersByUserId(ctx.user.id);
       if (!volunteers || volunteers.length === 0) return [];
-      
+
       // 查詢所有關聯志工的送餐任務
       const allDeliveries = await Promise.all(
         volunteers.map(v => db.getMealDeliveriesByVolunteer(v.id))
       );
-      
+
       // 合併結果並去重
       const deliveries = allDeliveries.flat();
       const uniqueDeliveries = Array.from(
         new Map(deliveries.map(d => [d.id, d])).values()
       );
-      
+
       return uniqueDeliveries;
     }),
 
@@ -1237,58 +1465,72 @@ export const appRouter = router({
     }),
 
     assignVolunteer: adminProcedure
-      .input(z.object({
-        deliveryId: z.number(),
-        volunteerId: z.number()
-      }))
+      .input(
+        z.object({
+          deliveryId: z.number(),
+          volunteerId: z.number(),
+        })
+      )
       .mutation(async ({ input }) => {
         // 指派志工
         await db.assignVolunteerToDelivery(input.deliveryId, input.volunteerId);
-        
+
         // 查詢送餐任務資訊
         const delivery = await db.getMealDeliveryById(input.deliveryId);
         if (!delivery) {
-          throw new TRPCError({ code: 'NOT_FOUND', message: '找不到送餐任務' });
+          throw new TRPCError({ code: "NOT_FOUND", message: "找不到送餐任務" });
         }
-        
+
         // 查詢志工資訊（需要取得userId以查詢LINE綁定）
         const volunteer = await db.getVolunteerById(input.volunteerId);
         if (!volunteer) {
-          throw new TRPCError({ code: 'NOT_FOUND', message: '找不到志工資料' });
+          throw new TRPCError({ code: "NOT_FOUND", message: "找不到志工資料" });
         }
-        
+
         // 查詢志工的使用者資料（取得姓名和LINE綁定）
         const user = await db.getUserById(volunteer.userId);
         if (!user) {
-          console.warn(`[Meal Delivery] Volunteer user not found: ${volunteer.userId}`);
+          console.warn(
+            `[Meal Delivery] Volunteer user not found: ${volunteer.userId}`
+          );
           return { success: true };
         }
-        
+
         // 查詢志工是否有LINE綁定（透過recipients表）
-        const recipient = await recipientsDb.getRecipientByPhone(user.phone || '');
-        
+        const recipient = await recipientsDb.getRecipientByPhone(
+          user.phone || ""
+        );
+
         // 如果志工已綁定LINE，發送任務指派通知
         if (recipient?.lineUserId) {
-          const { createVolunteerTaskAssignmentMessage } = await import('./_core/lineMessaging');
+          const { createVolunteerTaskAssignmentMessage } =
+            await import("./_core/lineMessaging");
           const messages = createVolunteerTaskAssignmentMessage(
-            user.name || '志工',
+            user.name || "志工",
             delivery.recipientName,
             delivery.deliveryAddress,
-            delivery.deliveryDate.toLocaleDateString('zh-TW'),
+            delivery.deliveryDate.toLocaleDateString("zh-TW"),
             delivery.deliveryTime,
             delivery.deliveryNumber
           );
-          
+
           const result = await sendLineMessage(recipient.lineUserId, messages);
           if (result.success) {
-            console.log(`[Meal Delivery] Task assignment notification sent to volunteer: ${user.name}`);
+            console.log(
+              `[Meal Delivery] Task assignment notification sent to volunteer: ${user.name}`
+            );
           } else {
-            console.error(`[Meal Delivery] Failed to send task assignment notification:`, result.error);
+            console.error(
+              `[Meal Delivery] Failed to send task assignment notification:`,
+              result.error
+            );
           }
         } else {
-          console.log(`[Meal Delivery] Volunteer ${user.name} has no LINE binding, skipping notification`);
+          console.log(
+            `[Meal Delivery] Volunteer ${user.name} has no LINE binding, skipping notification`
+          );
         }
-        
+
         return { success: true };
       }),
 
@@ -1300,42 +1542,52 @@ export const appRouter = router({
       }),
 
     complete: volunteerProcedure
-      .input(z.object({
-        deliveryId: z.number(),
-        photo: z.string().optional(),
-        signature: z.string().optional(),
-      }))
+      .input(
+        z.object({
+          deliveryId: z.number(),
+          photo: z.string().optional(),
+          signature: z.string().optional(),
+        })
+      )
       .mutation(async ({ input }) => {
-        await db.completeDelivery(input.deliveryId, input.photo, input.signature);
+        await db.completeDelivery(
+          input.deliveryId,
+          input.photo,
+          input.signature
+        );
         return { success: true };
       }),
 
     verify: volunteerProcedure
-      .input(z.object({
-        deliveryId: z.number(),
-        verificationCode: z.string()
-      }))
+      .input(
+        z.object({
+          deliveryId: z.number(),
+          verificationCode: z.string(),
+        })
+      )
       .query(async ({ input }) => {
         const delivery = await db.getMealDeliveryById(input.deliveryId);
         if (!delivery) {
-          throw new TRPCError({ code: 'NOT_FOUND', message: '找不到送餐記錄' });
+          throw new TRPCError({ code: "NOT_FOUND", message: "找不到送餐記錄" });
         }
         const isValid = delivery.verificationCode === input.verificationCode;
         return { valid: isValid };
       }),
 
     addTracking: volunteerProcedure
-      .input(z.object({
-        deliveryId: z.number(),
-        latitude: z.string(),
-        longitude: z.string(),
-        speed: z.string().optional(),
-        accuracy: z.string().optional(),
-      }))
+      .input(
+        z.object({
+          deliveryId: z.number(),
+          latitude: z.string(),
+          longitude: z.string(),
+          speed: z.string().optional(),
+          accuracy: z.string().optional(),
+        })
+      )
       .mutation(async ({ input }) => {
         await db.createDeliveryTracking({
           ...input,
-          timestamp: new Date()
+          timestamp: new Date(),
         });
         return { success: true };
       }),
@@ -1347,10 +1599,12 @@ export const appRouter = router({
       }),
 
     optimizeRoute: adminProcedure
-      .input(z.object({
-        startPoint: z.string(),
-        deliveryIds: z.array(z.number()),
-      }))
+      .input(
+        z.object({
+          startPoint: z.string(),
+          deliveryIds: z.array(z.number()),
+        })
+      )
       .mutation(async ({ input }) => {
         // 獲取送餐任務資料
         const deliveries = await Promise.all(
@@ -1359,7 +1613,7 @@ export const appRouter = router({
 
         const validDeliveries = deliveries.filter(d => d !== undefined);
         if (validDeliveries.length === 0) {
-          throw new TRPCError({ code: 'NOT_FOUND', message: '找不到送餐任務' });
+          throw new TRPCError({ code: "NOT_FOUND", message: "找不到送餐任務" });
         }
 
         const deliveryPoints = validDeliveries.map(d => ({
@@ -1368,7 +1622,10 @@ export const appRouter = router({
           recipientName: d!.recipientName,
         }));
 
-        const optimizedRoute = await optimizeDeliveryRoute(input.startPoint, deliveryPoints);
+        const optimizedRoute = await optimizeDeliveryRoute(
+          input.startPoint,
+          deliveryPoints
+        );
 
         return {
           success: true,
@@ -1383,27 +1640,38 @@ export const appRouter = router({
       .input(z.object({ deliveryId: z.number() }))
       .query(async ({ input }) => {
         const database = await db.getDb();
-        if (!database) throw new TRPCError({ code: "INTERNAL_SERVER_ERROR", message: "Database not available" });
+        if (!database)
+          throw new TRPCError({
+            code: "INTERNAL_SERVER_ERROR",
+            message: "Database not available",
+          });
 
-        const { mealDeliveries } = await import('../drizzle/schema');
-        const { eq } = await import('drizzle-orm');
+        const { mealDeliveries } = await import("../drizzle/schema");
+        const { eq } = await import("drizzle-orm");
 
         // 驗證送餐任務是否存在
-        const delivery = await database.select().from(mealDeliveries).where(eq(mealDeliveries.id, input.deliveryId)).limit(1);
+        const delivery = await database
+          .select()
+          .from(mealDeliveries)
+          .where(eq(mealDeliveries.id, input.deliveryId))
+          .limit(1);
         if (delivery.length === 0) {
-          throw new TRPCError({ code: "NOT_FOUND", message: "Delivery not found" });
+          throw new TRPCError({
+            code: "NOT_FOUND",
+            message: "Delivery not found",
+          });
         }
 
         // 生成QR Code URL（收餐人掃描後會導向確認頁面）
-        const confirmUrl = `${process.env.VITE_APP_URL || 'https://3000-il1io6hgxt6mik0thc87e-9837adb0.manus-asia.computer'}/confirm-receipt/${input.deliveryId}`;
-        
+        const confirmUrl = `${process.env.VITE_APP_URL || "https://3000-il1io6hgxt6mik0thc87e-9837adb0.manus-asia.computer"}/confirm-receipt/${input.deliveryId}`;
+
         // 生成QR Code圖片（Base64格式）
         const qrCodeDataUrl = await QRCode.toDataURL(confirmUrl, {
           width: 300,
           margin: 2,
           color: {
-            dark: '#000000',
-            light: '#FFFFFF',
+            dark: "#000000",
+            light: "#FFFFFF",
           },
         });
 
@@ -1415,20 +1683,32 @@ export const appRouter = router({
       }),
 
     confirmReceipt: publicProcedure
-      .input(z.object({
-        deliveryId: z.number(),
-        verificationCode: z.string(),
-        latitude: z.number().optional(),
-        longitude: z.number().optional(),
-      }))
-      .mutation(async ({ input }) => {        const database = await db.getDb();
-        if (!database) throw new TRPCError({ code: "INTERNAL_SERVER_ERROR", message: "Database not available" });
+      .input(
+        z.object({
+          deliveryId: z.number(),
+          verificationCode: z.string(),
+          latitude: z.number().optional(),
+          longitude: z.number().optional(),
+        })
+      )
+      .mutation(async ({ input }) => {
+        const database = await db.getDb();
+        if (!database)
+          throw new TRPCError({
+            code: "INTERNAL_SERVER_ERROR",
+            message: "Database not available",
+          });
 
-        const { mealDeliveries, deliveryTracking } = await import('../drizzle/schema');
-        const { eq } = await import('drizzle-orm');
+        const { mealDeliveries, deliveryTracking } =
+          await import("../drizzle/schema");
+        const { eq } = await import("drizzle-orm");
 
         // 驗證送餐任務是否存在
-        const delivery = await database.select().from(mealDeliveries).where(eq(mealDeliveries.id, input.deliveryId)).limit(1);
+        const delivery = await database
+          .select()
+          .from(mealDeliveries)
+          .where(eq(mealDeliveries.id, input.deliveryId))
+          .limit(1);
         if (delivery.length === 0) {
           throw new TRPCError({ code: "NOT_FOUND", message: "送餐任務不存在" });
         }
@@ -1436,8 +1716,11 @@ export const appRouter = router({
         const currentDelivery = delivery[0];
 
         // 檢查是否已經確認過
-        if (currentDelivery.status === 'delivered') {
-          throw new TRPCError({ code: "BAD_REQUEST", message: "此送餐任務已經確認收餐" });
+        if (currentDelivery.status === "delivered") {
+          throw new TRPCError({
+            code: "BAD_REQUEST",
+            message: "此送餐任務已經確認收餐",
+          });
         }
 
         // 驗證序號
@@ -1446,9 +1729,10 @@ export const appRouter = router({
         }
 
         // 更新送餐任務狀態為已送達
-        await database.update(mealDeliveries)
+        await database
+          .update(mealDeliveries)
           .set({
-            status: 'delivered',
+            status: "delivered",
           })
           .where(eq(mealDeliveries.id, input.deliveryId));
 
@@ -1471,15 +1755,22 @@ export const appRouter = router({
 
     // 簡化版：只用驗證碼確認收餐（供公開頁面使用）
     confirmReceiptByCode: publicProcedure
-      .input(z.object({
-        verificationCode: z.string().length(6),
-      }))
+      .input(
+        z.object({
+          verificationCode: z.string().length(6),
+        })
+      )
       .mutation(async ({ input }) => {
         const database = await db.getDb();
-        if (!database) throw new TRPCError({ code: "INTERNAL_SERVER_ERROR", message: "Database not available" });
+        if (!database)
+          throw new TRPCError({
+            code: "INTERNAL_SERVER_ERROR",
+            message: "Database not available",
+          });
 
-        const { mealDeliveries, volunteers, users } = await import('../drizzle/schema');
-        const { eq } = await import('drizzle-orm');
+        const { mealDeliveries, volunteers, users } =
+          await import("../drizzle/schema");
+        const { eq } = await import("drizzle-orm");
 
         // 透過驗證碼查詢送餐任務
         const deliveryResult = await database
@@ -1495,20 +1786,27 @@ export const appRouter = router({
           .limit(1);
 
         if (deliveryResult.length === 0) {
-          throw new TRPCError({ code: "NOT_FOUND", message: "驗證碼錯誤或送餐任務不存在" });
+          throw new TRPCError({
+            code: "NOT_FOUND",
+            message: "驗證碼錯誤或送餐任務不存在",
+          });
         }
 
         const { delivery, user } = deliveryResult[0];
 
         // 檢查是否已經確認過
-        if (delivery.status === 'delivered') {
-          throw new TRPCError({ code: "BAD_REQUEST", message: "此送餐任務已經確認收餐" });
+        if (delivery.status === "delivered") {
+          throw new TRPCError({
+            code: "BAD_REQUEST",
+            message: "此送餐任務已經確認收餐",
+          });
         }
 
         // 更新送餐任務狀態為已送達
-        await database.update(mealDeliveries)
+        await database
+          .update(mealDeliveries)
           .set({
-            status: 'delivered',
+            status: "delivered",
           })
           .where(eq(mealDeliveries.id, delivery.id));
 
@@ -1516,7 +1814,7 @@ export const appRouter = router({
           success: true,
           message: "收餐確認成功！感謝您的配合。",
           deliveryNumber: delivery.deliveryNumber,
-          volunteerName: user?.name || '未知志工',
+          volunteerName: user?.name || "未知志工",
           deliveryId: delivery.id,
         };
       }),
@@ -1547,22 +1845,30 @@ export const appRouter = router({
 
     // 新增收餐人
     create: adminProcedure
-      .input(z.object({
-        name: z.string(),
-        phone: z.string(),
-        address: z.string().optional(),
-        notes: z.string().optional(),
-      }))
+      .input(
+        z.object({
+          name: z.string(),
+          phone: z.string(),
+          address: z.string().optional(),
+          notes: z.string().optional(),
+        })
+      )
       .mutation(async ({ input }) => {
         // 檢查電話是否已存在
         const existing = await recipientsDb.getRecipientByPhone(input.phone);
         if (existing) {
-          throw new TRPCError({ code: 'CONFLICT', message: '此電話號碼已經存在' });
+          throw new TRPCError({
+            code: "CONFLICT",
+            message: "此電話號碼已經存在",
+          });
         }
 
         const recipient = await recipientsDb.createRecipient(input);
         if (!recipient) {
-          throw new TRPCError({ code: 'INTERNAL_SERVER_ERROR', message: '建立收餐人失敗' });
+          throw new TRPCError({
+            code: "INTERNAL_SERVER_ERROR",
+            message: "建立收餐人失敗",
+          });
         }
 
         return recipient;
@@ -1570,18 +1876,23 @@ export const appRouter = router({
 
     // 更新收餐人
     update: adminProcedure
-      .input(z.object({
-        id: z.number(),
-        name: z.string().optional(),
-        phone: z.string().optional(),
-        address: z.string().optional(),
-        notes: z.string().optional(),
-      }))
+      .input(
+        z.object({
+          id: z.number(),
+          name: z.string().optional(),
+          phone: z.string().optional(),
+          address: z.string().optional(),
+          notes: z.string().optional(),
+        })
+      )
       .mutation(async ({ input }) => {
         const { id, ...data } = input;
         const success = await recipientsDb.updateRecipient(id, data);
         if (!success) {
-          throw new TRPCError({ code: 'INTERNAL_SERVER_ERROR', message: '更新收餐人失敗' });
+          throw new TRPCError({
+            code: "INTERNAL_SERVER_ERROR",
+            message: "更新收餐人失敗",
+          });
         }
         return { success: true };
       }),
@@ -1592,22 +1903,30 @@ export const appRouter = router({
       .mutation(async ({ input }) => {
         const success = await recipientsDb.deleteRecipient(input.id);
         if (!success) {
-          throw new TRPCError({ code: 'INTERNAL_SERVER_ERROR', message: '刪除收餐人失敗' });
+          throw new TRPCError({
+            code: "INTERNAL_SERVER_ERROR",
+            message: "刪除收餐人失敗",
+          });
         }
         return { success: true };
       }),
 
     // 綁定LINE帳號（管理員手動綁定）
     bindLine: adminProcedure
-      .input(z.object({
-        recipientId: z.number(),
-        lineUserId: z.string(),
-      }))
+      .input(
+        z.object({
+          recipientId: z.number(),
+          lineUserId: z.string(),
+        })
+      )
       .mutation(async ({ input }) => {
         // 取得LINE使用者資料
         const profileResult = await getLineUserProfile(input.lineUserId);
         if (!profileResult.success || !profileResult.profile) {
-          throw new TRPCError({ code: 'BAD_REQUEST', message: '無法取得LINE使用者資料，請確認使用者已加入好友' });
+          throw new TRPCError({
+            code: "BAD_REQUEST",
+            message: "無法取得LINE使用者資料，請確認使用者已加入好友",
+          });
         }
 
         const success = await recipientsDb.updateRecipientLineBinding(
@@ -1617,19 +1936,30 @@ export const appRouter = router({
         );
 
         if (!success) {
-          throw new TRPCError({ code: 'INTERNAL_SERVER_ERROR', message: '綁定LINE帳號失敗' });
+          throw new TRPCError({
+            code: "INTERNAL_SERVER_ERROR",
+            message: "綁定LINE帳號失敗",
+          });
         }
 
-        return { success: true, displayName: profileResult.profile.displayName };
+        return {
+          success: true,
+          displayName: profileResult.profile.displayName,
+        };
       }),
 
     // 解除LINE綁定
     unbindLine: adminProcedure
       .input(z.object({ recipientId: z.number() }))
       .mutation(async ({ input }) => {
-        const success = await recipientsDb.clearRecipientLineBinding(input.recipientId);
+        const success = await recipientsDb.clearRecipientLineBinding(
+          input.recipientId
+        );
         if (!success) {
-          throw new TRPCError({ code: 'INTERNAL_SERVER_ERROR', message: '解除LINE綁定失敗' });
+          throw new TRPCError({
+            code: "INTERNAL_SERVER_ERROR",
+            message: "解除LINE綁定失敗",
+          });
         }
         return { success: true };
       }),
@@ -1638,7 +1968,10 @@ export const appRouter = router({
     getLineBotInfo: adminProcedure.query(() => {
       const botBasicId = process.env.LINE_BOT_BASIC_ID;
       if (!botBasicId) {
-        throw new TRPCError({ code: 'INTERNAL_SERVER_ERROR', message: 'LINE機器人未設定' });
+        throw new TRPCError({
+          code: "INTERNAL_SERVER_ERROR",
+          message: "LINE機器人未設定",
+        });
       }
       return {
         basicId: botBasicId,
@@ -1675,18 +2008,23 @@ export const appRouter = router({
   volunteerManagement: router({
     // 義工申請（需登入）
     submitApplication: protectedProcedure
-      .input(z.object({
-        employeeId: z.string().optional(),
-        department: z.string().optional(),
-        position: z.string().optional(),
-        skills: z.string().optional(),
-        availability: z.string().optional(),
-      }))
+      .input(
+        z.object({
+          employeeId: z.string().optional(),
+          department: z.string().optional(),
+          position: z.string().optional(),
+          skills: z.string().optional(),
+          availability: z.string().optional(),
+        })
+      )
       .mutation(async ({ input, ctx }) => {
         // 檢查是否已經申請過
         const existing = await db.getVolunteerByUserId(ctx.user.id);
         if (existing) {
-          throw new TRPCError({ code: 'BAD_REQUEST', message: '您已經提交過義工申請' });
+          throw new TRPCError({
+            code: "BAD_REQUEST",
+            message: "您已經提交過義工申請",
+          });
         }
 
         await db.createVolunteerApplication({
@@ -1694,7 +2032,7 @@ export const appRouter = router({
           ...input,
         });
 
-        return { success: true, message: '申請已提交，請等待管理員審核' };
+        return { success: true, message: "申請已提交，請等待管理員審核" };
       }),
 
     // 獲取待審核的義工列表（管理員）
@@ -1707,7 +2045,7 @@ export const appRouter = router({
       .input(z.object({ volunteerId: z.number() }))
       .mutation(async ({ input }) => {
         await db.approveVolunteer(input.volunteerId);
-        return { success: true, message: '已核准義工申請' };
+        return { success: true, message: "已核准義工申請" };
       }),
 
     // 審核義工申請 - 拒絕（管理員）
@@ -1715,7 +2053,7 @@ export const appRouter = router({
       .input(z.object({ volunteerId: z.number() }))
       .mutation(async ({ input }) => {
         await db.rejectVolunteer(input.volunteerId);
-        return { success: true, message: '已拒絕義工申請' };
+        return { success: true, message: "已拒絕義工申請" };
       }),
   }),
 
@@ -1723,22 +2061,26 @@ export const appRouter = router({
   deliveryTasks: router({
     // 建立送餐任務（管理員）
     create: adminProcedure
-      .input(z.object({
-        taskNumber: z.string(),
-        taskDate: z.date(),
-        volunteerId: z.number().optional(),
-        volunteerName: z.string().optional(),
-        notes: z.string().optional(),
-        points: z.array(z.object({
-          sequence: z.number(),
-          recipientName: z.string(),
-          recipientPhone: z.string(),
-          deliveryAddress: z.string(),
-          latitude: z.string().optional(),
-          longitude: z.string().optional(),
-          specialInstructions: z.string().optional(),
-        })),
-      }))
+      .input(
+        z.object({
+          taskNumber: z.string(),
+          taskDate: z.date(),
+          volunteerId: z.number().optional(),
+          volunteerName: z.string().optional(),
+          notes: z.string().optional(),
+          points: z.array(
+            z.object({
+              sequence: z.number(),
+              recipientName: z.string(),
+              recipientPhone: z.string(),
+              deliveryAddress: z.string(),
+              latitude: z.string().optional(),
+              longitude: z.string().optional(),
+              specialInstructions: z.string().optional(),
+            })
+          ),
+        })
+      )
       .mutation(async ({ input }) => {
         const result = await db.createDeliveryTask(input);
         return { success: true, taskId: result.taskId };
@@ -1746,12 +2088,16 @@ export const appRouter = router({
 
     // 獲取所有送餐任務（管理員）
     getAll: adminProcedure
-      .input(z.object({
-        status: z.string().optional(),
-        volunteerId: z.number().optional(),
-        startDate: z.date().optional(),
-        endDate: z.date().optional(),
-      }).optional())
+      .input(
+        z
+          .object({
+            status: z.string().optional(),
+            volunteerId: z.number().optional(),
+            startDate: z.date().optional(),
+            endDate: z.date().optional(),
+          })
+          .optional()
+      )
       .query(async ({ input }) => {
         return await db.getAllDeliveryTasks(input);
       }),
@@ -1765,13 +2111,19 @@ export const appRouter = router({
 
     // 指派送餐任務給義工（管理員）
     assign: adminProcedure
-      .input(z.object({
-        taskId: z.number(),
-        volunteerId: z.number(),
-        volunteerName: z.string(),
-      }))
+      .input(
+        z.object({
+          taskId: z.number(),
+          volunteerId: z.number(),
+          volunteerName: z.string(),
+        })
+      )
       .mutation(async ({ input }) => {
-        await db.assignDeliveryTask(input.taskId, input.volunteerId, input.volunteerName);
+        await db.assignDeliveryTask(
+          input.taskId,
+          input.volunteerId,
+          input.volunteerName
+        );
         return { success: true };
       }),
 
@@ -1840,14 +2192,16 @@ export const appRouter = router({
 
     // 新增最新消息（後台）
     create: adminProcedure
-      .input(z.object({
-        title: z.string().min(1).max(200),
-        content: z.string().min(1),
-        summary: z.string().max(500).optional(),
-        coverImage: z.string().max(500).optional(),
-        category: z.enum(['防災宣導', '活動公告', '新聞稿', '其他']),
-        isPublished: z.boolean().default(false),
-      }))
+      .input(
+        z.object({
+          title: z.string().min(1).max(200),
+          content: z.string().min(1),
+          summary: z.string().max(500).optional(),
+          coverImage: z.string().max(500).optional(),
+          category: z.enum(["防災宣導", "活動公告", "新聞稿", "其他"]),
+          isPublished: z.boolean().default(false),
+        })
+      )
       .mutation(async ({ input, ctx }) => {
         const newsData = {
           ...input,
@@ -1860,18 +2214,22 @@ export const appRouter = router({
 
     // 更新最新消息（後台）
     update: adminProcedure
-      .input(z.object({
-        id: z.number(),
-        title: z.string().min(1).max(200).optional(),
-        content: z.string().min(1).optional(),
-        summary: z.string().max(500).optional(),
-        coverImage: z.string().max(500).optional(),
-        category: z.enum(['防災宣導', '活動公告', '新聞稿', '其他']).optional(),
-        isPublished: z.boolean().optional(),
-      }))
+      .input(
+        z.object({
+          id: z.number(),
+          title: z.string().min(1).max(200).optional(),
+          content: z.string().min(1).optional(),
+          summary: z.string().max(500).optional(),
+          coverImage: z.string().max(500).optional(),
+          category: z
+            .enum(["防災宣導", "活動公告", "新聞稿", "其他"])
+            .optional(),
+          isPublished: z.boolean().optional(),
+        })
+      )
       .mutation(async ({ input }) => {
         const { id, ...updateData } = input;
-        
+
         // 如果更新為已發布，設定發布時間
         if (updateData.isPublished) {
           const existing = await db.getNewsById(id);
@@ -1879,7 +2237,7 @@ export const appRouter = router({
             (updateData as any).publishedAt = new Date();
           }
         }
-        
+
         await db.updateNews(id, updateData);
         const updated = await db.getNewsById(id);
         return updated;
@@ -1925,14 +2283,22 @@ export const appRouter = router({
 
     // 新增照片（後台）
     create: adminProcedure
-      .input(z.object({
-        title: z.string().min(1).max(200),
-        description: z.string().optional(),
-        imageUrl: z.string().min(1).max(500),
-        category: z.enum(['活動花絮', '設施環境', '教育訓練', '志工服務', '其他']),
-        isPublished: z.boolean().default(true),
-        displayOrder: z.number().default(0),
-      }))
+      .input(
+        z.object({
+          title: z.string().min(1).max(200),
+          description: z.string().optional(),
+          imageUrl: z.string().min(1).max(500),
+          category: z.enum([
+            "活動花絮",
+            "設施環境",
+            "教育訓練",
+            "志工服務",
+            "其他",
+          ]),
+          isPublished: z.boolean().default(true),
+          displayOrder: z.number().default(0),
+        })
+      )
       .mutation(async ({ input, ctx }) => {
         const galleryData = {
           ...input,
@@ -1944,15 +2310,19 @@ export const appRouter = router({
 
     // 更新照片（後台）
     update: adminProcedure
-      .input(z.object({
-        id: z.number(),
-        title: z.string().min(1).max(200).optional(),
-        description: z.string().optional(),
-        imageUrl: z.string().min(1).max(500).optional(),
-        category: z.enum(['活動花絮', '設施環境', '教育訓練', '志工服務', '其他']).optional(),
-        isPublished: z.boolean().optional(),
-        displayOrder: z.number().optional(),
-      }))
+      .input(
+        z.object({
+          id: z.number(),
+          title: z.string().min(1).max(200).optional(),
+          description: z.string().optional(),
+          imageUrl: z.string().min(1).max(500).optional(),
+          category: z
+            .enum(["活動花絮", "設施環境", "教育訓練", "志工服務", "其他"])
+            .optional(),
+          isPublished: z.boolean().optional(),
+          displayOrder: z.number().optional(),
+        })
+      )
       .mutation(async ({ input }) => {
         const { id, ...updateData } = input;
         await db.updateGalleryItem(id, updateData);
@@ -1981,11 +2351,13 @@ export const appRouter = router({
   upload: router({
     // 上傳圖片（管理員專用）
     image: adminProcedure
-      .input(z.object({
-        base64Data: z.string(),
-        mimeType: z.string(),
-        originalName: z.string(),
-      }))
+      .input(
+        z.object({
+          base64Data: z.string(),
+          mimeType: z.string(),
+          originalName: z.string(),
+        })
+      )
       .mutation(async ({ input, ctx }) => {
         const { uploadImage } = await import("./imageUpload");
         const result = await uploadImage(
@@ -2004,32 +2376,34 @@ export const appRouter = router({
     get: publicProcedure.query(async () => {
       const content = await db.getHomeContent();
       if (!content) {
-        throw new TRPCError({ code: 'NOT_FOUND', message: '首頁內容不存在' });
+        throw new TRPCError({ code: "NOT_FOUND", message: "首頁內容不存在" });
       }
       return content;
     }),
 
     // 更新首頁內容（管理員專用）
     update: adminProcedure
-      .input(z.object({
-        id: z.number(),
-        aboutTitle: z.string().optional(),
-        aboutParagraph1: z.string().optional(),
-        aboutParagraph2: z.string().optional(),
-        aboutParagraph3: z.string().optional(),
-        heroImage1: z.string().optional(),
-        heroImage1Title: z.string().optional(),
-        heroImage1Desc: z.string().optional(),
-        heroImage2: z.string().optional(),
-        heroImage2Title: z.string().optional(),
-        heroImage2Desc: z.string().optional(),
-        heroImage3: z.string().optional(),
-        heroImage3Title: z.string().optional(),
-        heroImage3Desc: z.string().optional(),
-        heroImage4: z.string().optional(),
-        heroImage4Title: z.string().optional(),
-        heroImage4Desc: z.string().optional(),
-      }))
+      .input(
+        z.object({
+          id: z.number(),
+          aboutTitle: z.string().optional(),
+          aboutParagraph1: z.string().optional(),
+          aboutParagraph2: z.string().optional(),
+          aboutParagraph3: z.string().optional(),
+          heroImage1: z.string().optional(),
+          heroImage1Title: z.string().optional(),
+          heroImage1Desc: z.string().optional(),
+          heroImage2: z.string().optional(),
+          heroImage2Title: z.string().optional(),
+          heroImage2Desc: z.string().optional(),
+          heroImage3: z.string().optional(),
+          heroImage3Title: z.string().optional(),
+          heroImage3Desc: z.string().optional(),
+          heroImage4: z.string().optional(),
+          heroImage4Title: z.string().optional(),
+          heroImage4Desc: z.string().optional(),
+        })
+      )
       .mutation(async ({ input, ctx }) => {
         await db.updateHomeContent({ ...input, updatedBy: ctx.user.id });
         return { success: true };

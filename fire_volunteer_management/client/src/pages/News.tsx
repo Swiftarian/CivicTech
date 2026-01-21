@@ -1,6 +1,12 @@
 import { useState } from "react";
 import { Button } from "@/components/ui/button";
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
+import {
+  Card,
+  CardContent,
+  CardDescription,
+  CardHeader,
+  CardTitle,
+} from "@/components/ui/card";
 import { trpc } from "@/lib/trpc";
 import { format } from "date-fns";
 import { zhTW } from "date-fns/locale";
@@ -12,16 +18,18 @@ export default function News() {
 
   const getCategoryBadge = (category: string) => {
     const categoryMap: Record<string, { className: string }> = {
-      "防災宣導": { className: "bg-red-100 text-red-800" },
-      "活動公告": { className: "bg-blue-100 text-blue-800" },
-      "新聞稿": { className: "bg-green-100 text-green-800" },
-      "其他": { className: "bg-gray-100 text-gray-800" }
+      防災宣導: { className: "bg-red-100 text-red-800" },
+      活動公告: { className: "bg-blue-100 text-blue-800" },
+      新聞稿: { className: "bg-green-100 text-green-800" },
+      其他: { className: "bg-gray-100 text-gray-800" },
     };
-    
+
     const info = categoryMap[category] || categoryMap["其他"];
-    
+
     return (
-      <span className={`inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium ${info.className}`}>
+      <span
+        className={`inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium ${info.className}`}
+      >
         {category}
       </span>
     );
@@ -47,7 +55,7 @@ export default function News() {
 
           {isLoading ? (
             <div className="space-y-4">
-              {[1, 2, 3].map((i) => (
+              {[1, 2, 3].map(i => (
                 <Card key={i} className="animate-pulse">
                   <CardHeader>
                     <div className="h-6 bg-muted rounded w-3/4 mb-2"></div>
@@ -62,7 +70,7 @@ export default function News() {
             </div>
           ) : newsList && newsList.length > 0 ? (
             <div className="space-y-6">
-              {newsList.map((news) => (
+              {newsList.map(news => (
                 <Link key={news.id} href={`/news/${news.id}`}>
                   <Card className="hover-lift cursor-pointer transition-all hover:shadow-lg">
                     <CardHeader>
@@ -72,7 +80,12 @@ export default function News() {
                             {getCategoryBadge(news.category)}
                             <span className="text-sm text-muted-foreground flex items-center gap-1">
                               <Calendar className="h-3.5 w-3.5" />
-                              {news.publishedAt && format(new Date(news.publishedAt), "yyyy年MM月dd日", { locale: zhTW })}
+                              {news.publishedAt &&
+                                format(
+                                  new Date(news.publishedAt),
+                                  "yyyy年MM月dd日",
+                                  { locale: zhTW }
+                                )}
                             </span>
                             <span className="text-sm text-muted-foreground flex items-center gap-1">
                               <Eye className="h-3.5 w-3.5" />
@@ -83,13 +96,13 @@ export default function News() {
                             {news.title}
                           </CardTitle>
                         </div>
-                        {news.coverImage && news.coverImage.trim() !== '' && (
+                        {news.coverImage && news.coverImage.trim() !== "" && (
                           <img
                             src={news.coverImage}
                             alt={news.title}
                             className="w-32 h-24 object-cover rounded-lg"
-                            onError={(e) => {
-                              e.currentTarget.style.display = 'none';
+                            onError={e => {
+                              e.currentTarget.style.display = "none";
                             }}
                           />
                         )}
@@ -109,7 +122,9 @@ export default function News() {
           ) : (
             <Card>
               <CardContent className="py-12 text-center">
-                <p className="text-muted-foreground text-lg">目前沒有最新消息</p>
+                <p className="text-muted-foreground text-lg">
+                  目前沒有最新消息
+                </p>
               </CardContent>
             </Card>
           )}
