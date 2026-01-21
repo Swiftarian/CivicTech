@@ -60,7 +60,7 @@ async function startServer() {
 
   server.listen(port, () => {
     console.log(`Server running on http://localhost:${port}/`);
-    
+
     // 初始化排程任務（只在生產環境執行）
     if (process.env.NODE_ENV === "production") {
       initializeScheduledTasks();

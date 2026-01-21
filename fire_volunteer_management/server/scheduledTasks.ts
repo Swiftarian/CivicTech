@@ -1,6 +1,6 @@
 /**
  * 排程任務處理器
- * 
+ *
  * 此模組負責執行定期排程任務，包含：
  * - 發送預約提醒Email（參訪日前3天）
  */
@@ -10,13 +10,13 @@ import { sendPublicBookingReminderEmail, sendGroupBookingReminderEmail } from ".
 
 /**
  * 發送預約提醒Email給即將到來的預約
- * 
+ *
  * 此函數會：
  * 1. 查詢3天後的所有預約
  * 2. 篩選還沒發送過提醒的預約
  * 3. 發送提醒Email
  * 4. 標記已發送提醒
- * 
+ *
  * 建議每天執行一次（例如：每天早上9點）
  */
 export async function sendBookingReminders(): Promise<{
@@ -110,7 +110,7 @@ export async function sendBookingReminders(): Promise<{
 
 /**
  * 初始化排程任務
- * 
+ *
  * 設定定期執行的排程任務
  * 目前設定為每天早上9點執行
  */
@@ -120,7 +120,7 @@ export function initializeScheduledTasks() {
   const tomorrow9AM = new Date(now);
   tomorrow9AM.setDate(tomorrow9AM.getDate() + 1);
   tomorrow9AM.setHours(9, 0, 0, 0);
-  
+
   const timeUntilFirstRun = tomorrow9AM.getTime() - now.getTime();
 
   console.log(`[排程任務] 初始化完成，首次執行時間：${tomorrow9AM.toLocaleString('zh-TW')}`);

@@ -192,7 +192,7 @@ if (-not $SkipInstall) {
         Write-Info "安裝 Node.js 依賴套件 (使用 npm)..."
         npm install
     }
-    
+
     if ($LASTEXITCODE -eq 0) {
         Write-Success "Node.js 依賴套件安裝完成"
     } else {
@@ -354,14 +354,14 @@ Write-Host ""
 try {
     Write-Info "系統正在運行中... (按 Ctrl+C 停止)"
     Write-Host ""
-    
+
     while ($true) {
         Start-Sleep -Seconds 5
-        
+
         # 檢查 Job 狀態
         $streamlitState = (Get-Job -Id $streamlitJob.Id).State
         $nodeState = (Get-Job -Id $nodeJob.Id).State
-        
+
         if ($streamlitState -ne "Running") {
             Write-Error-Custom "消防申報系統已停止 (狀態: $streamlitState)"
             Write-Host ""
@@ -369,7 +369,7 @@ try {
             Receive-Job -Id $streamlitJob.Id
             break
         }
-        
+
         if ($nodeState -ne "Running") {
             Write-Error-Custom "志工管理系統已停止 (狀態: $nodeState)"
             Write-Host ""
@@ -380,21 +380,21 @@ try {
     }
 } finally {
     Write-Header "正在停止所有服務"
-    
+
     Write-Info "停止消防申報系統..."
     Stop-Job -Id $streamlitJob.Id -ErrorAction SilentlyContinue
     Remove-Job -Id $streamlitJob.Id -Force -ErrorAction SilentlyContinue
-    
+
     Write-Info "停止志工管理系統..."
     Stop-Job -Id $nodeJob.Id -ErrorAction SilentlyContinue
     Remove-Job -Id $nodeJob.Id -Force -ErrorAction SilentlyContinue
-    
+
     # 清理可能殘留的進程
     Get-Process | Where-Object {$_.ProcessName -like "*streamlit*"} | Stop-Process -Force -ErrorAction SilentlyContinue
     Get-Process | Where-Object {$_.ProcessName -like "*node*" -and $_.Path -like "*fire_volunteer_management*"} | Stop-Process -Force -ErrorAction SilentlyContinue
-    
+
     Write-Success "所有服務已停止"
-    
+
     Set-Location $OriginalLocation
     Write-Host ""
     Write-ColorOutput Cyan "感謝使用臺東縣消防局整合系統！"

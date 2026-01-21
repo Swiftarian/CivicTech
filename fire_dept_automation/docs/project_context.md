@@ -2,9 +2,9 @@
 
 ## 📋 專案概述
 
-**專案名稱**：臺東縣消防局公私協力防災媒合平台  
-**版本**：2.0  
-**建立日期**：2024-11  
+**專案名稱**：臺東縣消防局公私協力防災媒合平台
+**版本**：2.0
+**建立日期**：2024-11
 **維護單位**：臺東縣消防局預防調查科
 
 本系統為整合型政府服務平台，包含三大子系統：
@@ -68,12 +68,12 @@ fire_dept_automation/
 - **檔案名稱**：使用中文描述性命名（配合 Streamlit 多頁面應用）
   - 格式：`{順序}_{emoji}_{功能名稱}.py`
   - 範例：`2_🍱_社區互助送餐.py`
-  
+
 - **函式命名**：小寫字母+底線（snake_case）
   ```python
   def get_all_tasks():
       pass
-  
+
   def create_delivery_record():
       pass
   ```
@@ -93,11 +93,11 @@ fire_dept_automation/
 def save_proof_photo(file_buffer, task_id):
     """
     儲存送達證明照片（強制拍照模式）
-    
+
     Args:
         file_buffer: Streamlit camera_input 的 buffer
         task_id: 任務 ID
-        
+
     Returns:
         str: 儲存的檔案相對路徑
     """
@@ -140,7 +140,7 @@ username = utils.check_login()
 def main():
     st.title("主標題")
     # ... 功能實作
-    
+
 if __name__ == "__main__":
     main()
 ```
@@ -236,12 +236,12 @@ def load_config():
 import unittest
 
 class TestMealBackend(unittest.TestCase):
-    
+
     @classmethod
     def setUpClass(cls):
         """測試前準備"""
         db_manager.init_db()
-    
+
     def test_1_seed_data(self):
         """測試 1: 種子資料"""
         # ... 測試邏輯
@@ -369,5 +369,5 @@ feat: 實作強制拍照驗證功能
 
 ---
 
-**最後更新**：2024-11-24  
+**最後更新**：2024-11-24
 **文件版本**：1.0
