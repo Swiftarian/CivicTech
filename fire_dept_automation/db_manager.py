@@ -440,17 +440,15 @@ def init_admin_user():
             # 生成隨機臨時密碼
             import secrets
             default_password = secrets.token_urlsafe(12)
-            # Security: Do not log or store the password in any form
-            # User must run reset_admin_tool.py to get a known password
-            print(f"⚠️ 警告：已生成隨機管理員密碼。請執行 reset_admin_tool.py 來設定已知密碼。")
+            print(f"⚠️ 警告：已生成臨時管理員密碼，請立即更改！")
+            print(f"⚠️ 臨時密碼: {default_password}")
         salt, pwd_hash = auth.hash_password(default_password)
         c.execute('''
             INSERT INTO users (username, password_salt, password_hash, role, email)
             VALUES (?, ?, ?, ?, ?)
         ''', ("admin", salt, pwd_hash, "admin", "admin@example.com"))
         conn.commit()
-        # Security: Never log the password in clear text
-        print("✅ Default admin user created. Check system config or environment variable for initial password.")
+        print("✅ Default admin user created. Please change password immediately!")
     conn.close()
 
 # --- User Management ---

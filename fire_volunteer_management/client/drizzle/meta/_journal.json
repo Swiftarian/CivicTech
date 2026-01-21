@@ -1,0 +1,34 @@
+{
+  "version": "7",
+  "dialect": "mysql",
+  "entries": [
+    {
+      "idx": 0,
+      "version": "5",
+      "when": 1763839428873,
+      "tag": "0000_sticky_iron_fist",
+      "breakpoints": true
+    },
+    {
+      "idx": 1,
+      "version": "5",
+      "when": 1763839514153,
+      "tag": "0001_slim_aqueduct",
+      "breakpoints": true
+    },
+    {
+      "idx": 2,
+      "version": "5",
+      "when": 1763986565236,
+      "tag": "0002_legal_master_chief",
+      "breakpoints": true
+    },
+    {
+      "idx": 3,
+      "version": "5",
+      "when": 1763988046118,
+      "tag": "0003_mature_cerebro",
+      "breakpoints": true
+    }
+  ]
+}
