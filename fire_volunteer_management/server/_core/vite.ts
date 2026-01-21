@@ -5,6 +5,16 @@ import { nanoid } from "nanoid";
 import path from "path";
 import { createServer as createViteServer } from "vite";
 import viteConfig from "../../vite.config";
+import rateLimit from 'express-rate-limit';
+
+// Rate limiter for Vite dev server requests
+const viteDevLimiter = rateLimit({
+  windowMs: 1 * 60 * 1000, // 1 minute
+  max: 100, // Limit each IP to 100 requests per minute (generous for HMR)
+  message: 'Too many requests to dev server',
+  standardHeaders: true,
+  legacyHeaders: false,
+});
 
 export async function setupVite(app: Express, server: Server) {
   const serverOptions = {
@@ -20,8 +30,8 @@ export async function setupVite(app: Express, server: Server) {
     appType: "custom",
   });
 
-  app.use(vite.middlewares);
-  app.use("*", async (req, res, next) => {
+  app.use(viteDevLimiter, vite.middlewares);
+  app.use("*", viteDevLimiter, async (req, res, next) => {
     const url = req.originalUrl;
 
     try {

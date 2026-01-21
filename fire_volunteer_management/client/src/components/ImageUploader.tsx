@@ -124,15 +124,40 @@ export function ImageUploader({
     }
   };
 
+  // Sanitize image URL to prevent XSS
+  const getSafeImageUrl = (url: string | null): string | undefined => {
+    if (!url) return undefined;
+    
+    // Only allow data URLs (base64) and https URLs
+    if (url.startsWith('data:image/')) {
+      return url;
+    }
+    
+    try {
+      const parsedUrl = new URL(url, window.location.origin);
+      // Only allow https protocol or relative URLs from same origin
+      if (parsedUrl.protocol === 'https:' || parsedUrl.origin === window.location.origin) {
+        return url;
+      }
+    } catch {
+      // Invalid URL, return undefined
+      return undefined;
+    }
+    
+    return undefined;
+  };
+
+  const safePreview = getSafeImageUrl(preview);
+
   return (
     <div className="space-y-2">
       <label className="text-sm font-medium">{label}</label>
       <p className="text-sm text-muted-foreground">{description}</p>
 
-      {preview ? (
+      {safePreview ? (
         <Card className="relative overflow-hidden">
           <img
-            src={preview}
+            src={safePreview}
             alt="預覽"
             className="w-full h-64 object-cover"
           />

@@ -120,6 +120,13 @@ export async function getLineUserProfile(
       return { success: false, error: "LINE credentials not configured" };
     }
 
+    // Validate userId to prevent SSRF attacks
+    // LINE User IDs are alphanumeric strings (typically 33 characters)
+    if (!userId || !/^[a-zA-Z0-9]+$/.test(userId) || userId.length > 50) {
+      console.error("[LINE] Invalid userId format");
+      return { success: false, error: "Invalid userId format" };
+    }
+
     const response = await fetch(`https://api.line.me/v2/bot/profile/${userId}`, {
       method: "GET",
       headers: {
