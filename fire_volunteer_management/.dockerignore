@@ -1,0 +1,44 @@
+# Node modules
+node_modules
+npm-debug.log
+pnpm-debug.log
+yarn-error.log
+
+# 環境變數檔案
+.env
+.env.*
+!.env.example
+!.env.production.example
+
+# 建置產物（會在 Docker 內重新建置）
+dist
+client/dist
+
+# Git
+.git
+.gitignore
+.gitattributes
+
+# IDE
+.vscode
+.idea
+*.swp
+*.swo
+*~
+
+# 測試
+coverage
+.nyc_output
+
+# 文件
+*.md
+!README.md
+docs
+
+# 其他
+.DS_Store
+Thumbs.db
+*.log
+tmp
+temp
+scripts
