@@ -1,0 +1,1 @@
+ALTER TABLE `volunteers` ADD `lineUserId` varchar(100);
