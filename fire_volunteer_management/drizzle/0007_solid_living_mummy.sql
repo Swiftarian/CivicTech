@@ -1,0 +1,1 @@
+ALTER TABLE `volunteers` ADD `category` enum('導覽館志工','送餐志工') DEFAULT '導覽館志工' NOT NULL;
