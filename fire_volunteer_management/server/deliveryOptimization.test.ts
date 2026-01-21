@@ -154,10 +154,10 @@ describe("送餐路線優化和送達驗證功能", () => {
 
     // 檢查送餐編號唯一性
     expect(new Set(deliveryNumbers).size).toBe(deliveryNumbers.length);
-
+    
     // 檢查驗證碼唯一性
     expect(new Set(verificationCodes).size).toBe(verificationCodes.length);
-
+    
     // 檢查驗證碼格式（6位數字）
     verificationCodes.forEach(code => {
       expect(code).toMatch(/^\d{6}$/);

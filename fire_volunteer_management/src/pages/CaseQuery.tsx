@@ -17,7 +17,7 @@ export default function CaseQuery() {
 
   const { refetch: refetchCase, isFetching: isFetchingCase } = trpc.cases.getByCaseNumber.useQuery(
     { caseNumber },
-    {
+    { 
       enabled: false,
       retry: false
     }
@@ -25,7 +25,7 @@ export default function CaseQuery() {
 
   const { refetch: refetchProgress, isFetching: isFetchingProgress } = trpc.cases.getProgress.useQuery(
     { caseId: searchResult?.id || 0 },
-    {
+    { 
       enabled: false,
       retry: false
     }
@@ -38,16 +38,16 @@ export default function CaseQuery() {
     }
 
     const result = await refetchCase();
-
+    
     if (result.data) {
       setSearchResult(result.data);
-
+      
       // 查詢進度記錄
       const progressResult = await refetchProgress();
       if (progressResult.data) {
         setProgressData(progressResult.data);
       }
-
+      
       toast.success("查詢成功");
     } else {
       setSearchResult(null);
@@ -64,9 +64,9 @@ export default function CaseQuery() {
       completed: { label: "已完成", className: "bg-green-100 text-green-800" },
       rejected: { label: "已拒絕", className: "bg-red-100 text-red-800" }
     };
-
+    
     const statusInfo = statusMap[status] || { label: status, className: "bg-gray-100 text-gray-800" };
-
+    
     return (
       <span className={`inline-flex items-center px-3 py-1 rounded-full text-sm font-medium ${statusInfo.className}`}>
         {statusInfo.label}
@@ -81,9 +81,9 @@ export default function CaseQuery() {
       high: { label: "高", className: "bg-orange-100 text-orange-800" },
       urgent: { label: "緊急", className: "bg-red-100 text-red-800" }
     };
-
+    
     const priorityInfo = priorityMap[priority] || { label: priority, className: "bg-gray-100 text-gray-800" };
-
+    
     return (
       <span className={`inline-flex items-center px-3 py-1 rounded-full text-sm font-medium ${priorityInfo.className}`}>
         {priorityInfo.label}
@@ -131,7 +131,7 @@ export default function CaseQuery() {
                     onKeyDown={(e) => e.key === "Enter" && handleSearch()}
                   />
                 </div>
-                <Button
+                <Button 
                   onClick={handleSearch}
                   disabled={isFetchingCase || isFetchingProgress}
                 >

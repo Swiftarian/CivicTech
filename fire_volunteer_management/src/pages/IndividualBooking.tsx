@@ -42,7 +42,7 @@ export default function IndividualBooking() {
         specialNeeds: ""
       });
       setDate(undefined);
-
+      
       setTimeout(() => {
         setLocation("/booking/query");
       }, 3000);
@@ -56,7 +56,7 @@ export default function IndividualBooking() {
 
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
-
+    
     if (!date) {
       toast.error("請選擇參訪日期");
       return;

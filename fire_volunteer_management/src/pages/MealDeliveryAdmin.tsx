@@ -32,7 +32,7 @@ export default function MealDeliveryAdmin() {
 
   const { data: deliveries, refetch } = trpc.mealDeliveries.getAll.useQuery();
   const { data: volunteers } = trpc.volunteers.getAll.useQuery();
-
+  
   const createMutation = trpc.mealDeliveries.create.useMutation({
     onSuccess: () => {
       toast.success("送餐任務建立成功");
@@ -57,11 +57,11 @@ export default function MealDeliveryAdmin() {
   const handleCreate = (e: React.FormEvent<HTMLFormElement>) => {
     e.preventDefault();
     const formData = new FormData(e.currentTarget);
-
+    
     const dateTimeStr = formData.get("scheduledDate") as string;
     const dateTime = new Date(dateTimeStr);
     const timeStr = `${dateTime.getHours().toString().padStart(2, '0')}:${dateTime.getMinutes().toString().padStart(2, '0')}`;
-
+    
     createMutation.mutate({
       recipientName: formData.get("recipientName") as string,
       recipientPhone: formData.get("recipientPhone") as string,
@@ -111,7 +111,7 @@ export default function MealDeliveryAdmin() {
               <Utensils className="h-8 w-8" />
               <span className="text-xl font-bold">送餐服務管理</span>
             </Link>
-
+            
             <div className="flex items-center space-x-6">
               <Link href="/admin" className="hover:opacity-80 transition-opacity">返回後台</Link>
             </div>
@@ -207,7 +207,7 @@ export default function MealDeliveryAdmin() {
         {/* 送餐任務列表 */}
         <div className="space-y-4">
           <h2 className="text-2xl font-bold">送餐任務列表</h2>
-
+          
           {!deliveries || deliveries.length === 0 ? (
             <Card>
               <CardContent className="py-12 text-center text-muted-foreground">
@@ -275,7 +275,7 @@ export default function MealDeliveryAdmin() {
                             </SelectContent>
                           </Select>
                         )}
-
+                        
                         {delivery.verificationCode && (
                           <Button
                             variant="outline"

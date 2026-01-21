@@ -13,7 +13,7 @@ export default function Traffic() {
               <MapPin className="h-8 w-8" />
               <span className="text-xl font-bold">台東防災館</span>
             </Link>
-
+            
             <div className="flex items-center space-x-6">
               <Link href="/" className="hover:opacity-80 transition-opacity">返回首頁</Link>
             </div>
@@ -64,7 +64,7 @@ export default function Traffic() {
 
           {/* 交通方式 */}
           <h2 className="text-3xl font-bold mb-6 text-center">交通方式</h2>
-
+          
           <div className="grid md:grid-cols-2 gap-6 mb-8">
             {/* 自行開車 */}
             <Card className="hover-lift">

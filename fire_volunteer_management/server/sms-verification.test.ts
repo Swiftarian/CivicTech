@@ -138,7 +138,7 @@ describe("SMS簡訊和序號驗證功能", () => {
     // 驗證任務已建立且包含序號
     expect(delivery.verificationCode).toBeDefined();
     expect(delivery.recipientPhone).toBe("0912-345-678");
-
+    
     // 在模擬模式下，SMS會記錄到console
     // 實際整合Twilio後，可以查詢SMS發送歷史記錄
   });

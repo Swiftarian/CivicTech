@@ -225,7 +225,7 @@ export function initializeScheduledTasks() {
   const tomorrow9AM = new Date(now);
   tomorrow9AM.setDate(tomorrow9AM.getDate() + 1);
   tomorrow9AM.setHours(9, 0, 0, 0);
-
+  
   const timeUntilFirstRun = tomorrow9AM.getTime() - now.getTime();
 
   // 設定首次執行
@@ -252,7 +252,7 @@ import { initializeScheduledTasks } from "../scheduledTasks";
 
 server.listen(port, () => {
   console.log(`Server running on http://localhost:${port}/`);
-
+  
   // 初始化排程任務（只在生產環境執行）
   if (process.env.NODE_ENV === "production") {
     initializeScheduledTasks();
@@ -365,7 +365,7 @@ export function initializeScheduledTasks() {
   const tomorrow2PM = new Date(now);
   tomorrow2PM.setDate(tomorrow2PM.getDate() + 1);
   tomorrow2PM.setHours(14, 0, 0, 0); // 改為下午2點
-
+  
   const timeUntilFirstRun = tomorrow2PM.getTime() - now.getTime();
 
   setTimeout(() => {
@@ -387,15 +387,15 @@ export function initializeScheduledTasks() {
 export async function getBookingsNeedingReminder() {
   const db = await getDb();
   if (!db) return [];
-
+  
   // 改為5天後
   const fiveDaysLater = new Date();
   fiveDaysLater.setDate(fiveDaysLater.getDate() + 5);
   fiveDaysLater.setHours(0, 0, 0, 0);
-
+  
   const fiveDaysLaterEnd = new Date(fiveDaysLater);
   fiveDaysLaterEnd.setHours(23, 59, 59, 999);
-
+  
   return await db.select().from(bookings)
     .where(
       and(
@@ -443,8 +443,8 @@ text += `提醒您，您預約的台東防災館參訪將於5天後進行！\n\n
 
 **方法1：重置reminderSent欄位**
 ```sql
-UPDATE bookings
-SET reminderSent = 'no'
+UPDATE bookings 
+SET reminderSent = 'no' 
 WHERE bookingNumber = 'BK1234567890';
 ```
 

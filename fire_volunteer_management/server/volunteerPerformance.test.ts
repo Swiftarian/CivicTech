@@ -37,7 +37,7 @@ describe("志工績效統計API", () => {
     const result = await caller.volunteers.getAllPerformance();
 
     expect(Array.isArray(result)).toBe(true);
-
+    
     // 驗證返回的數據結構
     if (result.length > 0) {
       const firstVolunteer = result[0];
@@ -47,13 +47,13 @@ describe("志工績效統計API", () => {
       expect(firstVolunteer).toHaveProperty("completedDeliveries");
       expect(firstVolunteer).toHaveProperty("avgDeliveryTime");
       expect(firstVolunteer).toHaveProperty("onTimeRate");
-
+      
       // 驗證數據類型
       expect(typeof firstVolunteer.totalDeliveries).toBe("number");
       expect(typeof firstVolunteer.completedDeliveries).toBe("number");
       expect(typeof firstVolunteer.avgDeliveryTime).toBe("number");
       expect(typeof firstVolunteer.onTimeRate).toBe("number");
-
+      
       // 驗證數據合理性
       expect(firstVolunteer.totalDeliveries).toBeGreaterThanOrEqual(0);
       expect(firstVolunteer.completedDeliveries).toBeGreaterThanOrEqual(0);
@@ -70,10 +70,10 @@ describe("志工績效統計API", () => {
 
     // 先獲取所有志工
     const allVolunteers = await caller.volunteers.getAllPerformance();
-
+    
     if (allVolunteers.length > 0) {
       const volunteerId = allVolunteers[0].id;
-
+      
       const result = await caller.volunteers.getPerformance({ volunteerId });
 
       expect(result).toBeDefined();
@@ -96,14 +96,14 @@ describe("志工績效統計API", () => {
     for (const volunteer of result) {
       // 完成次數不應超過總次數
       expect(volunteer.completedDeliveries).toBeLessThanOrEqual(volunteer.totalDeliveries || 0);
-
+      
       // 準時率應在0-100之間
       expect(volunteer.onTimeRate).toBeGreaterThanOrEqual(0);
       expect(volunteer.onTimeRate).toBeLessThanOrEqual(100);
-
+      
       // 平均配送時間應為非負數
       expect(volunteer.avgDeliveryTime).toBeGreaterThanOrEqual(0);
-
+      
       // 如果沒有完成任何配送，平均時間應為0
       if ((volunteer.completedDeliveries || 0) === 0) {
         expect(volunteer.avgDeliveryTime).toBe(0);
@@ -119,12 +119,12 @@ describe("志工績效統計API", () => {
 
     if (result.length > 0) {
       const firstVolunteer = result[0];
-
+      
       // 應該包含志工基本資訊
       expect(firstVolunteer).toHaveProperty("id");
       expect(firstVolunteer).toHaveProperty("userId");
       expect(firstVolunteer).toHaveProperty("status");
-
+      
       // 可能包含使用者資訊（如果有關聯）
       // name 和 email 可能為 undefined，但應該存在這些屬性
       expect("name" in firstVolunteer).toBe(true);
@@ -140,10 +140,10 @@ describe("志工績效統計API", () => {
 
     if (result.length > 1) {
       // 手動排序並驗證
-      const sorted = [...result].sort((a, b) =>
+      const sorted = [...result].sort((a, b) => 
         (b.totalDeliveries || 0) - (a.totalDeliveries || 0)
       );
-
+      
       // 驗證排序後的第一個志工送餐次數最多
       expect(sorted[0].totalDeliveries).toBeGreaterThanOrEqual(sorted[sorted.length - 1].totalDeliveries || 0);
     }

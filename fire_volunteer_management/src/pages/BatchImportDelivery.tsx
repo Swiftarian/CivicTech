@@ -43,10 +43,10 @@ export default function BatchImportDelivery() {
 
     for (const line of lines) {
       if (!line.trim()) continue;
-
+      
       // 格式：王小明,台東市中華路一段100號,0912-345-678
       const parts = line.split(",").map(p => p.trim());
-
+      
       if (parts.length >= 3) {
         parsed.push({
           recipientName: parts[0],

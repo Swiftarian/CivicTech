@@ -17,22 +17,22 @@ const twilioClient = process.env.TWILIO_ACCOUNT_SID && process.env.TWILIO_AUTH_T
 function formatPhoneNumber(phone: string): string {
   // 移除所有非數字字元
   const cleaned = phone.replace(/\D/g, '');
-
+  
   // 如果已經是國際格式，直接返回
   if (phone.startsWith('+')) {
     return phone.replace(/\D/g, '').replace(/^/, '+');
   }
-
+  
   // 如果以0開頭，轉換為+886
   if (cleaned.startsWith('0')) {
     return `+886${cleaned.substring(1)}`;
   }
-
+  
   // 如果已經是886開頭，加上+
   if (cleaned.startsWith('886')) {
     return `+${cleaned}`;
   }
-
+  
   // 預設視為台灣號碼
   return `+886${cleaned}`;
 }
@@ -82,7 +82,7 @@ export async function sendDeliveryNotificationSMS(params: {
     // 如果有Twilio設定，使用真實SMS發送
     if (twilioClient && process.env.TWILIO_FROM_NUMBER) {
       const formattedPhone = formatPhoneNumber(recipientPhone);
-
+      
       console.log('='.repeat(60));
       console.log('📱 SMS簡訊發送（Twilio）');
       console.log('='.repeat(60));
@@ -90,7 +90,7 @@ export async function sendDeliveryNotificationSMS(params: {
       console.log(`驗證序號：${verificationCode}`);
       console.log(`送餐任務ID：${deliveryId}`);
       console.log('-'.repeat(60));
-
+      
       const message = await twilioClient.messages.create({
         body: smsContent,
         from: process.env.TWILIO_FROM_NUMBER,
@@ -100,7 +100,7 @@ export async function sendDeliveryNotificationSMS(params: {
       console.log(`✅ SMS發送成功！Message SID: ${message.sid}`);
       console.log(`狀態：${message.status}`);
       console.log('='.repeat(60));
-
+      
       return {
         success: true,
         message: `SMS sent successfully via Twilio (SID: ${message.sid})`,

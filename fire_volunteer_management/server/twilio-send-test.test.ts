@@ -5,7 +5,7 @@ describe("真實SMS發送測試", () => {
   it("應該能夠發送真實簡訊到台灣手機", async () => {
     const verificationCode = generateVerificationCode();
     const testPhone = "0972911502"; // 用戶提供的測試手機號碼
-
+    
     console.log('='.repeat(60));
     console.log('🚀 開始測試發送真實簡訊...');
     console.log('='.repeat(60));
@@ -30,7 +30,7 @@ describe("真實SMS發送測試", () => {
 
     expect(result.success).toBe(true);
     expect(result.message).toContain('Twilio');
-
+    
     console.log('');
     console.log('✅ 簡訊已發送！請檢查手機 0972-911-502 是否收到簡訊');
     console.log('');

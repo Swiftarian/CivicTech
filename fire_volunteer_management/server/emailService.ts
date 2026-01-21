@@ -1,6 +1,6 @@
 /**
  * Email 通知服務
- *
+ * 
  * 此模組負責發送各類Email通知
  * 使用 Nodemailer + Gmail SMTP 發送Email
  */
@@ -61,7 +61,7 @@ interface EmailOptions {
 
 /**
  * 發送Email
- *
+ * 
  * 使用 Nodemailer + Gmail SMTP 發送Email
  * 如果 SMTP 未設定，則使用 console.log 模擬發送
  */
@@ -90,7 +90,7 @@ export async function sendEmail(
     // 使用 SMTP 發送
     try {
       const fromEmail = process.env.SMTP_FROM || process.env.SMTP_USER || 'noreply@taitung-disaster.gov.tw';
-
+      
       await smtp.sendMail({
         from: fromEmail,
         to: options.to,
@@ -137,22 +137,22 @@ export async function sendLeaveRequestReviewEmail(
 ): Promise<boolean> {
   const typeText = requestType === 'leave' ? '請假' : '換班';
   const statusText = status === 'approved' ? '已核准' : '已拒絕';
-
+  
   const subject = `【台東防災館】${typeText}申請${statusText}通知`;
-
+  
   let text = `親愛的 ${recipientName}，您好：\n\n`;
   text += `您的${typeText}申請已經過審核，結果為：${statusText}\n\n`;
-
+  
   if (reviewNotes) {
-    text += status === 'approved'
+    text += status === 'approved' 
       ? `審核備註：${reviewNotes}\n\n`
       : `拒絕原因：${reviewNotes}\n\n`;
   }
-
+  
   text += `如有任何疑問，請聯繫管理員。\n\n`;
   text += `此為系統自動發送的通知信件，請勿直接回覆。\n\n`;
   text += `台東防災館管理系統`;
-
+  
   // HTML版本（選用）
   const html = `
     <div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto;">
@@ -171,7 +171,7 @@ export async function sendLeaveRequestReviewEmail(
       <p style="color: #6b7280; font-size: 12px;">台東防災館管理系統</p>
     </div>
   `;
-
+  
   return await sendEmail(
     {
       to: recipientEmail,
@@ -200,7 +200,7 @@ export async function sendPublicBookingConfirmationEmail(
   isTest?: boolean
 ): Promise<boolean> {
   const subject = `【台東防災館】預約確認通知 - 案件編號 ${bookingNumber}`;
-
+  
   let text = `親愛的 ${recipientName}，您好：\n\n`;
   text += `感謝您預約台東防災館參訪服務，您的預約已經成功建立！\n\n`;
   text += `預約資訊：\n`;
@@ -217,7 +217,7 @@ export async function sendPublicBookingConfirmationEmail(
   text += `期待您的到訪！\n\n`;
   text += `此為系統自動發送的通知信件，請勿直接回覆。\n\n`;
   text += `台東防災館管理系統`;
-
+  
   const html = `
     <div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto;">
       <h2 style="color: #16a34a;">台東防災館 - 預約確認通知</h2>
@@ -250,7 +250,7 @@ export async function sendPublicBookingConfirmationEmail(
       <p style="color: #6b7280; font-size: 12px;">台東防災館管理系統</p>
     </div>
   `;
-
+  
   return await sendEmail(
     {
       to: recipientEmail,
@@ -282,7 +282,7 @@ export async function sendGroupBookingConfirmationEmail(
   isTest?: boolean
 ): Promise<boolean> {
   const subject = `【台東防災館】團體預約確認通知 - 案件編號 ${bookingNumber}`;
-
+  
   let text = `${organizationName} ${contactPerson}，您好：\n\n`;
   text += `感謝貴單位預約台東防災館團體參訪服務，您的預約已經成功建立！\n\n`;
   text += `預約資訊：\n`;
@@ -301,7 +301,7 @@ export async function sendGroupBookingConfirmationEmail(
   text += `期待貴單位的到訪！\n\n`;
   text += `此為系統自動發送的通知信件，請勿直接回覆。\n\n`;
   text += `台東防災館管理系統`;
-
+  
   const html = `
     <div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto;">
       <h2 style="color: #16a34a;">台東防災館 - 團體預約確認通知</h2>
@@ -337,7 +337,7 @@ export async function sendGroupBookingConfirmationEmail(
       <p style="color: #6b7280; font-size: 12px;">台東防災館管理系統</p>
     </div>
   `;
-
+  
   return await sendEmail(
     {
       to: recipientEmail,
@@ -368,7 +368,7 @@ export async function sendPublicBookingReminderEmail(
   isTest?: boolean
 ): Promise<boolean> {
   const subject = `【台東防災館】參訪提醒 - 案件編號 ${bookingNumber}`;
-
+  
   let text = `親愛的 ${recipientName}，您好：\n\n`;
   text += `提醒您，您預約的台東防災館參訪將於3天後進行！\n\n`;
   text += `預約資訊：\n`;
@@ -389,7 +389,7 @@ export async function sendPublicBookingReminderEmail(
   text += `期待您的到訪！\n\n`;
   text += `此為系統自動發送的提醒信件，請勿直接回覆。\n\n`;
   text += `台東防災館管理系統`;
-
+  
   const html = `
     <div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto;">
       <h2 style="color: #16a34a;">台東防災館 - 參訪提醒</h2>
@@ -428,7 +428,7 @@ export async function sendPublicBookingReminderEmail(
       <p style="color: #6b7280; font-size: 12px;">台東防災館管理系統</p>
     </div>
   `;
-
+  
   return await sendEmail(
     {
       to: recipientEmail,
@@ -460,7 +460,7 @@ export async function sendGroupBookingReminderEmail(
   isTest?: boolean
 ): Promise<boolean> {
   const subject = `【台東防災館】團體參訪提醒 - 案件編號 ${bookingNumber}`;
-
+  
   let text = `${organizationName} ${contactPerson}，您好：\n\n`;
   text += `提醒貴單位，預約的台東防災館團體參訪將於3天後進行！\n\n`;
   text += `預約資訊：\n`;
@@ -485,7 +485,7 @@ export async function sendGroupBookingReminderEmail(
   text += `期待貴單位的到訪！\n\n`;
   text += `此為系統自動發送的提醒信件，請勿直接回覆。\n\n`;
   text += `台東防災館管理系統`;
-
+  
   const html = `
     <div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto;">
       <h2 style="color: #16a34a;">台東防災館 - 團體參訪提醒</h2>
@@ -528,7 +528,7 @@ export async function sendGroupBookingReminderEmail(
       <p style="color: #6b7280; font-size: 12px;">台東防災館管理系統</p>
     </div>
   `;
-
+  
   return await sendEmail(
     {
       to: recipientEmail,
@@ -552,15 +552,15 @@ export async function sendNewLeaveRequestEmail(
   reason: string
 ): Promise<boolean> {
   const typeText = requestType === 'leave' ? '請假' : '換班';
-
+  
   const subject = `【台東防災館】新的${typeText}申請待審核`;
-
+  
   let text = `管理員，您好：\n\n`;
   text += `志工 ${volunteerName} 提交了一筆新的${typeText}申請，請盡快審核。\n\n`;
   text += `申請原因：${reason}\n\n`;
   text += `請登入管理後台查看詳細資訊並進行審核。\n\n`;
   text += `台東防災館管理系統`;
-
+  
   const html = `
     <div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto;">
       <h2 style="color: #2563eb;">台東防災館 - 新的${typeText}申請待審核</h2>
@@ -575,7 +575,7 @@ export async function sendNewLeaveRequestEmail(
       <p style="color: #6b7280; font-size: 12px;">台東防災館管理系統</p>
     </div>
   `;
-
+  
   return await sendEmail(
     {
       to: adminEmail,
