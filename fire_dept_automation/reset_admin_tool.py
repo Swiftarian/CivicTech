@@ -20,7 +20,7 @@ def hash_password_pbkdf2(password, salt=None):
         # 確保 salt 是 bytes
         if isinstance(salt, str):
             salt = bytes.fromhex(salt)
-            
+
     # PBKDF2 with SHA256, 100,000 iterations
     pwd_hash = hashlib.pbkdf2_hmac(
         'sha256',
@@ -28,13 +28,13 @@ def hash_password_pbkdf2(password, salt=None):
         salt,
         100000
     )
-    
+
     # 返回 salt 和 hash 的 hex 字串
     return salt.hex(), pwd_hash.hex()
 
 def force_reset_admin():
     print(f"🚀 開始強制重設帳號 [{TARGET_USERNAME}]...")
-    
+
     # 1. 使用正確的 PBKDF2 加密（與 auth.py 一致）
     salt_hex, password_hash = hash_password_pbkdf2(NEW_PASSWORD)
     print(f"✅ 已生成 PBKDF2 密碼雜湊")
@@ -61,8 +61,8 @@ def force_reset_admin():
         if user:
             # 更新：包含 password_salt 和 password_hash
             c.execute("""
-                UPDATE users 
-                SET password_hash = ?, password_salt = ?, email = ? 
+                UPDATE users
+                SET password_hash = ?, password_salt = ?, email = ?
                 WHERE username = ?
             """, (password_hash, salt_hex, NEW_EMAIL, TARGET_USERNAME))
             print(f"✅ 帳號 '{TARGET_USERNAME}' 資料強制覆寫成功！")
@@ -70,7 +70,7 @@ def force_reset_admin():
             # 建立新帳號
             print(f"⚠️ 帳號 '{TARGET_USERNAME}' 不存在，正在建立新帳號...")
             c.execute("""
-                INSERT INTO users (username, password_hash, password_salt, email, role, created_at) 
+                INSERT INTO users (username, password_hash, password_salt, email, role, created_at)
                 VALUES (?, ?, ?, ?, 'admin', datetime('now'))
             """, (TARGET_USERNAME, password_hash, salt_hex, NEW_EMAIL))
             print(f"✅ 新帳號 '{TARGET_USERNAME}' 建立成功！")

@@ -3,23 +3,22 @@
 # 安裝方式: pip install pre-commit && pre-commit install
 
 repos:
-  # Semgrep 安全掃描
-  - repo: https://github.com/returntocorp/semgrep
-    rev: v1.52.0
+  # 使用本地 Semgrep (避免 Windows 相容性問題)
+  - repo: local
     hooks:
       - id: semgrep
         name: Semgrep Security Scan
-        args: ['--config', 'auto', '--error', '--skip-unknown-extensions']
-        # --config auto: 自動使用適合的規則
-        # --error: 發現問題時回傳錯誤碼（阻止 commit）
-        # --skip-unknown-extensions: 跳過不認識的檔案類型
+        entry: powershell -Command "$env:PYTHONUTF8='1'; semgrep scan --config auto --error --quiet"
+        language: system
+        types: [python]
+        pass_filenames: false
 
-  # Python 程式碼格式檢查（可選）
+  # Python 程式碼格式檢查
   - repo: https://github.com/pre-commit/pre-commit-hooks
     rev: v4.5.0
     hooks:
-      - id: trailing-whitespace      # 移除行尾空白
-      - id: end-of-file-fixer        # 確保檔案結尾有換行
-      - id: check-yaml               # 檢查 YAML 語法
-      - id: check-added-large-files  # 警告大檔案（超過 500KB）
+      - id: trailing-whitespace
+      - id: end-of-file-fixer
+      - id: check-yaml
+      - id: check-added-large-files
         args: ['--maxkb=500']

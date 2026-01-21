@@ -37,11 +37,11 @@ DEFAULT_CONFIG = LLMConfig()
 def get_correction_prompt(ocr_text: str, context: str = "") -> str:
     """
     生成 OCR 校正的提示詞
-    
+
     Args:
         ocr_text: OCR 辨識的原始文字
         context: 額外上下文 (如文件類型)
-    
+
     Returns:
         完整的提示詞
     """
@@ -70,16 +70,16 @@ def get_correction_prompt(ocr_text: str, context: str = "") -> str:
 def get_structuring_prompt(ocr_text: str, fields: List[str]) -> str:
     """
     生成結構化提取的提示詞
-    
+
     Args:
         ocr_text: OCR 辨識的文字
         fields: 需要提取的欄位列表
-    
+
     Returns:
         完整的提示詞
     """
     fields_str = "\n".join([f"- {f}" for f in fields])
-    
+
     prompt = f"""你是一個專業的文件資料提取專家。請從以下 OCR 文字中提取結構化資訊。
 
 ## 需要提取的欄位：
@@ -99,17 +99,17 @@ def get_structuring_prompt(ocr_text: str, fields: List[str]) -> str:
 def call_ollama(prompt: str, config: LLMConfig) -> str:
     """
     呼叫本地 Ollama API
-    
+
     Args:
         prompt: 提示詞
         config: LLM 配置
-    
+
     Returns:
         模型回應
     """
     try:
         import requests
-        
+
         url = f"{config.api_base}/api/generate"
         payload = {
             "model": config.model_name,
@@ -120,13 +120,13 @@ def call_ollama(prompt: str, config: LLMConfig) -> str:
                 "num_predict": config.max_tokens
             }
         }
-        
+
         response = requests.post(url, json=payload, timeout=120)
         response.raise_for_status()
-        
+
         result = response.json()
         return result.get("response", "")
-        
+
     except ImportError:
         raise ImportError("請安裝 requests: pip install requests")
     except Exception as e:
@@ -136,31 +136,31 @@ def call_ollama(prompt: str, config: LLMConfig) -> str:
 def call_openai_compatible(prompt: str, config: LLMConfig) -> str:
     """
     呼叫 OpenAI 相容 API (包括 Qwen API)
-    
+
     Args:
         prompt: 提示詞
         config: LLM 配置
-    
+
     Returns:
         模型回應
     """
     try:
         import openai
-        
+
         client = openai.OpenAI(
             api_key=config.api_key,
             base_url=config.api_base
         )
-        
+
         response = client.chat.completions.create(
             model=config.model_name,
             messages=[{"role": "user", "content": prompt}],
             temperature=config.temperature,
             max_tokens=config.max_tokens
         )
-        
+
         return response.choices[0].message.content
-        
+
     except ImportError:
         raise ImportError("請安裝 openai: pip install openai")
     except Exception as e:
@@ -170,49 +170,49 @@ def call_openai_compatible(prompt: str, config: LLMConfig) -> str:
 def call_llm(prompt: str, config: LLMConfig = None) -> str:
     """
     統一的 LLM 呼叫介面
-    
+
     Args:
         prompt: 提示詞
         config: LLM 配置 (使用預設配置如果為 None)
-    
+
     Returns:
         模型回應
     """
     if config is None:
         config = DEFAULT_CONFIG
-    
+
     if config.backend == LLMBackend.OLLAMA:
         return call_ollama(prompt, config)
     else:
         return call_openai_compatible(prompt, config)
 
 
-def correct_ocr_text(ocr_text: str, 
+def correct_ocr_text(ocr_text: str,
                      context: str = "",
                      config: LLMConfig = None) -> str:
     """
     使用 LLM 校正 OCR 文字
-    
+
     Args:
         ocr_text: OCR 辨識的原始文字
         context: 文件類型上下文
         config: LLM 配置
-    
+
     Returns:
         校正後的文字
     """
     if not ocr_text.strip():
         return ""
-    
+
     prompt = get_correction_prompt(ocr_text, context)
     corrected = call_llm(prompt, config)
-    
+
     # 清理輸出（移除可能的 markdown 標記）
     corrected = corrected.strip()
     if corrected.startswith("```"):
         lines = corrected.split("\n")
         corrected = "\n".join(lines[1:-1] if lines[-1] == "```" else lines[1:])
-    
+
     return corrected
 
 
@@ -221,21 +221,21 @@ def extract_structured_data(ocr_text: str,
                            config: LLMConfig = None) -> Dict:
     """
     從 OCR 文字中提取結構化資料
-    
+
     Args:
         ocr_text: OCR 辨識的文字
         fields: 需要提取的欄位列表
         config: LLM 配置
-    
+
     Returns:
         結構化資料字典
     """
     if not ocr_text.strip():
         return {field: None for field in fields}
-    
+
     prompt = get_structuring_prompt(ocr_text, fields)
     response = call_llm(prompt, config)
-    
+
     # 解析 JSON
     try:
         # 嘗試提取 JSON 部分
@@ -251,13 +251,13 @@ def extract_structured_data(ocr_text: str,
 def check_ollama_available(config: LLMConfig = None) -> bool:
     """
     檢查 Ollama 服務是否可用
-    
+
     Returns:
         是否可用
     """
     if config is None:
         config = DEFAULT_CONFIG
-    
+
     try:
         import requests
         response = requests.get(f"{config.api_base}/api/tags", timeout=5)
@@ -269,13 +269,13 @@ def check_ollama_available(config: LLMConfig = None) -> bool:
 def list_ollama_models(config: LLMConfig = None) -> List[str]:
     """
     列出可用的 Ollama 模型
-    
+
     Returns:
         模型名稱列表
     """
     if config is None:
         config = DEFAULT_CONFIG
-    
+
     try:
         import requests
         response = requests.get(f"{config.api_base}/api/tags", timeout=5)
@@ -284,7 +284,7 @@ def list_ollama_models(config: LLMConfig = None) -> List[str]:
             return [m["name"] for m in data.get("models", [])]
     except:
         pass
-    
+
     return []
 
 
@@ -300,17 +300,17 @@ if __name__ == "__main__":
         print("❌ Ollama 服務未運行")
         print("請執行: ollama serve")
         print("並下載模型: ollama pull qwen2.5-vl:7b")
-    
+
     # 測試校正
     test_text = """
     臺東縣政府消防局
     公文字號：府消預字第1130001234號
     主旨：有關辦理建築物公共安全檢査事宜
     """
-    
+
     print("\n原始 OCR 文字:")
     print(test_text)
-    
+
     if check_ollama_available():
         print("\n正在校正...")
         corrected = correct_ocr_text(test_text, context="公文")

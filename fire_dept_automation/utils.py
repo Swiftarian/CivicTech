@@ -49,7 +49,7 @@ def load_custom_css():
             border-left: 3px solid #ff4b4b;
             padding-left: 10px;
         }
-        
+
         /* 4. 優化按鈕樣式 (全域) */
         .stButton > button {
             transition: all 0.2s ease;
@@ -58,14 +58,14 @@ def load_custom_css():
             transform: scale(1.02); /* 按鈕懸停微放大 */
             box-shadow: 0 4px 12px rgba(0,0,0,0.15);
         }
-        
+
         /* 5. 優化 st.tabs 分頁標籤字體 */
         button[data-baseweb="tab"] {
             font-size: 24px !important;   /* 字體加大 */
             font-weight: 700 !important;  /* 加粗 */
             padding: 10px 20px !important; /* 增加點擊範圍 */
         }
-        
+
         /* 讓 Tab 內的文字垂直置中 */
         button[data-baseweb="tab"] div[data-testid="stMarkdownContainer"] p {
             font-size: 24px !important;
@@ -77,12 +77,12 @@ def load_custom_css():
             color: #00d2ff !important;    /* 選中變成科技藍 */
             border-color: #00d2ff !important;
         }
-        
+
         /* 未選中的 Tab */
         button[data-baseweb="tab"][aria-selected="false"] {
             color: #a0a0a0 !important;
         }
-        
+
         /* 6. 強化表單提交按鈕 */
         div[data-testid="stFormSubmitButton"] > button {
             width: 100%;              /* 按鈕全寬 */
@@ -104,11 +104,11 @@ def load_custom_css():
             padding-top: 5px;             /* 增加間距 */
             padding-bottom: 5px;
         }
-        
+
         /* ========================================== */
         /* 8. 平台首頁樣式 (Hero Section & Service Cards) */
         /* ========================================== */
-        
+
         /* Hero Section - 主視覺區 */
         .hero {
             text-align: center;
@@ -119,21 +119,21 @@ def load_custom_css():
             margin-bottom: 2rem;
             box-shadow: 0 10px 40px rgba(102, 126, 234, 0.3);
         }
-        
+
         .hero h1 {
             font-size: 2.8rem;
             font-weight: 800;
             margin-bottom: 1rem;
             text-shadow: 0 2px 10px rgba(0, 0, 0, 0.2);
         }
-        
+
         .hero p {
             font-size: 1.3rem;
             opacity: 0.95;
             font-weight: 300;
             letter-spacing: 0.5px;
         }
-        
+
         /* Service Cards - 服務卡片 */
         .service-card {
             background: white;
@@ -150,7 +150,7 @@ def load_custom_css():
             position: relative;
             overflow: hidden;
         }
-        
+
         .service-card::before {
             content: '';
             position: absolute;
@@ -162,28 +162,28 @@ def load_custom_css():
             transform: scaleX(0);
             transition: transform 0.4s ease;
         }
-        
+
         .service-card:hover {
             transform: translateY(-10px);
             box-shadow: 0 20px 50px rgba(0, 0, 0, 0.15);
             border-color: #667eea;
         }
-        
+
         .service-card:hover::before {
             transform: scaleX(1);
         }
-        
+
         .card-icon {
             font-size: 5rem;
             margin-bottom: 1.5rem;
             animation: float 3s ease-in-out infinite;
         }
-        
+
         @keyframes float {
             0%, 100% { transform: translateY(0px); }
             50% { transform: translateY(-10px); }
         }
-        
+
         .service-card h3 {
             font-size: 1.5rem;
             font-weight: 700;
@@ -191,14 +191,14 @@ def load_custom_css():
             color: #2d3748;
             line-height: 1.4;
         }
-        
+
         .service-card p {
             font-size: 1rem;
             color: #718096;
             line-height: 1.7;
             margin: 0;
         }
-        
+
         /* 調整按鈕樣式以配合新設計 */
         .stButton > button[kind="primary"] {
             background: linear-gradient(135deg, #667eea 0%, #764ba2 100%) !important;
@@ -208,12 +208,12 @@ def load_custom_css():
             font-size: 1.1rem !important;
             transition: all 0.3s ease !important;
         }
-        
+
         .stButton > button[kind="primary"]:hover {
             transform: translateY(-2px) !important;
             box-shadow: 0 10px 25px rgba(102, 126, 234, 0.4) !important;
         }
-        
+
         /* 9. 檔案上傳元件中文化 */
         /* 隱藏原始 "Browse files" 按鈕文字並替換 */
         [data-testid="stFileUploader"] button[kind="secondary"]::after {
@@ -231,7 +231,7 @@ def load_custom_css():
             top: 0;
             white-space: nowrap;
         }
-        
+
         /* 隱藏 "Drag and drop file here" 並替換 */
         [data-testid="stFileUploader"] [data-testid="stFileUploaderDropzone"] > div:first-child > div:first-child > small:first-of-type {
             visibility: hidden;
@@ -285,35 +285,35 @@ VALID_EQUIPMENT_LIST = sorted([
 def convert_to_traditional(text):
     """
     將簡體中文轉換為繁體中文（台灣用法）
-    
+
     Args:
         text: 可以是字串、字典或列表
-        
+
     Returns:
         轉換後的內容（保持原始資料類型）
     """
     if not _opencc_available or _opencc_converter is None:
         # 如果 OpenCC 不可用，直接返回原文
         return text
-    
+
     if text is None:
         return None
-    
+
     # 處理字串
     if isinstance(text, str):
         try:
             return _opencc_converter.convert(text)
         except:
             return text
-    
+
     # 處理字典（遞迴轉換所有值）
     elif isinstance(text, dict):
         return {key: convert_to_traditional(value) for key, value in text.items()}
-    
+
     # 處理列表（遞迴轉換所有元素）
     elif isinstance(text, list):
         return [convert_to_traditional(item) for item in text]
-    
+
     # 其他類型直接返回
     else:
         return text
@@ -329,9 +329,9 @@ def send_email(sender_email, sender_password, receiver_email, subject, body):
         msg['From'] = sender_email
         msg['To'] = receiver_email
         msg['Subject'] = subject
-        
+
         msg.attach(MIMEText(body, 'html'))
-        
+
         # 連線到 Gmail SMTP Server (使用 SSL)
         server = smtplib.SMTP_SSL('smtp.gmail.com', 465)
         server.login(sender_email, sender_password)
@@ -344,7 +344,7 @@ def send_email(sender_email, sender_password, receiver_email, subject, body):
 def generate_email_html(title, recipient_name, content_html, highlight_info=None, color_theme="#1a365d"):
     """
     生成統一的 HTML 郵件模板（臺東縣消防局標準格式）
-    
+
     Args:
         title (str): 郵件標題，顯示在 Header 區域
         recipient_name (str): 收件人稱呼
@@ -355,7 +355,7 @@ def generate_email_html(title, recipient_name, content_html, highlight_info=None
             - "#38a169" (綠色/成功)
             - "#e53e3e" (紅色/警告)
             - "#d97706" (黃色/注意)
-    
+
     Returns:
         str: 完整的響應式 HTML 郵件字串
     """
@@ -363,16 +363,16 @@ def generate_email_html(title, recipient_name, content_html, highlight_info=None
     highlight_section = ""
     if highlight_info:
         highlight_section = f"""
-        <div style="background-color: #f8f9fa; border-left: 5px solid {color_theme}; 
+        <div style="background-color: #f8f9fa; border-left: 5px solid {color_theme};
                     padding: 20px; margin: 20px 0; border-radius: 4px; text-align: center;">
-            <p style="font-family: 'Courier New', monospace; font-size: 32px; 
-                      font-weight: bold; color: #2d3748; margin: 10px 0; 
+            <p style="font-family: 'Courier New', monospace; font-size: 32px;
+                      font-weight: bold; color: #2d3748; margin: 10px 0;
                       letter-spacing: 4px; word-break: break-all;">
                 {highlight_info}
             </p>
         </div>
         """
-    
+
     html = f"""<!DOCTYPE html>
 <html>
 <head>
@@ -384,10 +384,10 @@ def generate_email_html(title, recipient_name, content_html, highlight_info=None
     <table role="presentation" style="width: 100%; border-collapse: collapse; background-color: #f4f4f4; padding: 20px 0;">
         <tr>
             <td align="center">
-                <table role="presentation" style="max-width: 600px; width: 100%; background-color: #ffffff; 
-                                                   border-radius: 8px; overflow: hidden; 
+                <table role="presentation" style="max-width: 600px; width: 100%; background-color: #ffffff;
+                                                   border-radius: 8px; overflow: hidden;
                                                    box-shadow: 0 2px 5px rgba(0,0,0,0.1); border-collapse: collapse;">
-                    
+
                     <!-- Header -->
                     <tr>
                         <td style="background-color: {color_theme}; padding: 20px; text-align: center;">
@@ -408,7 +408,7 @@ def generate_email_html(title, recipient_name, content_html, highlight_info=None
 
                     <!-- Footer -->
                     <tr>
-                        <td style="background-color: #edf2f7; padding: 20px; text-align: center; 
+                        <td style="background-color: #edf2f7; padding: 20px; text-align: center;
                                    font-size: 12px; color: #718096; line-height: 1.5;">
                             <p style="margin: 5px 0; font-weight: bold;">{cfg.CONFIG["email"]["signature_org"]}</p>
                             <p style="margin: 5px 0;">電話：{cfg.CONTACT_PHONE}</p>
@@ -430,14 +430,20 @@ def download_lang_data():
     """下載繁體中文語言包"""
     if not os.path.exists(LOCAL_TESSDATA_DIR):
         os.makedirs(LOCAL_TESSDATA_DIR)
-    
+
     # 下載 chi_tra.traineddata
-    url = "https://github.com/tesseract-ocr/tessdata_best/raw/main/chi_tra.traineddata"
+    # 安全: URL 為固定白名單值，非動態用戶輸入
+    ALLOWED_TESSDATA_URLS = [
+        "https://github.com/tesseract-ocr/tessdata_best/raw/main/chi_tra.traineddata",
+        "https://github.com/tesseract-ocr/tessdata_best/raw/main/eng.traineddata",
+    ]
+    url = ALLOWED_TESSDATA_URLS[0]  # chi_tra
     dest = os.path.join(LOCAL_TESSDATA_DIR, "chi_tra.traineddata")
-    
+
     if not os.path.exists(dest):
         with st.spinner("正在下載繁體中文語言包 (約 15MB)..."):
             try:
+                # nosemgrep: python.lang.security.audit.dynamic-urllib-use-detected
                 urllib.request.urlretrieve(url, dest)
                 st.success("下載完成！")
             except Exception as e:
@@ -446,11 +452,13 @@ def download_lang_data():
     # 嘗試複製 eng.traineddata (如果有的話)，否則也下載
     eng_dest = os.path.join(LOCAL_TESSDATA_DIR, "eng.traineddata")
     if not os.path.exists(eng_dest):
-        eng_url = "https://github.com/tesseract-ocr/tessdata_best/raw/main/eng.traineddata"
+        eng_url = ALLOWED_TESSDATA_URLS[1]  # eng
         try:
+            # nosemgrep: python.lang.security.audit.dynamic-urllib-use-detected
             urllib.request.urlretrieve(eng_url, eng_dest)
         except:
             pass # 英文非必要，失敗就算了
+
 
 import shutil
 import uuid
@@ -464,11 +472,11 @@ def get_default_tesseract_path():
         r"C:\Program Files (x86)\Tesseract-OCR\tesseract.exe",
         r"D:\Program Files (x86)\Tesseract-OCR\tesseract.exe"
     ]
-    
+
     for path in possible_paths:
         if os.path.exists(path):
             return path
-    
+
     # 若都找不到，返回預設第一個路徑（即使不存在）
     return possible_paths[0] if possible_paths else ""
 
@@ -479,16 +487,16 @@ def get_default_excel_path():
 def render_equipment_diff(sys_set, ocr_set):
     """
     渲染消防設備比對結果（視覺化 Diff View）
-    
+
     Args:
         sys_set: 系統列管設備集合
         ocr_set: 申報設備集合
-    
+
     Returns:
         HTML 字串，包含顏色標記的比對結果
     """
     html = "<div style='line-height: 2.5;'>"
-    
+
     # 1. 顯示系統有的 (漏報的標紅，吻合的標綠)
     html += "<strong>系統列管：</strong><br>"
     for item in sorted(sys_set):
@@ -498,7 +506,7 @@ def render_equipment_diff(sys_set, ocr_set):
         else:
             # 漏報 (紅色底)
             html += f"<span style='background-color:#fee2e2; color:#991b1b; padding:4px 8px; border-radius:4px; margin-right:5px; margin-bottom:5px; display:inline-block;'>❌ {item} (漏報)</span>"
-    
+
     html += "<br><br><strong>申報資料：</strong><br>"
     for item in sorted(ocr_set):
         if item in sys_set:
@@ -507,7 +515,7 @@ def render_equipment_diff(sys_set, ocr_set):
         else:
             # 多報 (黃色底)
             html += f"<span style='background-color:#fef3c7; color:#92400e; padding:4px 8px; border-radius:4px; margin-right:5px; margin-bottom:5px; display:inline-block;'>⚠️ {item} (新增)</span>"
-            
+
     html += "</div>"
     return html
 
@@ -516,27 +524,27 @@ def load_system_data(excel_path):
     """讀取系統列管資料 Excel (使用複製策略以避免檔案鎖定)"""
     if excel_path is None or not os.path.exists(excel_path):
         return None
-        
+
     temp_path = f"temp_system_data_{uuid.uuid4().hex[:8]}.xls"
-    
+
     try:
         # 1. 複製檔案到暫存檔
         shutil.copy2(excel_path, temp_path)
-        
+
         # 2. 讀取暫存檔
         if excel_path.endswith('.xls'):
             df = pd.read_excel(temp_path, header=1, engine='xlrd')
         else:
             df = pd.read_excel(temp_path, header=1)
-            
+
         # 清理欄位名稱 (去除前後空白、換行符號)
         df.columns = df.columns.astype(str).str.strip().str.replace('\n', '').str.replace('\r', '')
         return df
-        
+
     except Exception as e:
         st.error(f"讀取 Excel 失敗: {e}")
         return None
-        
+
     finally:
         # 3. 刪除暫存檔
         if os.path.exists(temp_path):
@@ -553,13 +561,13 @@ def pdf_to_images(pdf_file, dpi=300):
         stream = pdf_file.read()
     else:
         stream = pdf_file # 假設已經是 bytes 或路徑
-        
+
     # fitz.open 支援路徑或 stream
     if isinstance(stream, str):
         doc = fitz.open(stream)
     else:
         doc = fitz.open(stream=stream, filetype="pdf")
-        
+
     images = []
     for page_num in range(len(doc)):
         page = doc.load_page(page_num)
@@ -573,7 +581,7 @@ def perform_ocr(image, tesseract_cmd):
     temp_img_path = os.path.join(os.getcwd(), "temp_ocr_image.png")
     try:
         image.save(temp_img_path)
-        
+
         cmd = [
             tesseract_cmd,
             temp_img_path,
@@ -581,19 +589,19 @@ def perform_ocr(image, tesseract_cmd):
             "-l", "chi_tra+eng",
             "--tessdata-dir", LOCAL_TESSDATA_DIR
         ]
-        
+
         startupinfo = subprocess.STARTUPINFO()
         startupinfo.dwFlags |= subprocess.STARTF_USESHOWWINDOW
-        
+
         process = subprocess.run(
             cmd,
             capture_output=True,
             startupinfo=startupinfo
         )
-        
+
         stdout_data = process.stdout
         stderr_data = process.stderr
-        
+
         if process.returncode != 0:
             try:
                 err_msg = stderr_data.decode('utf-8')
@@ -605,7 +613,7 @@ def perform_ocr(image, tesseract_cmd):
             text = stdout_data.decode('utf-8')
         except UnicodeDecodeError:
             text = stdout_data.decode('cp950', errors='ignore')
-            
+
         return text
 
     except Exception as e:
@@ -621,27 +629,27 @@ def normalize_equipment_str(text):
     """將輸入的文字進行模糊比對，只保留標準設備清單中的項目"""
     if not text or not isinstance(text, str):
         return ""
-    
+
     found_items = []
     clean_text = text.replace(" ", "").replace("　", "").replace("\n", "")
-    
+
     for item in VALID_EQUIPMENT_LIST:
         if item in clean_text:
             found_items.append(item)
-            
+
     return "、".join(found_items)
 
 def extract_info_from_ocr(text, pages_text_list=None):
     """從 OCR 文字中提取關鍵資訊"""
     info = {}
-    
+
     # --- 第一頁解析 (基本資料) ---
     if text:
         lines = text.split('\n')
         for line in lines:
             clean_line = line.replace(" ", "").replace("　", "").strip()
             if not clean_line: continue
-            
+
             # 1. 管理權人
             if "管理權人" in clean_line:
                 match = re.search(r"管理權人[:：|](.*)", clean_line)
@@ -649,7 +657,7 @@ def extract_info_from_ocr(text, pages_text_list=None):
                     val = match.group(1)
                     if "通訊處" not in val:
                         info['管理權人'] = val
-            
+
             # 備用：找 "姓名"
             if "姓名" in clean_line and "檢修人員" not in clean_line and "管理權人" not in info:
                  match = re.search(r"姓名[:：|](.*)", clean_line)
@@ -658,7 +666,7 @@ def extract_info_from_ocr(text, pages_text_list=None):
                      if "身分證" in val:
                          val = val.split("身分證")[0]
                      info['管理權人'] = val
-            
+
             # 2. 地址
             if "地址" in clean_line:
                  if "場所地址" in clean_line:
@@ -678,7 +686,7 @@ def extract_info_from_ocr(text, pages_text_list=None):
                         val = match.group(1).strip()
                         if any(char.isdigit() for char in val):
                             info['場所電話'] = val
-                     
+
             # 4. 場所名稱
             if "場所名稱" in clean_line:
                 match = re.search(r"場所名稱[:：|](.*)", clean_line)
@@ -695,74 +703,74 @@ def extract_info_from_ocr(text, pages_text_list=None):
     # --- 多頁解析 (尋找消防設備種類) ---
     if pages_text_list and isinstance(pages_text_list, list):
         target_page_text = None
-        
+
         for page_text in pages_text_list:
             if "消防安全設備檢修申報書目錄" in page_text.replace(" ", ""):
                 target_page_text = page_text
                 break
-        
+
         if not target_page_text and len(pages_text_list) > 1:
             target_page_text = pages_text_list[1]
-            
+
         if target_page_text:
             # 解析有勾選的設備項目
             checked_equipment = []
-            
+
             # 擴充的勾選符號清單（包含各種可能的打勾標記）
             checked_markers = ['✓', '☑', 'v', 'V', '√', '✔', '☒', '▣', '■', '●', '✅']
             # 空白方框符號（這些代表未勾選，應該排除）
             unchecked_markers = ['☐', '□', '▢', '▫', '▪']
-            
+
             # 將文字按行分割
             lines = target_page_text.split('\n')
-            
+
             for line in lines:
                 # 【重要】先檢查是否包含空白方框 - 如果有，跳過這一行
                 if any(unchecked in line for unchecked in unchecked_markers):
                     continue
-                
+
                 # 檢查是否包含勾選符號
                 if any(marker in line for marker in checked_markers):
                     # 去除空格和特殊符號後提取設備名稱
                     clean_line = line.replace(" ", "").replace("　", "")
-                    
+
                     # 使用 normalize_equipment_str 從這一行提取標準設備名稱
                     for equipment in VALID_EQUIPMENT_LIST:
                         if equipment in clean_line or equipment.replace("設備", "") in clean_line:
                             if equipment not in checked_equipment:
                                 checked_equipment.append(equipment)
                                 break
-            
+
             # 轉換為字串格式
             if checked_equipment:
                 info['消防設備種類'] = "、".join(checked_equipment)
-                  
+
     return info
 
 def save_delivery_photo(uploaded_file, task_id):
     """
     儲存送餐照片
-    
-        
+
+
     Returns:
         str: 儲存的檔案相對路徑 (用於存入資料庫)
     """
     if uploaded_file is None:
         return None
-    
+
     import datetime
-    
+
     upload_dir = "uploads/delivery_photos"
     if not os.path.exists(upload_dir):
         os.makedirs(upload_dir)
-        
+
     timestamp = datetime.datetime.now().strftime("%Y%m%d_%H%M%S")
     filename = f"delivery_{task_id}_{timestamp}.jpg"
     file_path = os.path.join(upload_dir, filename)
-    
+
     with open(file_path, "wb") as f:
         f.write(uploaded_file.getbuffer())
-        
+
     return file_path
 
 def save_proof_photo(file_buffer, task_id):
@@ -770,53 +778,53 @@ def save_proof_photo(file_buffer, task_id):
     儲存送達證明照片（強制拍照模式）
     - 按月份分類資料夾
     - 壓縮圖片至 800px 寬
-    
+
     Args:
         file_buffer: Streamlit camera_input 或 file_uploader 的 buffer
         task_id: 任務 ID
-        
+
     Returns:
         str: 儲存的檔案相對路徑
     """
     if file_buffer is None:
         return None
-    
+
     import datetime
     from PIL import Image
     import io
-    
+
     # 按月份建立資料夾
     now = datetime.datetime.now()
     year_month = now.strftime("%Y%m")
     upload_dir = f"uploads/delivery_proofs/{year_month}"
-    
+
     if not os.path.exists(upload_dir):
         os.makedirs(upload_dir)
-    
+
     # 生成檔名
     timestamp = now.strftime("%Y%m%d_%H%M%S")
     filename = f"{task_id}_{timestamp}.jpg"
     file_path = os.path.join(upload_dir, filename)
-    
+
     try:
         # 開啟圖片
         image = Image.open(file_buffer)
-        
+
         # 壓縮圖片（寬度 800px）
         if image.width > 800:
             ratio = 800 / image.width
             new_height = int(image.height * ratio)
             image = image.resize((800, new_height), Image.Resampling.LANCZOS)
-        
+
         # 轉換為 RGB（避免 RGBA 錯誤）
         if image.mode in ("RGBA", "P"):
             image = image.convert("RGB")
-        
+
         # 儲存圖片
         image.save(file_path, "JPEG", quality=85, optimize=True)
-        
+
         return file_path
-        
+
     except Exception as e:
         print(f"圖片處理失敗: {e}")
         # 如果壓縮失敗，直接儲存原圖
@@ -838,7 +846,7 @@ def get_libreoffice_path():
         r"D:\Program Files\LibreOffice\program\soffice.exe",
         r"D:\Program Files (x86)\LibreOffice\program\soffice.exe"
     ]
-    
+
     # 也可以嘗試從環境變數或 where 指令找 (這裡先簡單實作)
     for path in possible_paths:
         if os.path.exists(path):
@@ -849,13 +857,13 @@ def convert_doc_to_pdf_libreoffice(doc_path, libreoffice_path):
     """使用 LibreOffice 將 Word 轉 PDF (Headless 模式，不開啟視窗)"""
     import subprocess
     import os
-    
+
     doc_path = os.path.abspath(doc_path)
     output_dir = os.path.dirname(doc_path)
-    
+
     # LibreOffice 的 --convert-to pdf 會將檔案輸出到 --outdir 指定的目錄
     # 檔名會自動變成 [原檔名].pdf
-    
+
     cmd = [
         libreoffice_path,
         "--headless",
@@ -863,19 +871,19 @@ def convert_doc_to_pdf_libreoffice(doc_path, libreoffice_path):
         "--outdir", output_dir,
         doc_path
     ]
-    
+
     try:
         # 執行轉換
         subprocess.run(cmd, check=True, capture_output=True, timeout=120)
-        
+
         # 預期產生的 PDF 路徑
         pdf_path = os.path.splitext(doc_path)[0] + ".pdf"
-        
+
         if os.path.exists(pdf_path):
             return pdf_path
         else:
             raise Exception("LibreOffice 轉換失敗：未產生 PDF 檔案")
-            
+
     except subprocess.CalledProcessError as e:
         raise Exception(f"LibreOffice 執行錯誤: {e.stderr.decode('utf-8', errors='ignore')}")
     except Exception as e:
@@ -894,26 +902,26 @@ def convert_doc_to_pdf(doc_path):
         except Exception as e:
             print(f"LibreOffice 轉換失敗，嘗試切換回 Word COM: {e}")
             # 失敗後繼續往下執行 Word COM 邏輯
-    
+
     # 2. 使用 Word COM (原有的實作)
     import subprocess
     import os
     import shutil
-    
+
     doc_path = os.path.abspath(doc_path)
     # 產生暫存 PDF 路徑 (同目錄下，避免檔名衝突)
     pdf_path = os.path.splitext(doc_path)[0] + f"_temp_{uuid.uuid4().hex[:8]}.pdf"
-    
+
     # --- FIX: 解決 Word "上次開啟造成嚴重錯誤" 的對話框 ---
     # 策略：將原始檔案複製一份到暫存檔 (使用隨機檔名)，讓 Word 認為是新檔案
     temp_doc_path = os.path.join(os.path.dirname(doc_path), f"temp_word_{uuid.uuid4().hex[:8]}{os.path.splitext(doc_path)[1]}")
     shutil.copy2(doc_path, temp_doc_path)
     # ---------------------------------------------------
-    
+
     # 處理路徑中的特殊字符 (PowerShell Escape)
     ps_doc_path = temp_doc_path.replace("'", "''") # 使用暫存檔路徑
     ps_pdf_path = pdf_path.replace("'", "''")
-    
+
     # PowerShell Script
     # wdFormatPDF = 17
     ps_script = f"""
@@ -922,7 +930,7 @@ def convert_doc_to_pdf(doc_path):
         $word = New-Object -ComObject Word.Application
         $word.Visible = $false
         $word.DisplayAlerts = 0 # wdAlertsNone
-        
+
         $doc = $word.Documents.Open('{ps_doc_path}')
         $doc.SaveAs([ref] '{ps_pdf_path}', [ref] 17)
         $doc.Close()
@@ -936,38 +944,38 @@ def convert_doc_to_pdf(doc_path):
         }}
     }}
     """
-    
+
     # 執行 PowerShell
     try:
         cmd = ["powershell", "-NoProfile", "-ExecutionPolicy", "Bypass", "-Command", ps_script]
         # 設定 startupinfo 隱藏視窗 (Windows only)
         startupinfo = subprocess.STARTUPINFO()
         startupinfo.dwFlags |= subprocess.STARTF_USESHOWWINDOW
-        
+
         # 添加 60 秒超時限制
         result = subprocess.run(
-            cmd, 
-            capture_output=True, 
-            text=True, 
+            cmd,
+            capture_output=True,
+            text=True,
             startupinfo=startupinfo,
             timeout=60  # 60 秒超時
         )
-        
+
         if result.returncode != 0:
             raise Exception(f"PowerShell Error: {result.stderr}")
-            
+
         if not os.path.exists(pdf_path):
             raise Exception("PDF conversion failed (file not created)")
-            
+
         return pdf_path
-    
+
     except subprocess.TimeoutExpired:
         # 超時錯誤
         if os.path.exists(pdf_path):
             try: os.remove(pdf_path)
             except: pass
         raise Exception("Word 轉換超時 (>60秒)，請檢查文件大小或嘗試直接上傳 PDF")
-        
+
     except Exception as e:
         # 如果失敗，嘗試清理
         if os.path.exists(pdf_path):
@@ -979,4 +987,3 @@ def convert_doc_to_pdf(doc_path):
         if os.path.exists(temp_doc_path):
             try: os.remove(temp_doc_path)
             except: pass
-

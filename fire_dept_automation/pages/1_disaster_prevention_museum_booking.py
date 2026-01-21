@@ -25,9 +25,9 @@ sidebar_nav.render_chinese_sidebar()
 # Hero Banner (橫幅標題) - 升級版
 # ==========================================
 st.markdown("""
-    <div style="background: linear-gradient(135deg, #1e3a8a 0%, #3b82f6 50%, #06b6d4 100%); 
-                padding: 40px 20px; 
-                border-radius: 15px; 
+    <div style="background: linear-gradient(135deg, #1e3a8a 0%, #3b82f6 50%, #06b6d4 100%);
+                padding: 40px 20px;
+                border-radius: 15px;
                 margin-bottom: 30px;
                 box-shadow: 0 10px 30px rgba(0,0,0,0.2);">
         <h1 style="color: white; font-size: 2.8em; font-weight: bold; text-align: center; margin: 0; text-shadow: 2px 2px 4px rgba(0,0,0,0.3);">
@@ -59,9 +59,9 @@ st.sidebar.info("週二至週日 09:00-12:00 / 14:00-17:00  \n(週一休館)")
 if page == " 關於本館":
     st.header(" 關於本館")
     st.markdown("<br>", unsafe_allow_html=True)
-    
+
     col_about1, col_about2 = st.columns([2, 1])
-    
+
     with col_about1:
         st.subheader(" 設立宗旨")
         st.markdown(
@@ -73,9 +73,9 @@ if page == " 關於本館":
             "-  **社區與學校合作**: 深耕在地防災文化\n"
             "-  **科技與創新**: 運用VR, AR等互動科技"
         )
-        
+
         st.markdown("<br>", unsafe_allow_html=True)
-        
+
         st.subheader(" 服務對象")
         col_s1, col_s2, col_s3 = st.columns(3)
         with col_s1:
@@ -84,7 +84,7 @@ if page == " 關於本館":
             st.info("** 一般民眾**\n個人或家庭參觀")
         with col_s3:
             st.info("** 機關團體**\n企業, 社區組織")
-    
+
     with col_about2:
         st.subheader(" 開放資訊")
         st.success(
@@ -101,9 +101,9 @@ if page == " 關於本館":
             "線上預約系統\n"
             "(建議提前3天預約)"
         )
-        
+
         st.markdown("<br>", unsafe_allow_html=True)
-        
+
         st.subheader(" 聯絡我們")
         st.info(
             "**服務電話**\n"
@@ -120,10 +120,10 @@ if page == " 關於本館":
 elif page == " 最新消息":
     st.header(" 最新消息 & 公告")
     st.markdown("<br>", unsafe_allow_html=True)
-    
+
     # 公告卡片
     col_news1, col_news2 = st.columns(2)
-    
+
     with col_news1:
         with st.container():
             st.info(
@@ -132,9 +132,9 @@ elif page == " 最新消息":
                 "天氣轉涼, 請注意用火用電安全. 本館於 **11/15 舉辦「防範一氧化碳中毒」特別講座**,\n"
                 "歡迎縣民報名參加. 講座內容包含熱水器安全使用, 通風重要性, 五要原則等實用知識."
             )
-            
+
         st.markdown("<br>", unsafe_allow_html=True)
-        
+
         with st.container():
             st.success(
                 "#### 【榮譽】本館榮獲 2025 數位防災優良場域\n"
@@ -142,7 +142,7 @@ elif page == " 最新消息":
                 "感謝縣民支持, 本館榮獲數發部頒發「2025 年度優良智慧場域」殊榮!\n"
                 "未來將持續結合科技與防災教育, 提供更優質的體驗服務."
             )
-    
+
     with col_news2:
         with st.container():
             st.warning(
@@ -158,20 +158,20 @@ elif page == " 最新消息":
 elif page == " 館內設施":
     st.header(" 館內設施導覽")
     st.markdown("<br>", unsafe_allow_html=True)
-    
+
     # 使用 Tabs 或 Expander 展示不同區域
     topic = st.radio(
         "選擇體驗區域",
         [" 火災防護", " 地震應變", " 颱風防災", " 水災應對", " 緊急救護"],
         horizontal=True
     )
-    
+
     st.markdown("<br>", unsafe_allow_html=True)
-    
+
     if topic == " 火災防護":
         with st.expander(" 火災預防與逃生", expanded=True):
             col_fire1, col_fire2 = st.columns(2)
-            
+
             with col_fire1:
                 st.markdown(
                     "#### 火災預防要點\n"
@@ -181,7 +181,7 @@ elif page == " 館內設施":
                     "- 定期更換瓦斯管線\n"
                     "- 安裝住警器"
                 )
-            
+
             with col_fire2:
                 st.markdown(
                     "#### 火場逃生原則\n"
@@ -190,7 +190,7 @@ elif page == " 館內設施":
                     "3. **往下逃生**: 不搭電梯, 走樓梯往下\n"
                     "4. **濕毛巾摀口鼻**: 過濾煙霧"
                 )
-    
+
     elif topic == " 地震應變":
         with st.expander(" 地震避難與準備", expanded=True):
             st.markdown(
@@ -205,9 +205,9 @@ elif page == " 館內設施":
                 "- 打開收音機接收訊息\n\n"
                 "### 地震包準備清單"
             )
-            
+
             col_eq1, col_eq2, col_eq3 = st.columns(3)
-            
+
             with col_eq1:
                 st.markdown(
                     "**基本用品**\n"
@@ -217,7 +217,7 @@ elif page == " 館內設施":
                     "- 收音機\n"
                     "- 電池"
                 )
-            
+
             with col_eq2:
                 st.markdown(
                     "**醫療用品**\n"
@@ -227,7 +227,7 @@ elif page == " 館內設施":
                     "- 溫度計\n"
                     "- 消毒酒精"
                 )
-            
+
             with col_eq3:
                 st.markdown(
                     "**重要文件**\n"
@@ -237,7 +237,7 @@ elif page == " 館內設施":
                     "- 緊急聯絡清單\n"
                     "- 現金"
                 )
-    
+
     elif topic == " 颱風防災":
         with st.expander(" 颱風來臨前的準備", expanded=True):
             st.markdown(
@@ -258,7 +258,7 @@ elif page == " 館內設施":
                 "-  避免使用電梯\n"
                 "- 保持手機電力充足"
             )
-    
+
     elif topic == " 水災應對":
         with st.expander(" 淹水應變措施", expanded=True):
             st.markdown(
@@ -278,7 +278,7 @@ elif page == " 館內設施":
                 "- 整理受損物品\n"
                 "- 申請災害補助"
             )
-    
+
     elif topic == " 緊急救護":
         with st.expander(" CPR與AED使用", expanded=True):
             st.markdown(
@@ -305,15 +305,15 @@ elif page == " 館內設施":
 elif page == " 交通資訊":
     st.header(" 交通資訊")
     st.markdown("<br>", unsafe_allow_html=True)
-    
+
     col_traffic1, col_traffic2 = st.columns([2, 1])
-    
+
     with col_traffic1:
         st.subheader(" 地圖位置")
         # 嵌入 Google Maps 連結按鈕
         st.link_button(" 開啟 Google Maps 導航", "https://www.google.com/maps/search/?api=1&query=臺東縣消防局防災教育館")
         st.markdown("<br>", unsafe_allow_html=True)
-        
+
         st.subheader(" 交通指引")
         st.info(
             "####  自行開車\n"
@@ -323,13 +323,13 @@ elif page == " 交通資訊":
             "- 本館設有免費停車場 (約30個車位)\n"
             "- 周邊道路設有路邊停車格"
         )
-        
+
         st.warning(
             "####  搭乘公車\n"
             "- **普悠瑪客運**: 搭乘市區觀光循環線, 於「消防局站」下車, 步行約 2 分鐘\n"
             "- **鼎東客運**: 搭乘海線/山線班次, 於「臺東轉運站」轉乘計程車約 10 分鐘"
         )
-    
+
     with col_traffic2:
         st.subheader(" 聯絡資訊")
         st.markdown(
@@ -347,9 +347,9 @@ elif page == " 交通資訊":
 # ==========================================
 elif page == " 預約參觀":
     st.header(" 預約參觀系統")
-    
+
     tab_reserve, tab_check_capacity, tab_my_bookings = st.tabs([" 新增預約", " 查詢剩餘名額", " 查詢我的預約"])
-    
+
     # Tab 1: 新增預約 (完整日曆版 - 點擊時段預約)
     with tab_reserve:
         # 使用 session_state 管理選擇的日期和時段
@@ -357,25 +357,25 @@ elif page == " 預約參觀":
             st.session_state.selected_date = None
         if 'selected_time_slot' not in st.session_state:
             st.session_state.selected_time_slot = None
-        
+
         # Step 1: 顯示完整日曆
         if st.session_state.selected_date is None:
             st.subheader("📅 請在日曆中點擊時段進行預約")
             st.info("💡 點擊日曆中的時段標籤（如 09:00-12:00），直接進入該時段的預約表單。綠色表示空檔充足，紅色表示休館日或已額滿。")
-            
+
             st.markdown("<br>", unsafe_allow_html=True)
-            
+
             # 準備日曆事件資料
             calendar_events = []
-            
+
             # 只使用 2 個時段
             time_slots = ["09:00-12:00", "14:00-17:00"]
-            
+
             for i in range(1, 61):
                 future_date = datetime.date.today() + datetime.timedelta(days=i)
                 date_str = future_date.strftime("%Y-%m-%d")
                 weekday = future_date.weekday()
-                
+
                 # 週一休館日
                 if weekday == 0:
                     calendar_events.append({
@@ -394,7 +394,7 @@ elif page == " 預約參觀":
                     for slot in time_slots:
                         count = db_manager.get_booking_count_by_slot(date_str, slot)
                         remaining = 50 - count
-                        
+
                         if remaining > 0:
                             # 根據剩餘名額設定顏色
                             if remaining > 30:
@@ -403,7 +403,7 @@ elif page == " 預約參觀":
                                 color = "#ffc107"  # 黃色：尚有空檔
                             else:
                                 color = "#fd7e14"  # 橘色：名額有限
-                            
+
                             calendar_events.append({
                                 "title": f"{slot}\n剩餘 {remaining}人",
                                 "start": date_str,
@@ -417,7 +417,7 @@ elif page == " 預約參觀":
                                     "remaining": remaining
                                 }
                             })
-            
+
             # 日曆選項
             calendar_options = {
                 "initialView": "dayGridMonth",
@@ -439,18 +439,18 @@ elif page == " 預約參觀":
                     "end": (datetime.date.today() + datetime.timedelta(days=61)).strftime("%Y-%m-%d")
                 }
             }
-            
+
             # 顯示日曆
             cal_return = calendar(events=calendar_events, options=calendar_options, key="museum_calendar")
-            
+
             # 處理事件點擊
             if cal_return and 'eventClick' in cal_return and cal_return['eventClick']:
                 event_info = cal_return['eventClick']['event']
-                
+
                 # 檢查是否點擊了休館日
                 if 'extendedProps' in event_info:
                     ext_props = event_info['extendedProps']
-                    
+
                     if ext_props.get('isHoliday'):
                         st.error("⚠️ 該日為休館日（週一），請選擇其他日期")
                     elif 'date' in ext_props and 'timeSlot' in ext_props:
@@ -458,24 +458,24 @@ elif page == " 預約參觀":
                         st.session_state.selected_date = ext_props['date']
                         st.session_state.selected_time_slot = ext_props['timeSlot']
                         st.rerun()
-                
+
         # Step 2: 顯示預約表單（已選擇日期和時段後）
         else:
             selected_date_obj = datetime.datetime.strptime(st.session_state.selected_date, "%Y-%m-%d").date()
             weekday = ["一","二","三","四","五","六","日"][selected_date_obj.weekday()]
-            
+
             st.success(f"✅ 您選擇的參觀時段：**{st.session_state.selected_date}** (週{weekday}) **{st.session_state.selected_time_slot}**")
-            
+
             col_back1, col_back2 = st.columns([1, 5])
             with col_back1:
                 if st.button("← 重新選擇時段"):
                     st.session_state.selected_date = None
                     st.session_state.selected_time_slot = None
                     st.rerun()
-            
+
             st.markdown("<br>", unsafe_allow_html=True)
             st.subheader("填寫預約資訊")
-            
+
             with st.form("booking_form"):
                 # 新增: 參觀類型選擇
                 visit_type = st.radio(
@@ -483,11 +483,11 @@ elif page == " 預約參觀":
                     ["個人/家庭", "學校/機關團體"],
                     horizontal=True
                 )
-                
+
                 st.markdown("<br>", unsafe_allow_html=True)
-                
+
                 col_form1, col_form2 = st.columns(2)
-                
+
                 with col_form1:
                     # 顯示已選擇的日期和時段（只讀）
                     st.text_input(
@@ -495,20 +495,20 @@ elif page == " 預約參觀":
                         value=f"{st.session_state.selected_date} (週{weekday})",
                         disabled=True
                     )
-                    
+
                     st.text_input(
                         "參觀時段",
                         value=st.session_state.selected_time_slot,
                         disabled=True
                     )
-                    
+
                     # 顯示該時段剩餘名額
                     current_count = db_manager.get_booking_count_by_slot(
                         st.session_state.selected_date,
                         st.session_state.selected_time_slot
                     )
                     remaining = 50 - current_count
-                    
+
                     if remaining > 30:
                         st.info(f"💺 該時段剩餘名額：**{remaining}** 人")
                     elif remaining > 10:
@@ -517,29 +517,29 @@ elif page == " 預約參觀":
                         st.error(f"🚨 該時段名額有限：僅剩 **{remaining}** 人")
                     else:
                         st.error("❌ 該時段已額滿")
-                    
+
                     # 動態顯示人數欄位
                     if visit_type == "學校/機關團體":
                         visitor_count = st.number_input("預計人數 *", min_value=10, max_value=50, value=20)
                     else:
                         visitor_count = st.number_input("人數 *", min_value=1, max_value=10, value=2)
-                
+
                 with col_form2:
                     applicant_name = st.text_input("聯絡人姓名 *")
                     applicant_phone = st.text_input("聯絡電話 *", placeholder="0912-345-678")
-                    
+
                     # 動態顯示團體名稱
                     if visit_type == "學校/機關團體":
                         organization = st.text_input("團體/單位名稱 *", placeholder="例如: 臺東縣XX國小")
                     else:
                         organization = st.text_input("單位/學校名稱 (選填)")
-                    
+
                     email = st.text_input("Email (選填)")
-                
+
                 st.caption("* 為必填欄位")
-                
+
                 submitted = st.form_submit_button("提交預約", type="primary", use_container_width=True)
-                
+
                 if submitted:
                     # 驗證必填欄位
                     if not applicant_name or not applicant_phone:
@@ -563,23 +563,23 @@ elif page == " 預約參觀":
                         st.success(f"🎉 預約成功! 預約編號: **{booking_id}**")
                         st.info(f"📋 **{visit_type}** 預約\n人數: {visitor_count} 人\n請保存您的聯絡電話 **{applicant_phone}**, 以便查詢或取消預約.")
                         st.balloons()
-                        
+
                         # 發送 Email 通知
                         if email:
                             # 取得 Email 設定
                             sender_email = st.secrets["email"].get("sender_email", "") if "email" in st.secrets else ""
                             sender_password = st.secrets["email"].get("sender_password", "") if "email" in st.secrets else ""
-                            
+
                             if sender_email and sender_password:
                                 with st.spinner("📧 正在發送預約確認信..."):
                                     # 組建郵件內容
                                     subject = f"【臺東縣消防局】防災教育館預約確認通知 - 預約編號 {booking_id}"
-                                    
+
                                     # 格式化日期顯示
                                     date_obj = datetime.datetime.strptime(st.session_state.selected_date, "%Y-%m-%d")
                                     weekday = ["一","二","三","四","五","六","日"][date_obj.weekday()]
                                     date_display = f"{date_obj.strftime('%Y年%m月%d日')} (週{weekday})"
-                                    
+
                                     content_html = f"""
                                     <p>感謝您預約臺東縣消防局防災教育館參觀！</p>
                                     <p>您的預約資訊如下：</p>
@@ -613,7 +613,7 @@ elif page == " 預約參觀":
                                             <td style="padding: 10px; border: 1px solid #e2e8f0;">{applicant_phone}</td>
                                         </tr>
                                     </table>
-                                    
+
                                     <p><strong>重要提醒：</strong></p>
                                     <ul style="line-height: 1.8;">
                                         <li>請妥善保存此預約編號：<strong>{booking_id}</strong></li>
@@ -621,10 +621,10 @@ elif page == " 預約參觀":
                                         <li>如需取消或變更預約，請撥打電話：089-322112</li>
                                         <li>本館地址：950 臺東縣臺東市四維路二段100號</li>
                                     </ul>
-                                    
+
                                     <p>期待您的蒞臨！</p>
                                     """
-                                    
+
                                     # 使用統一模板生成完整 HTML
                                     full_html = utils.generate_email_html(
                                         title="防災教育館預約確認",
@@ -633,36 +633,36 @@ elif page == " 預約參觀":
                                         highlight_info=f"預約編號：{booking_id}",
                                         color_theme="#2563eb"  # 藍色主題
                                     )
-                                    
+
                                     # 發送郵件
                                     success, msg = utils.send_email(sender_email, sender_password, email, subject, full_html)
-                                    
+
                                     if success:
                                         st.toast(f"✅ 預約確認信已發送至 {email}", icon="📧")
                                     else:
                                         st.warning(f"預約成功，但郵件發送失敗：{msg}")
                             else:
                                 st.info("💡 提示：若需自動發送預約確認信，請聯絡系統管理員設定郵件服務。")
-                        
+
                         # 清除選擇
                         st.session_state.selected_date = None
                         st.session_state.selected_time_slot = None
-    
-    
+
+
     # Tab 2: 查詢剩餘名額
     with tab_check_capacity:
         st.subheader("查詢各時段剩餘名額")
-        
+
         query_date = st.date_input(
             "選擇日期",
             min_value=datetime.date.today(),
             max_value=datetime.date.today() + datetime.timedelta(days=60),
             key="query_date"
         )
-        
+
         if st.button(" 查詢", key="check_capacity"):
             time_slots = ["09:00-11:00", "11:00-13:00", "14:00-16:00", "16:00-18:00"]
-            
+
             capacity_data = []
             for slot in time_slots:
                 count = db_manager.get_booking_count_by_slot(
@@ -676,31 +676,31 @@ elif page == " 預約參觀":
                     "剩餘名額": remaining,
                     "狀態": " 可預約" if remaining > 10 else " 名額有限" if remaining > 0 else " 已額滿"
                 })
-            
+
             import pandas as pd
             df_capacity = pd.DataFrame(capacity_data)
             st.dataframe(df_capacity, use_container_width=True, hide_index=True)
-    
+
     # Tab 3: 查詢我的預約
     with tab_my_bookings:
         st.subheader("查詢我的預約記錄")
-        
+
         query_phone = st.text_input("請輸入預約時使用的電話號碼", key="query_phone")
-        
+
         if st.button(" 查詢預約", key="check_bookings"):
             if query_phone:
                 bookings = db_manager.get_bookings_by_phone(query_phone)
-                
+
                 if bookings:
                     import pandas as pd
                     df_bookings = pd.DataFrame([dict(b) for b in bookings])
-                    
+
                     # 只顯示相關欄位
                     display_df = df_bookings[['id', 'visit_date', 'time_slot', 'applicant_name', 'visitor_count', 'organization', 'status']]
                     display_df.columns = ['預約編號', '參觀日期', '時段', '聯絡人', '人數', '團體名稱', '狀態']
-                    
+
                     st.dataframe(display_df, use_container_width=True, hide_index=True)
-                    
+
                     # 取消預約功能
                     st.markdown("<br>", unsafe_allow_html=True)
                     cancel_id = st.number_input("輸入要取消的預約編號", min_value=1, step=1, key="cancel_id")
@@ -720,9 +720,9 @@ elif page == " 預約參觀":
 # ==========================================
 elif page == " 防災知識與影音":
     st.header(" 防災知識與影音")
-    
+
     tab_articles, tab_videos = st.tabs([" 📝 防災知識文章", " 🎬 宣導影片"])
-    
+
     with tab_articles:
         st.subheader(" 📝 防災知識文章")
         st.info(
@@ -734,32 +734,32 @@ elif page == " 防災知識與影音":
             "4. 要注意安全的安裝\n"
             "5. 要注意平時的檢修"
         )
-        
+
     with tab_videos:
         st.subheader(" 精選防災宣導影片")
         st.markdown("由內政部消防署提供的官方宣導影片")
         st.markdown("<br>", unsafe_allow_html=True)
-        
+
         col_v1, col_v2 = st.columns(2)
-        
+
         with col_v1:
             st.markdown("####  住宅用火災警報器宣導")
             st.video("https://www.youtube.com/watch?v=wEA2cBfMbLM")
             st.caption("影片來源: 內政部消防署")
-            
+
             st.markdown("<br>", unsafe_allow_html=True)
-            
+
             st.markdown("####  CPR+AED教學影片")
             st.video("https://www.youtube.com/watch?v=7rZvvLAWwFo")
             st.caption("影片來源: 消防署緊急救護宣導")
-        
+
         with col_v2:
             st.markdown("####  地震保命三步驟")
             st.video("https://www.youtube.com/watch?v=v3HXX6dMjSU")
             st.caption("影片來源: 內政部消防署")
-            
+
             st.markdown("<br>", unsafe_allow_html=True)
-            
+
             st.markdown("####  防災知識大會考")
             st.info(
                 "**更多影片資源**\n\n"

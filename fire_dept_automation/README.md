@@ -40,23 +40,23 @@ graph TB
         A --> F[防災導覽<br/>3_📢_防災智慧導覽.py]
         A --> G[OCR比對<br/>4_自動比對系統.py]
     end
-    
+
     subgraph 業務邏輯層
         H[auth.py<br/>身份驗證]
         I[utils.py<br/>工具函式<br/>OCR/Email/CSS]
         J[db_manager.py<br/>資料庫操作]
     end
-    
+
     subgraph 資料層
         K[(cases.db<br/>SQLite)]
         L[uploads/<br/>檔案儲存]
     end
-    
+
     subgraph 設定檔
         M[config.toml<br/>系統設定]
         N[secrets.toml<br/>機密資訊]
     end
-    
+
     B & C & D & E & F & G --> H
     H --> J
     I --> J
@@ -64,7 +64,7 @@ graph TB
     B & D & F --> L
     H & I --> M
     I --> N
-    
+
     style A fill:#FF4B4B,color:#fff
     style D fill:#3DD598,color:#fff
     style F fill:#3788d8,color:#fff
@@ -481,6 +481,6 @@ streamlit run 首頁.py
 
 ---
 
-**開發時間**：2025年11月  
-**版本**：v1.0.0  
+**開發時間**：2025年11月
+**版本**：v1.0.0
 **最後更新**：2025-11-22

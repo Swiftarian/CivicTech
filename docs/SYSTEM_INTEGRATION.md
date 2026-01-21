@@ -229,8 +229,8 @@ app.use(cors({
 
 ```powershell
 # 查看 CPU 和記憶體使用
-Get-Process | Where-Object {$_.ProcessName -like "*python*" -or $_.ProcessName -like "*node*"} | 
-  Select-Object ProcessName, CPU, WorkingSet | 
+Get-Process | Where-Object {$_.ProcessName -like "*python*" -or $_.ProcessName -like "*node*"} |
+  Select-Object ProcessName, CPU, WorkingSet |
   Format-Table -AutoSize
 ```
 
@@ -301,5 +301,5 @@ server {
 
 ---
 
-**最後更新**: 2025-11-27  
+**最後更新**: 2025-11-27
 **維護者**: CivicTech Team

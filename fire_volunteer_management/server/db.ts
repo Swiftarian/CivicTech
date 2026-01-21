@@ -1,7 +1,7 @@
 import { eq, and, desc, gte, lte, or, like, sql, isNotNull } from "drizzle-orm";
 import { drizzle } from "drizzle-orm/mysql2";
-import { 
-  InsertUser, users, 
+import {
+  InsertUser, users,
   volunteers, InsertVolunteer,
   bookings, InsertBooking,
   schedules, InsertSchedule,
@@ -172,12 +172,12 @@ export async function updateVolunteer(id: number, data: Partial<InsertVolunteer>
 export async function deleteVolunteer(id: number) {
   const db = await getDb();
   if (!db) return;
-  
+
   // 刪除志工前，先刪除相關的排班、打卡、請假等記錄
   await db.delete(attendances).where(eq(attendances.volunteerId, id));
   await db.delete(leaveRequests).where(eq(leaveRequests.volunteerId, id));
   await db.delete(schedules).where(eq(schedules.volunteerId, id));
-  
+
   // 最後刪除志工記錄
   await db.delete(volunteers).where(eq(volunteers.id, id));
 }
@@ -241,15 +241,15 @@ export async function assignVolunteerToBooking(bookingId: number, volunteerId: n
 export async function getBookingsNeedingReminder() {
   const db = await getDb();
   if (!db) return [];
-  
+
   // 計算3天後的日期範圍（當天的開始和結束）
   const threeDaysLater = new Date();
   threeDaysLater.setDate(threeDaysLater.getDate() + 3);
   threeDaysLater.setHours(0, 0, 0, 0); // 設定為當天開始
-  
+
   const threeDaysLaterEnd = new Date(threeDaysLater);
   threeDaysLaterEnd.setHours(23, 59, 59, 999); // 設定為當天結束
-  
+
   // 查詢條件：
   // 1. 參訪日期為3天後
   // 2. 還沒有發送過提醒（reminderSent = 'no'）
@@ -374,29 +374,29 @@ export async function getPendingLeaveRequests() {
 }
 
 export async function updateLeaveRequestStatus(
-  id: number, 
+  id: number,
   status: "pending" | "approved" | "rejected",
   reviewedBy: number,
   reviewNotes?: string
 ) {
   const db = await getDb();
   if (!db) return;
-  
+
   // 取得請假申請資料
   const leaveRequest = await db.select()
     .from(leaveRequests)
     .where(eq(leaveRequests.id, id))
     .limit(1);
-  
+
   if (leaveRequest.length === 0) return;
-  
+
   const request = leaveRequest[0];
-  
+
   // 更新請假申請狀態
   await db.update(leaveRequests)
     .set({ status, reviewedBy, reviewedAt: new Date(), reviewNotes })
     .where(eq(leaveRequests.id, id));
-  
+
   // 取得志工和使用者資料
   const volunteerData = await db.select({
     volunteerId: volunteers.id,
@@ -408,20 +408,20 @@ export async function updateLeaveRequestStatus(
     .leftJoin(users, eq(volunteers.userId, users.id))
     .where(eq(volunteers.id, request.volunteerId))
     .limit(1);
-  
+
   if (volunteerData.length === 0) return;
-  
+
   const { userId, userName, userEmail } = volunteerData[0];
-  
+
   // 發送系統內通知
-  const notificationTitle = status === 'approved' 
-    ? '請假/換班申請已核准' 
+  const notificationTitle = status === 'approved'
+    ? '請假/換班申請已核准'
     : '請假/換班申請已拒絕';
-  
+
   const notificationMessage = status === 'approved'
     ? `您的${request.type === 'leave' ? '請假' : '換班'}申請已被核准。${reviewNotes ? `\n審核備註：${reviewNotes}` : ''}`
     : `您的${request.type === 'leave' ? '請假' : '換班'}申請已被拒絕。${reviewNotes ? `\n拒絕原因：${reviewNotes}` : ''}`;
-  
+
   await createNotification({
     userId,
     type: 'leave_request_review',
@@ -431,10 +431,10 @@ export async function updateLeaveRequestStatus(
     relatedType: 'leave_request',
     isRead: false
   });
-  
-  return { 
-    volunteerId: volunteerData[0].volunteerId, 
-    userId, 
+
+  return {
+    volunteerId: volunteerData[0].volunteerId,
+    userId,
     userName: userName || '志工',
     userEmail: userEmail || null,
     requestType: request.type
@@ -556,8 +556,8 @@ export async function completeDelivery(deliveryId: number, photo?: string, signa
   const db = await getDb();
   if (!db) return;
   await db.update(mealDeliveries)
-    .set({ 
-      status: "delivered", 
+    .set({
+      status: "delivered",
       deliveredTime: new Date(),
       photo,
       recipientSignature: signature
@@ -659,9 +659,9 @@ export async function getEmailLogs(params: {
 
   try {
     const { limit = 50, offset = 0, emailType, isTest } = params;
-    
+
     let query = db.select().from(emailLogs);
-    
+
     const conditions = [];
     if (emailType) {
       conditions.push(eq(emailLogs.emailType, emailType));
@@ -669,16 +669,16 @@ export async function getEmailLogs(params: {
     if (isTest !== undefined) {
       conditions.push(eq(emailLogs.isTest, isTest));
     }
-    
+
     if (conditions.length > 0) {
       query = query.where(and(...conditions)) as any;
     }
-    
+
     const result = await query
       .orderBy(desc(emailLogs.sentAt))
       .limit(limit)
       .offset(offset);
-    
+
     return result;
   } catch (error) {
     console.error("[Database] Failed to get email logs:", error);
@@ -702,7 +702,7 @@ export async function getEmailStats(): Promise<{
 
   try {
     const allLogs = await db.select().from(emailLogs);
-    
+
     return {
       total: allLogs.length,
       success: allLogs.filter(log => log.status === 'success').length,
@@ -753,7 +753,7 @@ export async function getVolunteerPerformanceStats(volunteerId: number) {
       if (timeMatch) {
         const endHour = parseInt(timeMatch[3]);
         const endMinute = parseInt(timeMatch[4]);
-        
+
         const deliveryDate = new Date(delivery.deliveryDate);
         const deadline = new Date(deliveryDate);
         deadline.setHours(endHour, endMinute, 0, 0);
@@ -782,7 +782,7 @@ export async function getAllVolunteersPerformance() {
   if (!db) return [];
 
   const volunteersData = await db.select().from(volunteers);
-  
+
   const stats = await Promise.all(
     volunteersData.map(async (volunteer) => {
       const performance = await getVolunteerPerformanceStats(volunteer.id);

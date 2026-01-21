@@ -166,7 +166,7 @@ if (input.contactEmail) {
     month: '2-digit',
     day: '2-digit'
   });
-  
+
   if (input.type === 'group' && input.organizationName) {
     // 團體預約
     await sendGroupBookingConfirmationEmail(

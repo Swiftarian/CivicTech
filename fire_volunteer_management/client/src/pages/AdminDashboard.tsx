@@ -11,12 +11,12 @@ import { trpc } from "@/lib/trpc";
 import { toast } from "sonner";
 import { format } from "date-fns";
 import { zhTW } from "date-fns/locale";
-import { 
-  Users, 
-  Calendar, 
-  FileText, 
-  Truck, 
-  CheckCircle, 
+import {
+  Users,
+  Calendar,
+  FileText,
+  Truck,
+  CheckCircle,
   XCircle,
   Clock,
   TrendingUp
@@ -238,9 +238,9 @@ export default function AdminDashboard() {
                             <div className="flex gap-2">
                               <Button
                                 size="sm"
-                                onClick={() => updateBookingStatus.mutate({ 
-                                  id: booking.id, 
-                                  status: 'confirmed' 
+                                onClick={() => updateBookingStatus.mutate({
+                                  id: booking.id,
+                                  status: 'confirmed'
                                 })}
                               >
                                 確認
@@ -248,9 +248,9 @@ export default function AdminDashboard() {
                               <Button
                                 size="sm"
                                 variant="destructive"
-                                onClick={() => updateBookingStatus.mutate({ 
-                                  id: booking.id, 
-                                  status: 'cancelled' 
+                                onClick={() => updateBookingStatus.mutate({
+                                  id: booking.id,
+                                  status: 'cancelled'
                                 })}
                               >
                                 取消
