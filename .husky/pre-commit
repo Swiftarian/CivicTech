@@ -1,4 +1,7 @@
 #!/usr/bin/env sh
 . "$(dirname "$0")/_/husky.sh"
 
+# Move markdown files to docs/ directories
+sh "$(dirname "$0")/move-docs.sh"
+
 pnpm exec lint-staged
