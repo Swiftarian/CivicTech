@@ -141,41 +141,62 @@ export function ImageUploader({
   };
 
   // Sanitize image URL to prevent XSS
-  const getSafeImageUrl = (url: string | null): string | undefined => {
-    if (!url) return undefined;
+  const getSafeImageUrl = (url: string | null): string => {
+    if (!url) return '';
     
-    // Only allow data URLs (base64) and https URLs
+    // Only allow data URLs (base64) for base64 encoded images
     if (url.startsWith('data:image/')) {
-      return url;
+      // Validate that it's actually a proper data URL with base64
+      const dataUrlPattern = /^data:image\/(jpeg|jpg|png|gif|webp);base64,/;
+      if (dataUrlPattern.test(url)) {
+        // Additional check: ensure no javascript: or other protocols are embedded
+        if (url.includes('javascript:') || url.includes('data:text/html')) {
+          return '';
+        }
+        return url;
+      }
+      return '';
     }
     
     try {
       const parsedUrl = new URL(url, window.location.origin);
-      // Only allow https protocol or relative URLs from same origin
-      if (parsedUrl.protocol === 'https:' || parsedUrl.origin === window.location.origin) {
-        return url;
+      // Only allow https protocol from same origin or trusted domains
+      if (parsedUrl.protocol === 'https:' && parsedUrl.origin === window.location.origin) {
+        // Additional validation: no javascript in path or query
+        const fullUrl = parsedUrl.toString();
+        if (fullUrl.toLowerCase().includes('javascript:') || fullUrl.includes('<script')) {
+          return '';
+        }
+        return fullUrl;
       }
     } catch {
-      // Invalid URL, return undefined
-      return undefined;
+      // Invalid URL
+      return '';
     }
     
-    return undefined;
+    // Default: return empty string for safety
+    return '';
   };
 
   const safePreview = getSafeImageUrl(preview);
+  // Only render image if we have a safe preview URL
+  const shouldRenderImage = safePreview !== '';
 
   return (
     <div className="space-y-2">
       <label className="text-sm font-medium">{safeLabel}</label>
       <p className="text-sm text-muted-foreground">{safeDescription}</p>
 
-      {safePreview ? (
+      {shouldRenderImage ? (
         <Card className="relative overflow-hidden">
           <img
             src={safePreview}
             alt="預覽"
             className="w-full h-64 object-cover"
+            onError={(e) => {
+              // If image fails to load, hide it to prevent broken image display
+              (e.target as HTMLImageElement).style.display = 'none';
+            }}
           />
           <Button
             type="button"
