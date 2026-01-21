@@ -441,7 +441,7 @@ def init_admin_user():
             import secrets
             default_password = secrets.token_urlsafe(12)
             print(f"⚠️ 警告：已生成臨時管理員密碼，請立即更改！")
-            print(f"⚠️ 臨時密碼: {default_password}")
+            print(f"⚠️ 請使用密碼重置工具 (reset_admin_tool.py) 設置管理員密碼")
         salt, pwd_hash = auth.hash_password(default_password)
         c.execute('''
             INSERT INTO users (username, password_salt, password_hash, role, email)

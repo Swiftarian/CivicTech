@@ -25,7 +25,7 @@ with open(secrets_path, 'r', encoding='utf-8') as f:
 
 print(f'Email: {sender_email}')
 print(f'Password Length: {len(sender_password)} chars')
-print(f'Password (masked): {sender_password[:4]}...{sender_password[-4:]}')
+print('Password: [configured - not shown for security]')
 
 try:
     print('\nTesting SMTP connection...')

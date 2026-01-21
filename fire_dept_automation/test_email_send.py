@@ -62,10 +62,9 @@ def test_email_connection():
         
         # 遮罩部分資訊
         masked_email = sender_email[:5] + "***" + sender_email[-10:]
-        masked_pwd = sender_password[:4] + "***" + sender_password[-4:]
         
         print(f"✅ 寄件者帳號: {masked_email}")
-        print(f"✅ 應用程式密碼: {masked_pwd}")
+        print(f"✅ 應用程式密碼: [已設定，長度 {len(sender_password)} 字元]")
         
     except Exception as e:
         print(f"\n❌ 讀取 secrets.toml 失敗: {e}")
