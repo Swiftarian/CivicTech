@@ -3,6 +3,7 @@
 ## 功能概述
 
 當民眾或團體在台東防災館網站完成預約後，系統會自動發送Email確認信給預約者，信件中包含：
+
 - 案件編號（用於查詢和報到）
 - 預約詳細資訊（日期、時段、人數）
 - 溫馨提醒事項
@@ -13,15 +14,18 @@
 ## 功能特色
 
 ### 1. 自動發送
+
 - 預約成功後立即發送Email
 - 無需管理員手動操作
 - 提升使用者體驗
 
 ### 2. 雙範本設計
+
 - **民眾預約範本**：適用於1-19人的個人或小團體預約
 - **團體預約範本**：適用於20人以上的機關學校團體預約
 
 ### 3. 專業設計
+
 - HTML格式郵件，美觀易讀
 - 蘋果綠主題配色，與網站風格一致
 - 包含重要資訊區塊和溫馨提醒
@@ -35,11 +39,13 @@
 **主旨**：【台東防災館】預約確認通知 - 案件編號 BK1234567890
 
 **內容包含**：
+
 - 預約資訊區塊（案件編號、參訪日期、時段、人數）
 - 溫馨提醒（提早10分鐘抵達、出示案件編號、取消變更規定）
 - 聯絡資訊（地址、電話、Email）
 
 **範例**：
+
 ```
 親愛的 張三，您好：
 
@@ -71,11 +77,13 @@ Email: info@taitung-disaster.gov.tw
 **主旨**：【台東防災館】團體預約確認通知 - 案件編號 BK1234567890
 
 **內容包含**：
+
 - 預約資訊區塊（案件編號、單位名稱、聯絡人、日期、時段、人數）
 - 溫馨提醒（專業導覽員、提早15分鐘抵達、出示案件編號、取消變更規定）
 - 聯絡資訊
 
 **範例**：
+
 ```
 台東國小 李四，您好：
 
@@ -112,6 +120,7 @@ Email: info@taitung-disaster.gov.tw
 **檔案位置**：`server/emailService.ts`
 
 **主要函數**：
+
 - `sendPublicBookingConfirmationEmail()` - 發送民眾預約確認信
 - `sendGroupBookingConfirmationEmail()` - 發送團體預約確認信
 - `sendEmail()` - 基礎Email發送函數
@@ -150,6 +159,7 @@ sendGroupBookingConfirmationEmail(
 **整合位置**：`bookings.create` mutation
 
 **流程**：
+
 1. 建立預約記錄
 2. 生成案件編號
 3. 檢查是否提供Email
@@ -158,16 +168,17 @@ sendGroupBookingConfirmationEmail(
 6. 回傳預約結果
 
 **程式碼片段**：
+
 ```typescript
 // 發送Email通知（如果有提供Email）
 if (input.contactEmail) {
-  const visitDate = input.visitDate.toLocaleDateString('zh-TW', {
-    year: 'numeric',
-    month: '2-digit',
-    day: '2-digit'
+  const visitDate = input.visitDate.toLocaleDateString("zh-TW", {
+    year: "numeric",
+    month: "2-digit",
+    day: "2-digit",
   });
-  
-  if (input.type === 'group' && input.organizationName) {
+
+  if (input.type === "group" && input.organizationName) {
     // 團體預約
     await sendGroupBookingConfirmationEmail(
       input.contactEmail,
@@ -199,6 +210,7 @@ if (input.contactEmail) {
 **檔案位置**：`server/bookings.email-notification.test.ts`
 
 **測試案例**：
+
 1. ✅ 民眾預約成功後發送Email通知
 2. ✅ 團體預約成功後發送Email通知
 3. ✅ 未提供Email時不發送通知
@@ -206,6 +218,7 @@ if (input.contactEmail) {
 5. ✅ 團體預約但未提供組織名稱時使用民眾範本
 
 **執行測試**：
+
 ```bash
 pnpm test bookings.email-notification.test.ts
 ```
@@ -219,6 +232,7 @@ pnpm test bookings.email-notification.test.ts
 目前系統使用 `console.log` 模擬Email發送，所有Email內容會輸出到伺服器日誌中。
 
 **日誌範例**：
+
 ```
 === 發送Email ===
 收件人: zhang@example.com
@@ -236,12 +250,14 @@ pnpm test bookings.email-notification.test.ts
 #### 選項1：Nodemailer + SMTP
 
 **安裝套件**：
+
 ```bash
 pnpm add nodemailer
 pnpm add -D @types/nodemailer
 ```
 
 **環境變數**：
+
 ```env
 SMTP_HOST=smtp.gmail.com
 SMTP_PORT=587
@@ -251,12 +267,13 @@ SMTP_FROM=台東防災館 <noreply@taitung-disaster.gov.tw>
 ```
 
 **修改 `emailService.ts`**：
+
 ```typescript
-import nodemailer from 'nodemailer';
+import nodemailer from "nodemailer";
 
 const transporter = nodemailer.createTransporter({
   host: process.env.SMTP_HOST,
-  port: parseInt(process.env.SMTP_PORT || '587'),
+  port: parseInt(process.env.SMTP_PORT || "587"),
   secure: false,
   auth: {
     user: process.env.SMTP_USER,
@@ -275,7 +292,7 @@ export async function sendEmail(options: EmailOptions): Promise<boolean> {
     });
     return true;
   } catch (error) {
-    console.error('發送Email失敗:', error);
+    console.error("發送Email失敗:", error);
     return false;
   }
 }
@@ -286,19 +303,22 @@ export async function sendEmail(options: EmailOptions): Promise<boolean> {
 #### 選項2：SendGrid
 
 **安裝套件**：
+
 ```bash
 pnpm add @sendgrid/mail
 ```
 
 **環境變數**：
+
 ```env
 SENDGRID_API_KEY=your-sendgrid-api-key
 SENDGRID_FROM_EMAIL=noreply@taitung-disaster.gov.tw
 ```
 
 **修改 `emailService.ts`**：
+
 ```typescript
-import sgMail from '@sendgrid/mail';
+import sgMail from "@sendgrid/mail";
 
 sgMail.setApiKey(process.env.SENDGRID_API_KEY!);
 
@@ -313,7 +333,7 @@ export async function sendEmail(options: EmailOptions): Promise<boolean> {
     });
     return true;
   } catch (error) {
-    console.error('發送Email失敗:', error);
+    console.error("發送Email失敗:", error);
     return false;
   }
 }
@@ -324,11 +344,13 @@ export async function sendEmail(options: EmailOptions): Promise<boolean> {
 #### 選項3：AWS SES
 
 **安裝套件**：
+
 ```bash
 pnpm add @aws-sdk/client-ses
 ```
 
 **環境變數**：
+
 ```env
 AWS_REGION=ap-northeast-1
 AWS_ACCESS_KEY_ID=your-access-key
@@ -337,8 +359,9 @@ AWS_SES_FROM_EMAIL=noreply@taitung-disaster.gov.tw
 ```
 
 **修改 `emailService.ts`**：
+
 ```typescript
-import { SESClient, SendEmailCommand } from '@aws-sdk/client-ses';
+import { SESClient, SendEmailCommand } from "@aws-sdk/client-ses";
 
 const sesClient = new SESClient({ region: process.env.AWS_REGION });
 
@@ -358,7 +381,7 @@ export async function sendEmail(options: EmailOptions): Promise<boolean> {
     await sesClient.send(command);
     return true;
   } catch (error) {
-    console.error('發送Email失敗:', error);
+    console.error("發送Email失敗:", error);
     return false;
   }
 }
@@ -371,17 +394,20 @@ export async function sendEmail(options: EmailOptions): Promise<boolean> {
 如果要使用Gmail作為SMTP伺服器（適合小型部署）：
 
 ### 1. 啟用Gmail兩步驟驗證
+
 1. 前往 Google 帳戶設定
 2. 選擇「安全性」
 3. 啟用「兩步驟驗證」
 
 ### 2. 建立應用程式密碼
+
 1. 在「安全性」頁面中選擇「應用程式密碼」
 2. 選擇「郵件」和「其他裝置」
 3. 輸入名稱（例如：台東防災館）
 4. 複製生成的16位密碼
 
 ### 3. 設定環境變數
+
 ```env
 SMTP_HOST=smtp.gmail.com
 SMTP_PORT=587
@@ -391,6 +417,7 @@ SMTP_FROM=台東防災館 <your-gmail@gmail.com>
 ```
 
 ### 4. Gmail限制
+
 - 每日發送上限：500封
 - 適合小型網站使用
 - 大型網站建議使用專業Email服務
@@ -402,6 +429,7 @@ SMTP_FROM=台東防災館 <your-gmail@gmail.com>
 ### Q1: Email沒有發送成功怎麼辦？
 
 **檢查步驟**：
+
 1. 確認預約時有填寫Email欄位
 2. 檢查伺服器日誌是否有錯誤訊息
 3. 確認Email服務配置是否正確
@@ -414,14 +442,17 @@ SMTP_FROM=台東防災館 <your-gmail@gmail.com>
 ### Q2: 如何測試Email功能？
 
 **方法1：使用模擬模式**
+
 - 查看伺服器日誌中的Email內容
 - 確認內容格式正確
 
 **方法2：使用測試Email服務**
+
 - 使用 [Mailtrap](https://mailtrap.io/) 或 [MailHog](https://github.com/mailhog/MailHog)
 - 捕獲所有發送的Email進行測試
 
 **方法3：執行單元測試**
+
 ```bash
 pnpm test bookings.email-notification.test.ts
 ```
@@ -433,6 +464,7 @@ pnpm test bookings.email-notification.test.ts
 **修改位置**：`server/emailService.ts`
 
 **可自訂內容**：
+
 - Email主旨
 - 文字內容
 - HTML樣式
@@ -440,6 +472,7 @@ pnpm test bookings.email-notification.test.ts
 - 溫馨提醒事項
 
 **範例**：修改聯絡電話
+
 ```typescript
 text += `電話：(089) 123-4567\n`;  // 改為實際電話
 
@@ -463,7 +496,7 @@ text += `電話：(089) 123-4567\n`;  // 改為實際電話
 
 ```typescript
 interface EmailOptions {
-  to: string | string[];  // 支援單一或多個收件人
+  to: string | string[]; // 支援單一或多個收件人
   subject: string;
   text: string;
   html?: string;
@@ -475,21 +508,25 @@ interface EmailOptions {
 ## 未來改進建議
 
 ### 1. 新增更多Email範本
+
 - 預約取消通知
 - 預約變更通知
 - 參訪前一天提醒
 - 參訪後感謝信
 
 ### 2. Email排程發送
+
 - 參訪前3天自動發送提醒信
 - 參訪後自動發送問卷調查
 
 ### 3. Email統計分析
+
 - 發送成功率
 - 開信率追蹤
 - 點擊率分析
 
 ### 4. 個人化內容
+
 - 根據預約類型客製化內容
 - 加入預約者歷史參訪記錄
 - 推薦相關活動

@@ -1,7 +1,13 @@
 import { useState } from "react";
 import { trpc } from "@/lib/trpc";
 import { Button } from "@/components/ui/button";
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
+import {
+  Card,
+  CardContent,
+  CardDescription,
+  CardHeader,
+  CardTitle,
+} from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Alert, AlertDescription } from "@/components/ui/alert";
@@ -20,12 +26,12 @@ export default function MealConfirm() {
 
   // 確認收餐（只需驗證碼）
   const confirmMutation = trpc.mealDeliveries.confirmReceiptByCode.useMutation({
-    onSuccess: (data) => {
+    onSuccess: data => {
       setIsSuccess(true);
       setDeliveryInfo(data);
       toast.success("收餐確認成功！");
     },
-    onError: (error) => {
+    onError: error => {
       toast.error(`確認失敗：${error.message}`);
     },
   });
@@ -59,18 +65,27 @@ export default function MealConfirm() {
                 <CheckCircle2 className="w-10 h-10 text-green-600" />
               </div>
             </div>
-            <CardTitle className="text-2xl text-green-600">收餐確認成功！</CardTitle>
-            <CardDescription>
-              感謝您的配合，祝您用餐愉快
-            </CardDescription>
+            <CardTitle className="text-2xl text-green-600">
+              收餐確認成功！
+            </CardTitle>
+            <CardDescription>感謝您的配合，祝您用餐愉快</CardDescription>
           </CardHeader>
           <CardContent className="space-y-4">
             {deliveryInfo && (
               <Alert>
                 <AlertDescription className="space-y-1">
-                  <p><strong>送餐編號：</strong>{deliveryInfo.deliveryNumber}</p>
-                  <p><strong>送餐志工：</strong>{deliveryInfo.volunteerName}</p>
-                  <p><strong>確認時間：</strong>{new Date().toLocaleString('zh-TW')}</p>
+                  <p>
+                    <strong>送餐編號：</strong>
+                    {deliveryInfo.deliveryNumber}
+                  </p>
+                  <p>
+                    <strong>送餐志工：</strong>
+                    {deliveryInfo.volunteerName}
+                  </p>
+                  <p>
+                    <strong>確認時間：</strong>
+                    {new Date().toLocaleString("zh-TW")}
+                  </p>
                 </AlertDescription>
               </Alert>
             )}
@@ -110,18 +125,20 @@ export default function MealConfirm() {
             )}
           </div>
           <CardTitle className="text-2xl">收餐確認</CardTitle>
-          <CardDescription>
-            請輸入送餐志工提供的驗證碼
-          </CardDescription>
+          <CardDescription>請輸入送餐志工提供的驗證碼</CardDescription>
         </CardHeader>
         <CardContent>
           <form onSubmit={handleSubmit} className="space-y-6">
             <div className="space-y-2">
-              <Label htmlFor="verificationCode" className="text-lg">驗證碼</Label>
+              <Label htmlFor="verificationCode" className="text-lg">
+                驗證碼
+              </Label>
               <Input
                 id="verificationCode"
                 value={verificationCode}
-                onChange={(e) => setVerificationCode(e.target.value.toUpperCase())}
+                onChange={e =>
+                  setVerificationCode(e.target.value.toUpperCase())
+                }
                 placeholder="請輸入6位驗證碼"
                 maxLength={6}
                 required
@@ -138,8 +155,7 @@ export default function MealConfirm() {
                 💡 <strong>如何取得驗證碼？</strong>
                 <br />
                 • 送餐志工會在送達時告知您驗證碼
-                <br />
-                • 或您可以在LINE通知訊息中找到驗證碼
+                <br />• 或您可以在LINE通知訊息中找到驗證碼
               </AlertDescription>
             </Alert>
 

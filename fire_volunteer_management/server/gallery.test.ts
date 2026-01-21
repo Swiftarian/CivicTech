@@ -82,7 +82,7 @@ describe("gallery API", () => {
     expect(publishedGallery).toBeDefined();
     expect(Array.isArray(publishedGallery)).toBe(true);
     // 所有返回的照片都應該是已發布狀態
-    publishedGallery.forEach((item) => {
+    publishedGallery.forEach(item => {
       expect(item.isPublished).toBe(true);
     });
   });
@@ -123,7 +123,7 @@ describe("gallery API", () => {
 
     // 驗證排序：displayOrder 大的在前
     expect(gallery.length).toBeGreaterThanOrEqual(3);
-    const orders = gallery.map((item) => item.displayOrder);
+    const orders = gallery.map(item => item.displayOrder);
     for (let i = 0; i < orders.length - 1; i++) {
       expect(orders[i]).toBeGreaterThanOrEqual(orders[i + 1]);
     }
@@ -184,7 +184,7 @@ describe("gallery API", () => {
 
     // 驗證已刪除
     const allGallery = await caller.gallery.getAll();
-    const deleted = allGallery.find((item) => item.id === created.id);
+    const deleted = allGallery.find(item => item.id === created.id);
     expect(deleted).toBeUndefined();
   });
 
@@ -230,9 +230,9 @@ describe("gallery API", () => {
 
     // 驗證已刪除
     const allGallery = await caller.gallery.getAll();
-    const deleted1 = allGallery.find((item) => item.id === item1.id);
-    const deleted2 = allGallery.find((item) => item.id === item2.id);
-    const deleted3 = allGallery.find((item) => item.id === item3.id);
+    const deleted1 = allGallery.find(item => item.id === item1.id);
+    const deleted2 = allGallery.find(item => item.id === item2.id);
+    const deleted3 = allGallery.find(item => item.id === item3.id);
 
     expect(deleted1).toBeUndefined();
     expect(deleted2).toBeUndefined();

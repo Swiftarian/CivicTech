@@ -63,7 +63,11 @@ describe("bookings.cancel", () => {
     expect(result).toEqual({ success: true });
     expect(db.getBookingByNumber).toHaveBeenCalledWith("IND-20251209-001");
     // 驗證傳遞了正確的bookingType參數
-    expect(db.updateBookingStatus).toHaveBeenCalledWith(1, "cancelled", "individual");
+    expect(db.updateBookingStatus).toHaveBeenCalledWith(
+      1,
+      "cancelled",
+      "individual"
+    );
   });
 
   it("should cancel a group booking and pass correct bookingType", async () => {
@@ -92,7 +96,11 @@ describe("bookings.cancel", () => {
     });
 
     expect(result).toEqual({ success: true });
-    expect(db.updateBookingStatus).toHaveBeenCalledWith(2, "cancelled", "group");
+    expect(db.updateBookingStatus).toHaveBeenCalledWith(
+      2,
+      "cancelled",
+      "group"
+    );
   });
 
   it("should throw error when booking not found", async () => {

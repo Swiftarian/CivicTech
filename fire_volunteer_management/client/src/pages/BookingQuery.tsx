@@ -1,13 +1,28 @@
 import { useState } from "react";
 import { Button } from "@/components/ui/button";
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
+import {
+  Card,
+  CardContent,
+  CardDescription,
+  CardHeader,
+  CardTitle,
+} from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { trpc } from "@/lib/trpc";
 import { toast } from "sonner";
 import { format } from "date-fns";
 import { zhTW } from "date-fns/locale";
-import { ArrowLeft, Search, Calendar, Users, Phone, Mail, Building, XCircle } from "lucide-react";
+import {
+  ArrowLeft,
+  Search,
+  Calendar,
+  Users,
+  Phone,
+  Mail,
+  Building,
+  XCircle,
+} from "lucide-react";
 import {
   AlertDialog,
   AlertDialogAction,
@@ -35,31 +50,33 @@ export default function BookingQuery() {
   // 檢查 URL 參數中的成功訊息
   useEffect(() => {
     const params = new URLSearchParams(window.location.search);
-    const bookingNum = params.get('booking');
+    const bookingNum = params.get("booking");
     if (bookingNum) {
       setSuccessMessage(bookingNum);
       // 8 秒後自動隱藏訊息
       setTimeout(() => setSuccessMessage(null), 8000);
       // 清除 URL 參數
-      window.history.replaceState({}, '', '/booking/query');
+      window.history.replaceState({}, "", "/booking/query");
     }
   }, []);
 
-  const { refetch: refetchByNumber, isFetching: isFetchingByNumber } = trpc.bookings.getByNumber.useQuery(
-    { bookingNumber },
-    { 
-      enabled: false,
-      retry: false
-    }
-  );
+  const { refetch: refetchByNumber, isFetching: isFetchingByNumber } =
+    trpc.bookings.getByNumber.useQuery(
+      { bookingNumber },
+      {
+        enabled: false,
+        retry: false,
+      }
+    );
 
-  const { refetch: refetchByPhone, isFetching: isFetchingByPhone } = trpc.bookings.getByPhone.useQuery(
-    { contactPhone },
-    { 
-      enabled: false,
-      retry: false
-    }
-  );
+  const { refetch: refetchByPhone, isFetching: isFetchingByPhone } =
+    trpc.bookings.getByPhone.useQuery(
+      { contactPhone },
+      {
+        enabled: false,
+        retry: false,
+      }
+    );
 
   const cancelBooking = trpc.bookings.cancel.useMutation({
     onSuccess: () => {
@@ -68,11 +85,11 @@ export default function BookingQuery() {
       // 重新查詢以更新狀態
       handleSearch();
     },
-    onError: (error) => {
+    onError: error => {
       toast.error("取消失敗", {
-        description: error.message
+        description: error.message,
       });
-    }
+    },
   });
 
   const handleCancelBooking = () => {
@@ -88,7 +105,7 @@ export default function BookingQuery() {
         return;
       }
       const result = await refetchByNumber();
-    
+
       if (result.data) {
         setSearchResult(result.data);
         toast.success("查詢成功");
@@ -103,7 +120,7 @@ export default function BookingQuery() {
         return;
       }
       const result = await refetchByPhone();
-    
+
       if (result.data) {
         setSearchResult(result.data);
         toast.success("查詢成功，顯示最近一筆預約記錄");
@@ -119,11 +136,14 @@ export default function BookingQuery() {
       pending: { label: "待確認", className: "badge-pending" },
       confirmed: { label: "已確認", className: "badge-confirmed" },
       cancelled: { label: "已取消", className: "badge-cancelled" },
-      completed: { label: "已完成", className: "badge-completed" }
+      completed: { label: "已完成", className: "badge-completed" },
     };
-    
-    const statusInfo = statusMap[status] || { label: status, className: "badge-status" };
-    
+
+    const statusInfo = statusMap[status] || {
+      label: status,
+      className: "badge-status",
+    };
+
     return (
       <span className={`badge-status ${statusInfo.className}`}>
         {statusInfo.label}
@@ -149,9 +169,13 @@ export default function BookingQuery() {
           {successMessage && (
             <Alert className="bg-green-50 border-green-200 text-green-800">
               <CheckCircle2 className="h-5 w-5 text-green-600" />
-              <AlertTitle className="text-lg font-semibold">預約成功！</AlertTitle>
+              <AlertTitle className="text-lg font-semibold">
+                預約成功！
+              </AlertTitle>
               <AlertDescription className="text-base mt-2">
-                您的預約編號：<span className="font-mono font-bold">{successMessage}</span>，請妥善保存以便查詢。
+                您的預約編號：
+                <span className="font-mono font-bold">{successMessage}</span>
+                ，請妥善保存以便查詢。
               </AlertDescription>
             </Alert>
           )}
@@ -186,41 +210,47 @@ export default function BookingQuery() {
                 <div className="flex-1">
                   {searchBy === "number" ? (
                     <>
-                      <Label htmlFor="bookingNumber" className="sr-only">預約編號</Label>
+                      <Label htmlFor="bookingNumber" className="sr-only">
+                        預約編號
+                      </Label>
                       <Input
                         id="bookingNumber"
                         placeholder="請輸入預約編號（例如：BK1234567890）"
                         value={bookingNumber}
-                        onChange={(e) => setBookingNumber(e.target.value)}
-                        onKeyDown={(e) => e.key === "Enter" && handleSearch()}
+                        onChange={e => setBookingNumber(e.target.value)}
+                        onKeyDown={e => e.key === "Enter" && handleSearch()}
                       />
                     </>
                   ) : (
                     <>
-                      <Label htmlFor="contactPhone" className="sr-only">聯絡電話</Label>
+                      <Label htmlFor="contactPhone" className="sr-only">
+                        聯絡電話
+                      </Label>
                       <Input
                         id="contactPhone"
                         placeholder="請輸入預約時留下的聯絡電話"
                         value={contactPhone}
-                        onChange={(e) => setContactPhone(e.target.value)}
-                        onKeyDown={(e) => e.key === "Enter" && handleSearch()}
+                        onChange={e => setContactPhone(e.target.value)}
+                        onKeyDown={e => e.key === "Enter" && handleSearch()}
                       />
                     </>
                   )}
                 </div>
-                <Button 
+                <Button
                   onClick={handleSearch}
                   disabled={isFetchingByNumber || isFetchingByPhone}
                 >
                   <Search className="h-4 w-4 mr-2" />
-                  {(isFetchingByNumber || isFetchingByPhone) ? "查詢中..." : "查詢"}
+                  {isFetchingByNumber || isFetchingByPhone
+                    ? "查詢中..."
+                    : "查詢"}
                 </Button>
               </div>
 
               {/* 提示訊息 */}
               <p className="text-sm text-muted-foreground text-center">
-                {searchBy === "number" 
-                  ? "建議優先使用預約編號查詢，可在預約確認信中找到" 
+                {searchBy === "number"
+                  ? "建議優先使用預約編號查詢，可在預約確認信中找到"
                   : "電話查詢為備用方案，如未收到預約確認信可使用此方式"}
               </p>
             </CardContent>
@@ -249,21 +279,31 @@ export default function BookingQuery() {
               <CardContent className="space-y-6">
                 <div className="grid md:grid-cols-2 gap-6">
                   <div className="space-y-4">
-                    <h4 className="font-semibold text-lg border-b pb-2">聯絡資訊</h4>
-                    
+                    <h4 className="font-semibold text-lg border-b pb-2">
+                      聯絡資訊
+                    </h4>
+
                     <div className="flex items-start gap-3">
                       <Users className="h-5 w-5 text-muted-foreground mt-0.5" />
                       <div>
-                        <div className="text-sm text-muted-foreground">聯絡人</div>
-                        <div className="font-medium">{searchResult.contactName}</div>
+                        <div className="text-sm text-muted-foreground">
+                          聯絡人
+                        </div>
+                        <div className="font-medium">
+                          {searchResult.contactName}
+                        </div>
                       </div>
                     </div>
 
                     <div className="flex items-start gap-3">
                       <Phone className="h-5 w-5 text-muted-foreground mt-0.5" />
                       <div>
-                        <div className="text-sm text-muted-foreground">聯絡電話</div>
-                        <div className="font-medium">{searchResult.contactPhone}</div>
+                        <div className="text-sm text-muted-foreground">
+                          聯絡電話
+                        </div>
+                        <div className="font-medium">
+                          {searchResult.contactPhone}
+                        </div>
                       </div>
                     </div>
 
@@ -271,8 +311,12 @@ export default function BookingQuery() {
                       <div className="flex items-start gap-3">
                         <Mail className="h-5 w-5 text-muted-foreground mt-0.5" />
                         <div>
-                          <div className="text-sm text-muted-foreground">聯絡信箱</div>
-                          <div className="font-medium">{searchResult.contactEmail}</div>
+                          <div className="text-sm text-muted-foreground">
+                            聯絡信箱
+                          </div>
+                          <div className="font-medium">
+                            {searchResult.contactEmail}
+                          </div>
                         </div>
                       </div>
                     )}
@@ -281,22 +325,32 @@ export default function BookingQuery() {
                       <div className="flex items-start gap-3">
                         <Building className="h-5 w-5 text-muted-foreground mt-0.5" />
                         <div>
-                          <div className="text-sm text-muted-foreground">團體名稱</div>
-                          <div className="font-medium">{searchResult.organizationName}</div>
+                          <div className="text-sm text-muted-foreground">
+                            團體名稱
+                          </div>
+                          <div className="font-medium">
+                            {searchResult.organizationName}
+                          </div>
                         </div>
                       </div>
                     )}
                   </div>
 
                   <div className="space-y-4">
-                    <h4 className="font-semibold text-lg border-b pb-2">參訪資訊</h4>
-                    
+                    <h4 className="font-semibold text-lg border-b pb-2">
+                      參訪資訊
+                    </h4>
+
                     <div className="flex items-start gap-3">
                       <Calendar className="h-5 w-5 text-muted-foreground mt-0.5" />
                       <div>
-                        <div className="text-sm text-muted-foreground">參訪日期</div>
+                        <div className="text-sm text-muted-foreground">
+                          參訪日期
+                        </div>
                         <div className="font-medium">
-                          {format(new Date(searchResult.visitDate), "PPP", { locale: zhTW })}
+                          {format(new Date(searchResult.visitDate), "PPP", {
+                            locale: zhTW,
+                          })}
                         </div>
                       </div>
                     </div>
@@ -304,16 +358,24 @@ export default function BookingQuery() {
                     <div className="flex items-start gap-3">
                       <Calendar className="h-5 w-5 text-muted-foreground mt-0.5" />
                       <div>
-                        <div className="text-sm text-muted-foreground">參訪時段</div>
-                        <div className="font-medium">{searchResult.visitTime}</div>
+                        <div className="text-sm text-muted-foreground">
+                          參訪時段
+                        </div>
+                        <div className="font-medium">
+                          {searchResult.visitTime}
+                        </div>
                       </div>
                     </div>
 
                     <div className="flex items-start gap-3">
                       <Users className="h-5 w-5 text-muted-foreground mt-0.5" />
                       <div>
-                        <div className="text-sm text-muted-foreground">參訪人數</div>
-                        <div className="font-medium">{searchResult.numberOfPeople} 人</div>
+                        <div className="text-sm text-muted-foreground">
+                          參訪人數
+                        </div>
+                        <div className="font-medium">
+                          {searchResult.numberOfPeople} 人
+                        </div>
                       </div>
                     </div>
                   </div>
@@ -358,18 +420,19 @@ export default function BookingQuery() {
                 </div>
 
                 {/* 取消預約按鈕 */}
-                {searchResult.status !== 'cancelled' && searchResult.status !== 'completed' && (
-                  <div className="flex justify-end pt-4 border-t">
-                    <Button
-                      variant="destructive"
-                      onClick={() => setShowCancelDialog(true)}
-                      disabled={cancelBooking.isPending}
-                    >
-                      <XCircle className="h-4 w-4 mr-2" />
-                      取消預約
-                    </Button>
-                  </div>
-                )}
+                {searchResult.status !== "cancelled" &&
+                  searchResult.status !== "completed" && (
+                    <div className="flex justify-end pt-4 border-t">
+                      <Button
+                        variant="destructive"
+                        onClick={() => setShowCancelDialog(true)}
+                        disabled={cancelBooking.isPending}
+                      >
+                        <XCircle className="h-4 w-4 mr-2" />
+                        取消預約
+                      </Button>
+                    </div>
+                  )}
               </CardContent>
             </Card>
           )}
@@ -378,9 +441,7 @@ export default function BookingQuery() {
             <Card className="bg-muted/50">
               <CardContent className="py-12 text-center">
                 <Search className="h-16 w-16 text-muted-foreground mx-auto mb-4" />
-                <p className="text-muted-foreground">
-                  請輸入預約編號進行查詢
-                </p>
+                <p className="text-muted-foreground">請輸入預約編號進行查詢</p>
               </CardContent>
             </Card>
           )}

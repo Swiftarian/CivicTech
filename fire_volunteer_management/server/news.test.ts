@@ -80,7 +80,7 @@ describe("news API", () => {
     expect(publishedNews).toBeDefined();
     expect(Array.isArray(publishedNews)).toBe(true);
     // 所有返回的新聞都應該是已發布狀態
-    publishedNews.forEach((news) => {
+    publishedNews.forEach(news => {
       expect(news.isPublished).toBe(true);
     });
   });
@@ -139,7 +139,7 @@ describe("news API", () => {
 
     // 驗證已刪除
     const allNews = await caller.news.getAll();
-    const deletedNews = allNews.find((n) => n.id === created.id);
+    const deletedNews = allNews.find(n => n.id === created.id);
     expect(deletedNews).toBeUndefined();
   });
 
@@ -164,7 +164,7 @@ describe("news API", () => {
 
     // 獲取更新後的新聞
     const allNews = await caller.news.getAll();
-    const updated = allNews.find((n) => n.id === created.id);
+    const updated = allNews.find(n => n.id === created.id);
 
     expect(updated).toBeDefined();
     expect(updated!.viewCount).toBe(1);

@@ -177,12 +177,12 @@ taitung-disaster-system/
 
 系統提供測試登入功能（需設定 `ENABLE_TEST_LOGIN=true`）：
 
-| 角色 | Email | 密碼 |
-|------|-------|------|
+| 角色   | Email                          | 密碼              |
+| ------ | ------------------------------ | ----------------- |
 | 管理員 | jacky.hsieh@insight.ntu.edu.tw | SecurityTest2024! |
-| 管理員 | chelsea.juan@udngroup.com.tw | SecurityTest2024! |
-| 義工 | vol1@taitung.gov.tw | Volunteer2024! |
-| 義工 | vol2@taitung.gov.tw | Volunteer2024! |
+| 管理員 | chelsea.juan@udngroup.com.tw   | SecurityTest2024! |
+| 義工   | vol1@taitung.gov.tw            | Volunteer2024!    |
+| 義工   | vol2@taitung.gov.tw            | Volunteer2024!    |
 
 **測試登入頁面**：http://localhost:3000/test-login
 

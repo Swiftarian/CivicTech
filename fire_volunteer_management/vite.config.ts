@@ -6,8 +6,12 @@ import path from "path";
 import { defineConfig } from "vite";
 import { vitePluginManusRuntime } from "vite-plugin-manus-runtime";
 
-
-const plugins = [react(), tailwindcss(), jsxLocPlugin(), vitePluginManusRuntime()];
+const plugins = [
+  react(),
+  tailwindcss(),
+  jsxLocPlugin(),
+  vitePluginManusRuntime(),
+];
 
 export default defineConfig({
   plugins,
@@ -38,7 +42,7 @@ export default defineConfig({
     ],
     hmr: {
       clientPort: 443,
-      protocol: 'wss',
+      protocol: "wss",
     },
     fs: {
       strict: true,

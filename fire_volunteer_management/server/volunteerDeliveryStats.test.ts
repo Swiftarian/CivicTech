@@ -64,28 +64,32 @@ describe("志工送餐統計功能", () => {
 
     // 驗證返回的統計資料結構
     expect(Array.isArray(stats)).toBe(true);
-    
+
     if (stats.length > 0) {
       const firstStat = stats[0];
-      
+
       // 驗證必要欄位存在
-      expect(firstStat).toHaveProperty('volunteerId');
-      expect(firstStat).toHaveProperty('userName');
-      expect(firstStat).toHaveProperty('total');
-      expect(firstStat).toHaveProperty('completed');
-      expect(firstStat).toHaveProperty('inProgress');
-      expect(firstStat).toHaveProperty('assigned');
-      expect(firstStat).toHaveProperty('pending');
-      
+      expect(firstStat).toHaveProperty("volunteerId");
+      expect(firstStat).toHaveProperty("userName");
+      expect(firstStat).toHaveProperty("total");
+      expect(firstStat).toHaveProperty("completed");
+      expect(firstStat).toHaveProperty("inProgress");
+      expect(firstStat).toHaveProperty("assigned");
+      expect(firstStat).toHaveProperty("pending");
+
       // 驗證數字欄位為非負數
       expect(firstStat.total).toBeGreaterThanOrEqual(0);
       expect(firstStat.completed).toBeGreaterThanOrEqual(0);
       expect(firstStat.inProgress).toBeGreaterThanOrEqual(0);
       expect(firstStat.assigned).toBeGreaterThanOrEqual(0);
       expect(firstStat.pending).toBeGreaterThanOrEqual(0);
-      
+
       // 驗證總數等於各狀態之和
-      const sum = firstStat.completed + firstStat.inProgress + firstStat.assigned + firstStat.pending;
+      const sum =
+        firstStat.completed +
+        firstStat.inProgress +
+        firstStat.assigned +
+        firstStat.pending;
       expect(firstStat.total).toBe(sum);
     }
   });

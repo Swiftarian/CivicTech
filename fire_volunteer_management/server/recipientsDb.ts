@@ -4,12 +4,18 @@
 
 import { eq } from "drizzle-orm";
 import { getDb } from "./db";
-import { recipients, type Recipient, type InsertRecipient } from "../drizzle/schema";
+import {
+  recipients,
+  type Recipient,
+  type InsertRecipient,
+} from "../drizzle/schema";
 
 /**
  * 建立新的收餐人記錄
  */
-export async function createRecipient(data: InsertRecipient): Promise<Recipient | null> {
+export async function createRecipient(
+  data: InsertRecipient
+): Promise<Recipient | null> {
   const db = await getDb();
   if (!db) {
     console.warn("[Recipients DB] Database not available");
@@ -36,7 +42,9 @@ export async function createRecipient(data: InsertRecipient): Promise<Recipient 
 /**
  * 根據電話號碼查詢收餐人
  */
-export async function getRecipientByPhone(phone: string): Promise<Recipient | null> {
+export async function getRecipientByPhone(
+  phone: string
+): Promise<Recipient | null> {
   const db = await getDb();
   if (!db) {
     console.warn("[Recipients DB] Database not available");
@@ -60,7 +68,9 @@ export async function getRecipientByPhone(phone: string): Promise<Recipient | nu
 /**
  * 根據LINE User ID查詢收餐人
  */
-export async function getRecipientByLineUserId(lineUserId: string): Promise<Recipient | null> {
+export async function getRecipientByLineUserId(
+  lineUserId: string
+): Promise<Recipient | null> {
   const db = await getDb();
   if (!db) {
     console.warn("[Recipients DB] Database not available");
@@ -76,7 +86,10 @@ export async function getRecipientByLineUserId(lineUserId: string): Promise<Reci
 
     return result[0] || null;
   } catch (error) {
-    console.error("[Recipients DB] Error getting recipient by LINE user ID:", error);
+    console.error(
+      "[Recipients DB] Error getting recipient by LINE user ID:",
+      error
+    );
     return null;
   }
 }
@@ -106,7 +119,9 @@ export async function updateRecipientLineBinding(
       })
       .where(eq(recipients.id, recipientId));
 
-    console.log(`[Recipients DB] Updated LINE binding for recipient ${recipientId}`);
+    console.log(
+      `[Recipients DB] Updated LINE binding for recipient ${recipientId}`
+    );
     return true;
   } catch (error) {
     console.error("[Recipients DB] Error updating LINE binding:", error);
@@ -117,7 +132,9 @@ export async function updateRecipientLineBinding(
 /**
  * 清除收餐人的LINE綁定
  */
-export async function clearRecipientLineBinding(recipientId: number): Promise<boolean> {
+export async function clearRecipientLineBinding(
+  recipientId: number
+): Promise<boolean> {
   const db = await getDb();
   if (!db) {
     console.warn("[Recipients DB] Database not available");
@@ -135,7 +152,9 @@ export async function clearRecipientLineBinding(recipientId: number): Promise<bo
       })
       .where(eq(recipients.id, recipientId));
 
-    console.log(`[Recipients DB] Cleared LINE binding for recipient ${recipientId}`);
+    console.log(
+      `[Recipients DB] Cleared LINE binding for recipient ${recipientId}`
+    );
     return true;
   } catch (error) {
     console.error("[Recipients DB] Error clearing LINE binding:", error);
@@ -176,10 +195,7 @@ export async function updateRecipient(
   }
 
   try {
-    await db
-      .update(recipients)
-      .set(data)
-      .where(eq(recipients.id, recipientId));
+    await db.update(recipients).set(data).where(eq(recipients.id, recipientId));
 
     console.log(`[Recipients DB] Updated recipient ${recipientId}`);
     return true;

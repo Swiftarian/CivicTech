@@ -1,6 +1,12 @@
 import { useState } from "react";
 import { Button } from "@/components/ui/button";
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
+import {
+  Card,
+  CardContent,
+  CardDescription,
+  CardHeader,
+  CardTitle,
+} from "@/components/ui/card";
 import { Users, Building2, ArrowLeft, AlertCircle } from "lucide-react";
 import { Link, useLocation } from "wouter";
 import { Alert, AlertDescription } from "@/components/ui/alert";
@@ -8,11 +14,11 @@ import { Alert, AlertDescription } from "@/components/ui/alert";
 export default function BookingEntry() {
   const [, setLocation] = useLocation();
 
-  const handleBookingTypeSelect = (type: 'individual' | 'group') => {
-    if (type === 'individual') {
-      setLocation('/booking/individual');
+  const handleBookingTypeSelect = (type: "individual" | "group") => {
+    if (type === "individual") {
+      setLocation("/booking/individual");
     } else {
-      setLocation('/booking/group');
+      setLocation("/booking/group");
     }
   };
 
@@ -29,9 +35,7 @@ export default function BookingEntry() {
         <div className="max-w-4xl mx-auto space-y-6">
           <div className="text-center space-y-2">
             <h1 className="text-3xl font-bold tracking-tight">預約參訪</h1>
-            <p className="text-muted-foreground">
-              請選擇您的參訪人數類型
-            </p>
+            <p className="text-muted-foreground">請選擇您的參訪人數類型</p>
           </div>
 
           {/* 重要提示 */}
@@ -51,8 +55,10 @@ export default function BookingEntry() {
           {/* 選擇卡片 */}
           <div className="grid md:grid-cols-2 gap-6">
             {/* 一般民眾預約 */}
-            <Card className="hover:shadow-lg transition-shadow cursor-pointer border-2 hover:border-primary/50"
-                  onClick={() => handleBookingTypeSelect('individual')}>
+            <Card
+              className="hover:shadow-lg transition-shadow cursor-pointer border-2 hover:border-primary/50"
+              onClick={() => handleBookingTypeSelect("individual")}
+            >
               <CardHeader className="text-center pb-4">
                 <div className="mx-auto w-16 h-16 rounded-full bg-primary/10 flex items-center justify-center mb-4">
                   <Users className="h-8 w-8 text-primary" />
@@ -64,7 +70,9 @@ export default function BookingEntry() {
               </CardHeader>
               <CardContent className="space-y-3">
                 <div className="text-sm text-muted-foreground space-y-2">
-                  <p><strong>適合對象：</strong></p>
+                  <p>
+                    <strong>適合對象：</strong>
+                  </p>
                   <ul className="list-disc list-inside space-y-1 ml-2">
                     <li>家庭參訪</li>
                     <li>小型團體</li>
@@ -78,8 +86,10 @@ export default function BookingEntry() {
             </Card>
 
             {/* 團體預約 */}
-            <Card className="hover:shadow-lg transition-shadow cursor-pointer border-2 hover:border-primary/50"
-                  onClick={() => handleBookingTypeSelect('group')}>
+            <Card
+              className="hover:shadow-lg transition-shadow cursor-pointer border-2 hover:border-primary/50"
+              onClick={() => handleBookingTypeSelect("group")}
+            >
               <CardHeader className="text-center pb-4">
                 <div className="mx-auto w-16 h-16 rounded-full bg-primary/10 flex items-center justify-center mb-4">
                   <Building2 className="h-8 w-8 text-primary" />
@@ -91,7 +101,9 @@ export default function BookingEntry() {
               </CardHeader>
               <CardContent className="space-y-3">
                 <div className="text-sm text-muted-foreground space-y-2">
-                  <p><strong>適合對象：</strong></p>
+                  <p>
+                    <strong>適合對象：</strong>
+                  </p>
                   <ul className="list-disc list-inside space-y-1 ml-2">
                     <li>學校校外教學</li>
                     <li>企業參訪</li>
@@ -111,25 +123,33 @@ export default function BookingEntry() {
               <CardTitle className="text-lg">預約須知</CardTitle>
             </CardHeader>
             <CardContent className="text-sm text-muted-foreground space-y-2">
-              <p><strong>1. 預約時間限制：</strong></p>
+              <p>
+                <strong>1. 預約時間限制：</strong>
+              </p>
               <ul className="list-disc list-inside ml-4 space-y-1">
                 <li>最早可預約時間為兩周後</li>
                 <li>請至少提前3天完成預約</li>
               </ul>
-              
-              <p className="mt-3"><strong>2. 人數規定：</strong></p>
+
+              <p className="mt-3">
+                <strong>2. 人數規定：</strong>
+              </p>
               <ul className="list-disc list-inside ml-4 space-y-1">
                 <li>一般民眾：5~19人（不接待5人以下散客）</li>
                 <li>團體：20~60人（超過60人請分批預約）</li>
               </ul>
-              
-              <p className="mt-3"><strong>3. 預約確認：</strong></p>
+
+              <p className="mt-3">
+                <strong>3. 預約確認：</strong>
+              </p>
               <ul className="list-disc list-inside ml-4 space-y-1">
                 <li>預約成功後將收到確認Email與預約編號</li>
                 <li>參訪當天請攜帶預約編號報到</li>
               </ul>
-              
-              <p className="mt-3"><strong>4. 變更與取消：</strong></p>
+
+              <p className="mt-3">
+                <strong>4. 變更與取消：</strong>
+              </p>
               <ul className="list-disc list-inside ml-4 space-y-1">
                 <li>如需變更或取消，請提前2天聯絡我們</li>
                 <li>聯絡電話：089-123456</li>

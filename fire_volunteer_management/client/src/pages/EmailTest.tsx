@@ -4,10 +4,23 @@ import { trpc } from "@/lib/trpc";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
+import {
+  Card,
+  CardContent,
+  CardDescription,
+  CardHeader,
+  CardTitle,
+} from "@/components/ui/card";
 import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group";
 import { toast } from "sonner";
-import { Loader2, Mail, Send, History, CheckCircle2, XCircle } from "lucide-react";
+import {
+  Loader2,
+  Mail,
+  Send,
+  History,
+  CheckCircle2,
+  XCircle,
+} from "lucide-react";
 import { useLocation } from "wouter";
 
 export default function EmailTest() {
@@ -17,42 +30,48 @@ export default function EmailTest() {
   // 預約確認Email測試
   const [confirmationEmail, setConfirmationEmail] = useState("");
   const [confirmationName, setConfirmationName] = useState("");
-  const [confirmationType, setConfirmationType] = useState<"public" | "group">("public");
+  const [confirmationType, setConfirmationType] = useState<"public" | "group">(
+    "public"
+  );
   const [confirmationOrg, setConfirmationOrg] = useState("");
 
   // 預約提醒Email測試
   const [reminderEmail, setReminderEmail] = useState("");
   const [reminderName, setReminderName] = useState("");
-  const [reminderType, setReminderType] = useState<"public" | "group">("public");
+  const [reminderType, setReminderType] = useState<"public" | "group">(
+    "public"
+  );
   const [reminderOrg, setReminderOrg] = useState("");
 
   // 查詢Email歷史記錄
-  const { data: emailLogs, refetch: refetchLogs } = trpc.emailLogs.list.useQuery({
-    limit: 20,
-  });
+  const { data: emailLogs, refetch: refetchLogs } =
+    trpc.emailLogs.list.useQuery({
+      limit: 20,
+    });
 
   const { data: emailStats } = trpc.emailLogs.stats.useQuery();
 
-  const testConfirmationMutation = trpc.emailTest.testBookingConfirmation.useMutation({
-    onSuccess: (data) => {
-      if (data.success) {
-        toast.success(data.message, {
-          description: `測試案件編號：${data.bookingNumber}`,
+  const testConfirmationMutation =
+    trpc.emailTest.testBookingConfirmation.useMutation({
+      onSuccess: data => {
+        if (data.success) {
+          toast.success(data.message, {
+            description: `測試案件編號：${data.bookingNumber}`,
+          });
+          refetchLogs(); // 重新載入歷史記錄
+        } else {
+          toast.error(data.message);
+        }
+      },
+      onError: error => {
+        toast.error("發送失敗", {
+          description: error.message,
         });
-        refetchLogs(); // 重新載入歷史記錄
-      } else {
-        toast.error(data.message);
-      }
-    },
-    onError: (error) => {
-      toast.error("發送失敗", {
-        description: error.message,
-      });
-    },
-  });
+      },
+    });
 
   const testReminderMutation = trpc.emailTest.testBookingReminder.useMutation({
-    onSuccess: (data) => {
+    onSuccess: data => {
       if (data.success) {
         toast.success(data.message, {
           description: `測試案件編號：${data.bookingNumber}`,
@@ -62,7 +81,7 @@ export default function EmailTest() {
         toast.error(data.message);
       }
     },
-    onError: (error) => {
+    onError: error => {
       toast.error("發送失敗", {
         description: error.message,
       });
@@ -84,7 +103,8 @@ export default function EmailTest() {
       recipientEmail: confirmationEmail,
       recipientName: confirmationName,
       bookingType: confirmationType,
-      organizationName: confirmationType === "group" ? confirmationOrg : undefined,
+      organizationName:
+        confirmationType === "group" ? confirmationOrg : undefined,
     });
   };
 
@@ -136,7 +156,9 @@ export default function EmailTest() {
     <div className="min-h-screen bg-gradient-to-br from-green-50 to-emerald-50 py-12 px-4">
       <div className="container max-w-4xl">
         <div className="mb-8">
-          <h1 className="text-3xl font-bold text-gray-900 mb-2">Email通知測試</h1>
+          <h1 className="text-3xl font-bold text-gray-900 mb-2">
+            Email通知測試
+          </h1>
           <p className="text-gray-600">測試預約確認和提醒Email功能</p>
         </div>
 
@@ -160,7 +182,7 @@ export default function EmailTest() {
                   type="email"
                   placeholder="your-email@example.com"
                   value={confirmationEmail}
-                  onChange={(e) => setConfirmationEmail(e.target.value)}
+                  onChange={e => setConfirmationEmail(e.target.value)}
                 />
               </div>
 
@@ -170,7 +192,7 @@ export default function EmailTest() {
                   id="confirmation-name"
                   placeholder="張三"
                   value={confirmationName}
-                  onChange={(e) => setConfirmationName(e.target.value)}
+                  onChange={e => setConfirmationName(e.target.value)}
                 />
               </div>
 
@@ -178,17 +200,25 @@ export default function EmailTest() {
                 <Label>預約類型</Label>
                 <RadioGroup
                   value={confirmationType}
-                  onValueChange={(value) => setConfirmationType(value as "public" | "group")}
+                  onValueChange={value =>
+                    setConfirmationType(value as "public" | "group")
+                  }
                 >
                   <div className="flex items-center space-x-2">
                     <RadioGroupItem value="public" id="confirmation-public" />
-                    <Label htmlFor="confirmation-public" className="font-normal cursor-pointer">
+                    <Label
+                      htmlFor="confirmation-public"
+                      className="font-normal cursor-pointer"
+                    >
                       民眾預約（1-19人）
                     </Label>
                   </div>
                   <div className="flex items-center space-x-2">
                     <RadioGroupItem value="group" id="confirmation-group" />
-                    <Label htmlFor="confirmation-group" className="font-normal cursor-pointer">
+                    <Label
+                      htmlFor="confirmation-group"
+                      className="font-normal cursor-pointer"
+                    >
                       團體預約（20人以上）
                     </Label>
                   </div>
@@ -202,7 +232,7 @@ export default function EmailTest() {
                     id="confirmation-org"
                     placeholder="台東國小"
                     value={confirmationOrg}
-                    onChange={(e) => setConfirmationOrg(e.target.value)}
+                    onChange={e => setConfirmationOrg(e.target.value)}
                   />
                 </div>
               )}
@@ -246,7 +276,7 @@ export default function EmailTest() {
                   type="email"
                   placeholder="your-email@example.com"
                   value={reminderEmail}
-                  onChange={(e) => setReminderEmail(e.target.value)}
+                  onChange={e => setReminderEmail(e.target.value)}
                 />
               </div>
 
@@ -256,7 +286,7 @@ export default function EmailTest() {
                   id="reminder-name"
                   placeholder="李四"
                   value={reminderName}
-                  onChange={(e) => setReminderName(e.target.value)}
+                  onChange={e => setReminderName(e.target.value)}
                 />
               </div>
 
@@ -264,17 +294,25 @@ export default function EmailTest() {
                 <Label>預約類型</Label>
                 <RadioGroup
                   value={reminderType}
-                  onValueChange={(value) => setReminderType(value as "public" | "group")}
+                  onValueChange={value =>
+                    setReminderType(value as "public" | "group")
+                  }
                 >
                   <div className="flex items-center space-x-2">
                     <RadioGroupItem value="public" id="reminder-public" />
-                    <Label htmlFor="reminder-public" className="font-normal cursor-pointer">
+                    <Label
+                      htmlFor="reminder-public"
+                      className="font-normal cursor-pointer"
+                    >
                       民眾預約（1-19人）
                     </Label>
                   </div>
                   <div className="flex items-center space-x-2">
                     <RadioGroupItem value="group" id="reminder-group" />
-                    <Label htmlFor="reminder-group" className="font-normal cursor-pointer">
+                    <Label
+                      htmlFor="reminder-group"
+                      className="font-normal cursor-pointer"
+                    >
                       團體預約（20人以上）
                     </Label>
                   </div>
@@ -288,7 +326,7 @@ export default function EmailTest() {
                     id="reminder-org"
                     placeholder="台東國中"
                     value={reminderOrg}
-                    onChange={(e) => setReminderOrg(e.target.value)}
+                    onChange={e => setReminderOrg(e.target.value)}
                   />
                 </div>
               )}
@@ -321,35 +359,41 @@ export default function EmailTest() {
                 <History className="h-5 w-5 text-gray-600" />
                 <CardTitle>Email發送歷史記錄</CardTitle>
               </div>
-              <CardDescription>
-                最近20筆Email發送記錄
-              </CardDescription>
+              <CardDescription>最近20筆Email發送記錄</CardDescription>
             </CardHeader>
             <CardContent>
               {emailStats && (
                 <div className="grid grid-cols-4 gap-4 mb-6">
                   <div className="bg-gray-50 p-4 rounded-lg">
                     <p className="text-sm text-gray-600">總發送數</p>
-                    <p className="text-2xl font-bold text-gray-900">{emailStats.total}</p>
+                    <p className="text-2xl font-bold text-gray-900">
+                      {emailStats.total}
+                    </p>
                   </div>
                   <div className="bg-green-50 p-4 rounded-lg">
                     <p className="text-sm text-green-600">成功</p>
-                    <p className="text-2xl font-bold text-green-700">{emailStats.success}</p>
+                    <p className="text-2xl font-bold text-green-700">
+                      {emailStats.success}
+                    </p>
                   </div>
                   <div className="bg-red-50 p-4 rounded-lg">
                     <p className="text-sm text-red-600">失敗</p>
-                    <p className="text-2xl font-bold text-red-700">{emailStats.failed}</p>
+                    <p className="text-2xl font-bold text-red-700">
+                      {emailStats.failed}
+                    </p>
                   </div>
                   <div className="bg-blue-50 p-4 rounded-lg">
                     <p className="text-sm text-blue-600">測試Email</p>
-                    <p className="text-2xl font-bold text-blue-700">{emailStats.testEmails}</p>
+                    <p className="text-2xl font-bold text-blue-700">
+                      {emailStats.testEmails}
+                    </p>
                   </div>
                 </div>
               )}
 
               <div className="space-y-2">
                 {emailLogs && emailLogs.length > 0 ? (
-                  emailLogs.map((log) => (
+                  emailLogs.map(log => (
                     <div
                       key={log.id}
                       className="border rounded-lg p-4 hover:bg-gray-50 transition-colors"
@@ -357,7 +401,7 @@ export default function EmailTest() {
                       <div className="flex items-start justify-between">
                         <div className="flex-1">
                           <div className="flex items-center gap-2 mb-1">
-                            {log.status === 'success' ? (
+                            {log.status === "success" ? (
                               <CheckCircle2 className="h-4 w-4 text-green-600" />
                             ) : (
                               <XCircle className="h-4 w-4 text-red-600" />
@@ -370,11 +414,19 @@ export default function EmailTest() {
                             )}
                           </div>
                           <div className="text-sm text-gray-600 space-y-0.5">
-                            <p>收件人：{log.recipientEmail} {log.recipientName && `(${log.recipientName})`}</p>
+                            <p>
+                              收件人：{log.recipientEmail}{" "}
+                              {log.recipientName && `(${log.recipientName})`}
+                            </p>
                             <p>類型：{log.emailType}</p>
-                            <p>時間：{new Date(log.sentAt).toLocaleString('zh-TW')}</p>
+                            <p>
+                              時間：
+                              {new Date(log.sentAt).toLocaleString("zh-TW")}
+                            </p>
                             {log.errorMessage && (
-                              <p className="text-red-600">錯誤：{log.errorMessage}</p>
+                              <p className="text-red-600">
+                                錯誤：{log.errorMessage}
+                              </p>
                             )}
                           </div>
                         </div>
@@ -396,18 +448,37 @@ export default function EmailTest() {
               <CardTitle className="text-blue-900">測試說明</CardTitle>
             </CardHeader>
             <CardContent className="text-blue-800 space-y-2">
-              <p><strong>目前狀態：</strong>系統使用 console.log 模擬Email發送</p>
-              <p><strong>如何查看：</strong>點擊「發送測試Email」後，請查看瀏覽器開發者工具的Console（按F12），Email內容會顯示在日誌中</p>
-              <p><strong>實際部署：</strong>整合真實Email服務（Gmail SMTP、SendGrid、AWS SES）後，Email會實際發送到收件人信箱</p>
-              <p><strong>注意事項：</strong>測試Email的案件編號會以「TEST」開頭，方便識別</p>
+              <p>
+                <strong>目前狀態：</strong>系統使用 console.log 模擬Email發送
+              </p>
+              <p>
+                <strong>如何查看：</strong>
+                點擊「發送測試Email」後，請查看瀏覽器開發者工具的Console（按F12），Email內容會顯示在日誌中
+              </p>
+              <p>
+                <strong>實際部署：</strong>整合真實Email服務（Gmail
+                SMTP、SendGrid、AWS SES）後，Email會實際發送到收件人信箱
+              </p>
+              <p>
+                <strong>注意事項：</strong>
+                測試Email的案件編號會以「TEST」開頭，方便識別
+              </p>
             </CardContent>
           </Card>
 
           <div className="flex gap-4">
-            <Button variant="outline" onClick={() => setLocation("/")} className="flex-1">
+            <Button
+              variant="outline"
+              onClick={() => setLocation("/")}
+              className="flex-1"
+            >
               返回首頁
             </Button>
-            <Button variant="outline" onClick={() => setLocation("/admin/bookings")} className="flex-1">
+            <Button
+              variant="outline"
+              onClick={() => setLocation("/admin/bookings")}
+              className="flex-1"
+            >
               前往預約管理
             </Button>
           </div>

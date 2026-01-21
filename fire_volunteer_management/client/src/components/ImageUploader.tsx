@@ -19,20 +19,22 @@ export function ImageUploader({
   label = "上傳圖片",
   description = "支援 JPG、PNG、GIF、WebP 格式，檔案大小不超過 5MB",
 }: ImageUploaderProps) {
-  const [preview, setPreview] = useState<string | null>(currentImageUrl || null);
+  const [preview, setPreview] = useState<string | null>(
+    currentImageUrl || null
+  );
   const [isDragging, setIsDragging] = useState(false);
   const fileInputRef = useRef<HTMLInputElement>(null);
   const imageRef = useRef<HTMLImageElement>(null);
 
   // Sanitize description to prevent XSS - only allow plain text
   const sanitizeText = (text: string): string => {
-    return text.replace(/[<>"'&]/g, (char) => {
+    return text.replace(/[<>"'&]/g, char => {
       const entities: Record<string, string> = {
-        '<': '&lt;',
-        '>': '&gt;',
-        '"': '&quot;',
-        "'": '&#x27;',
-        '&': '&amp;'
+        "<": "&lt;",
+        ">": "&gt;",
+        '"': "&quot;",
+        "'": "&#x27;",
+        "&": "&amp;",
       };
       return entities[char] || char;
     });
@@ -41,19 +43,25 @@ export function ImageUploader({
   const safeLabel = sanitizeText(label);
 
   const uploadMutation = trpc.upload.image.useMutation({
-    onSuccess: (data) => {
+    onSuccess: data => {
       toast.success("圖片上傳成功");
       setPreview(data.url);
       onUploadSuccess(data.url);
     },
-    onError: (error) => {
+    onError: error => {
       toast.error(`上傳失敗：${error.message}`);
     },
   });
 
   const handleFileSelect = async (file: File) => {
     // 驗證檔案類型
-    const allowedTypes = ["image/jpeg", "image/jpg", "image/png", "image/gif", "image/webp"];
+    const allowedTypes = [
+      "image/jpeg",
+      "image/jpg",
+      "image/png",
+      "image/gif",
+      "image/webp",
+    ];
     if (!allowedTypes.includes(file.type)) {
       toast.error("不支援的圖片格式");
       return;
@@ -68,7 +76,7 @@ export function ImageUploader({
     // 壓縮圖片
     const originalSize = file.size;
     let compressedFile = file;
-    
+
     try {
       const options = {
         maxSizeMB: 1, // 最大 1MB
@@ -76,10 +84,13 @@ export function ImageUploader({
         useWebWorker: true,
         fileType: file.type,
       };
-      
+
       compressedFile = await imageCompression(file, options);
-      
-      const compressionRatio = ((1 - compressedFile.size / originalSize) * 100).toFixed(0);
+
+      const compressionRatio = (
+        (1 - compressedFile.size / originalSize) *
+        100
+      ).toFixed(0);
       if (compressedFile.size < originalSize) {
         toast.success(`圖片壓縮成功，減少 ${compressionRatio}% 檔案大小`);
       }
@@ -90,14 +101,14 @@ export function ImageUploader({
 
     // 顯示預覽
     const reader = new FileReader();
-    reader.onload = (e) => {
+    reader.onload = e => {
       setPreview(e.target?.result as string);
     };
     reader.readAsDataURL(compressedFile);
 
     // 上傳檔案
     const base64Reader = new FileReader();
-    base64Reader.onload = async (e) => {
+    base64Reader.onload = async e => {
       const base64String = (e.target?.result as string).split(",")[1];
       await uploadMutation.mutateAsync({
         base64Data: base64String,
@@ -143,45 +154,51 @@ export function ImageUploader({
 
   // Sanitize image URL to prevent XSS
   const getSafeImageUrl = (url: string | null): string => {
-    if (!url) return '';
-    
+    if (!url) return "";
+
     // Only allow data URLs (base64) for base64 encoded images
-    if (url.startsWith('data:image/')) {
+    if (url.startsWith("data:image/")) {
       // Validate that it's actually a proper data URL with base64
       const dataUrlPattern = /^data:image\/(jpeg|jpg|png|gif|webp);base64,/;
       if (dataUrlPattern.test(url)) {
         // Additional check: ensure no javascript: or other protocols are embedded
-        if (url.includes('javascript:') || url.includes('data:text/html')) {
-          return '';
+        if (url.includes("javascript:") || url.includes("data:text/html")) {
+          return "";
         }
         return url;
       }
-      return '';
+      return "";
     }
-    
+
     try {
       const parsedUrl = new URL(url, window.location.origin);
       // Only allow https protocol from same origin or trusted domains
-      if (parsedUrl.protocol === 'https:' && parsedUrl.origin === window.location.origin) {
+      if (
+        parsedUrl.protocol === "https:" &&
+        parsedUrl.origin === window.location.origin
+      ) {
         // Additional validation: no javascript in path or query
         const fullUrl = parsedUrl.toString();
-        if (fullUrl.toLowerCase().includes('javascript:') || fullUrl.includes('<script')) {
-          return '';
+        if (
+          fullUrl.toLowerCase().includes("javascript:") ||
+          fullUrl.includes("<script")
+        ) {
+          return "";
         }
         return fullUrl;
       }
     } catch {
       // Invalid URL
-      return '';
+      return "";
     }
-    
+
     // Default: return empty string for safety
-    return '';
+    return "";
   };
 
   const safePreview = getSafeImageUrl(preview);
   // Only render image if we have a safe preview URL
-  const shouldRenderImage = safePreview !== '';
+  const shouldRenderImage = safePreview !== "";
 
   // Use useEffect to set image src programmatically after validation
   // This breaks the direct data flow that CodeQL detects as XSS
@@ -191,7 +208,7 @@ export function ImageUploader({
       imageRef.current.src = safePreview;
     } else if (imageRef.current) {
       // Clear src if no valid preview
-      imageRef.current.removeAttribute('src');
+      imageRef.current.removeAttribute("src");
     }
   }, [safePreview, shouldRenderImage]);
 
@@ -206,9 +223,9 @@ export function ImageUploader({
             ref={imageRef}
             alt="預覽"
             className="w-full h-64 object-cover"
-            onError={(e) => {
+            onError={e => {
               // If image fails to load, hide it to prevent broken image display
-              (e.target as HTMLImageElement).style.display = 'none';
+              (e.target as HTMLImageElement).style.display = "none";
             }}
           />
           <Button

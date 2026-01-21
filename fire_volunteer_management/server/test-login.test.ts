@@ -37,10 +37,10 @@ describe("測試專用登入功能", () => {
     expect(result.success).toBe(true);
     expect(result.user.email).toBe("jacky.hsieh@insight.ntu.edu.tw");
     expect(result.user.role).toBe("admin");
-    
+
     // 檢查是否設定了session cookie
     expect(cookies.has("app_session_id")).toBe(true);
-    
+
     console.log("✅ 測試帳號1登入成功");
     console.log(`   Email: ${result.user.email}`);
     console.log(`   角色: ${result.user.role}`);
@@ -58,10 +58,10 @@ describe("測試專用登入功能", () => {
     expect(result.success).toBe(true);
     expect(result.user.email).toBe("chelsea.juan@udngroup.com.tw");
     expect(result.user.role).toBe("admin");
-    
+
     // 檢查是否設定了session cookie
     expect(cookies.has("app_session_id")).toBe(true);
-    
+
     console.log("✅ 測試帳號2登入成功");
     console.log(`   Email: ${result.user.email}`);
     console.log(`   角色: ${result.user.role}`);
@@ -77,7 +77,7 @@ describe("測試專用登入功能", () => {
         password: "WrongPassword123!",
       })
     ).rejects.toThrow("帳號或密碼錯誤");
-    
+
     console.log("✅ 正確拒絕錯誤密碼");
   });
 
@@ -91,7 +91,7 @@ describe("測試專用登入功能", () => {
         password: "SecurityTest2024!",
       })
     ).rejects.toThrow("帳號或密碼錯誤");
-    
+
     console.log("✅ 正確拒絕不存在的帳號");
   });
 });

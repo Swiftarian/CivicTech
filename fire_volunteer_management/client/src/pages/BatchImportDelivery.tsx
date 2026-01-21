@@ -43,10 +43,10 @@ export default function BatchImportDelivery() {
 
     for (const line of lines) {
       if (!line.trim()) continue;
-      
+
       // 格式：王小明,台東市中華路一段100號,0912-345-678
       const parts = line.split(",").map(p => p.trim());
-      
+
       if (parts.length >= 3) {
         parsed.push({
           recipientName: parts[0],
@@ -76,7 +76,11 @@ export default function BatchImportDelivery() {
     ]);
   };
 
-  const updateAddress = (index: number, field: keyof DeliveryAddress, value: string) => {
+  const updateAddress = (
+    index: number,
+    field: keyof DeliveryAddress,
+    value: string
+  ) => {
     const updated = [...addresses];
     updated[index][field] = value;
     setAddresses(updated);
@@ -99,7 +103,8 @@ export default function BatchImportDelivery() {
 
     // 驗證所有地址都已填寫
     const incomplete = addresses.some(
-      addr => !addr.recipientName || !addr.deliveryAddress || !addr.recipientPhone
+      addr =>
+        !addr.recipientName || !addr.deliveryAddress || !addr.recipientPhone
     );
 
     if (incomplete) {
@@ -143,7 +148,7 @@ export default function BatchImportDelivery() {
               </p>
               <Textarea
                 value={textInput}
-                onChange={(e) => setTextInput(e.target.value)}
+                onChange={e => setTextInput(e.target.value)}
                 placeholder="王小明,台東市中華路一段100號,0912-345-678&#10;李小華,台東市更生路200號,0923-456-789&#10;張大同,台東市鐵花路50號,0934-567-890"
                 rows={10}
                 className="font-mono text-sm"
@@ -194,7 +199,9 @@ export default function BatchImportDelivery() {
                     <Card key={index} className="p-3">
                       <div className="space-y-2">
                         <div className="flex items-center justify-between">
-                          <span className="text-sm font-semibold">#{index + 1}</span>
+                          <span className="text-sm font-semibold">
+                            #{index + 1}
+                          </span>
                           <Button
                             size="sm"
                             variant="ghost"
@@ -206,17 +213,35 @@ export default function BatchImportDelivery() {
                         <Input
                           placeholder="收餐人姓名"
                           value={addr.recipientName}
-                          onChange={(e) => updateAddress(index, "recipientName", e.target.value)}
+                          onChange={e =>
+                            updateAddress(
+                              index,
+                              "recipientName",
+                              e.target.value
+                            )
+                          }
                         />
                         <Input
                           placeholder="送餐地址"
                           value={addr.deliveryAddress}
-                          onChange={(e) => updateAddress(index, "deliveryAddress", e.target.value)}
+                          onChange={e =>
+                            updateAddress(
+                              index,
+                              "deliveryAddress",
+                              e.target.value
+                            )
+                          }
                         />
                         <Input
                           placeholder="聯絡電話"
                           value={addr.recipientPhone}
-                          onChange={(e) => updateAddress(index, "recipientPhone", e.target.value)}
+                          onChange={e =>
+                            updateAddress(
+                              index,
+                              "recipientPhone",
+                              e.target.value
+                            )
+                          }
                         />
                       </div>
                     </Card>
@@ -237,14 +262,14 @@ export default function BatchImportDelivery() {
                 <Input
                   type="date"
                   value={deliveryDate}
-                  onChange={(e) => setDeliveryDate(e.target.value)}
+                  onChange={e => setDeliveryDate(e.target.value)}
                 />
               </div>
               <div>
                 <Label>送餐時段</Label>
                 <Input
                   value={deliveryTime}
-                  onChange={(e) => setDeliveryTime(e.target.value)}
+                  onChange={e => setDeliveryTime(e.target.value)}
                   placeholder="例如：11:00-12:00"
                 />
               </div>
@@ -252,7 +277,7 @@ export default function BatchImportDelivery() {
                 <Label>餐點類型</Label>
                 <Input
                   value={mealType}
-                  onChange={(e) => setMealType(e.target.value)}
+                  onChange={e => setMealType(e.target.value)}
                   placeholder="例如：午餐便當"
                 />
               </div>
@@ -261,9 +286,13 @@ export default function BatchImportDelivery() {
                 onClick={handleSubmit}
                 className="w-full"
                 size="lg"
-                disabled={addresses.length === 0 || createBatchMutation.isPending}
+                disabled={
+                  addresses.length === 0 || createBatchMutation.isPending
+                }
               >
-                {createBatchMutation.isPending ? "建立中..." : `建立 ${addresses.length} 筆送餐任務`}
+                {createBatchMutation.isPending
+                  ? "建立中..."
+                  : `建立 ${addresses.length} 筆送餐任務`}
               </Button>
             </CardContent>
           </Card>

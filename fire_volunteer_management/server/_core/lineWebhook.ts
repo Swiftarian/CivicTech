@@ -1,6 +1,6 @@
 /**
  * LINE Webhook 處理模組
- * 
+ *
  * 處理LINE平台發送的webhook事件，例如：
  * - 使用者加入好友
  * - 使用者封鎖機器人
@@ -8,7 +8,12 @@
  */
 
 import type { Request, Response } from "express";
-import { verifyLineSignature, replyLineMessage, getLineUserProfile, createWelcomeMessage } from "./lineMessaging";
+import {
+  verifyLineSignature,
+  replyLineMessage,
+  getLineUserProfile,
+  createWelcomeMessage,
+} from "./lineMessaging";
 import { getDb } from "../db";
 import { recipients } from "../../drizzle/schema";
 import { eq } from "drizzle-orm";
@@ -32,7 +37,10 @@ interface LineWebhookRequest {
 /**
  * 處理LINE webhook請求
  */
-export async function handleLineWebhook(req: Request, res: Response): Promise<void> {
+export async function handleLineWebhook(
+  req: Request,
+  res: Response
+): Promise<void> {
   try {
     // 驗證簽名
     const signature = req.headers["x-line-signature"] as string;

@@ -78,12 +78,14 @@
 ### 查詢志工資料
 
 **管理員可以：**
+
 - 查看所有志工列表
 - 篩選活躍/停用志工
 - 搜尋特定志工
 - 查看志工詳細資料
 
 **志工可以：**
+
 - 查看個人檔案
 - 更新聯絡資訊（部分欄位）
 
@@ -91,18 +93,18 @@
 
 **volunteers 表**
 
-| 欄位 | 類型 | 說明 |
-|------|------|------|
-| id | INT | 主鍵，自動遞增 |
-| userId | INT | 關聯到 users 表 |
-| specialty | TEXT | 專長 |
-| availableTime | TEXT | 可服務時段 |
-| emergencyContact | VARCHAR(100) | 緊急聯絡人 |
-| emergencyPhone | VARCHAR(20) | 緊急聯絡電話 |
-| status | ENUM | active / inactive |
-| totalHours | INT | 累計服務時數（分鐘） |
-| createdAt | TIMESTAMP | 建立時間 |
-| updatedAt | TIMESTAMP | 更新時間 |
+| 欄位             | 類型         | 說明                 |
+| ---------------- | ------------ | -------------------- |
+| id               | INT          | 主鍵，自動遞增       |
+| userId           | INT          | 關聯到 users 表      |
+| specialty        | TEXT         | 專長                 |
+| availableTime    | TEXT         | 可服務時段           |
+| emergencyContact | VARCHAR(100) | 緊急聯絡人           |
+| emergencyPhone   | VARCHAR(20)  | 緊急聯絡電話         |
+| status           | ENUM         | active / inactive    |
+| totalHours       | INT          | 累計服務時數（分鐘） |
+| createdAt        | TIMESTAMP    | 建立時間             |
+| updatedAt        | TIMESTAMP    | 更新時間             |
 
 ---
 
@@ -133,12 +135,14 @@
 ### 查看班表
 
 **管理員可以：**
+
 - 查看所有志工的班表
 - 按日期篩選
 - 按志工篩選
 - 查看班表狀態（已排班、已簽到、已簽退、已取消）
 
 **志工可以：**
+
 - 查看個人班表
 - 查看未來排班
 - 查看歷史排班記錄
@@ -161,19 +165,19 @@ cancelled（已取消）
 
 **schedules 表**
 
-| 欄位 | 類型 | 說明 |
-|------|------|------|
-| id | INT | 主鍵，自動遞增 |
-| volunteerId | INT | 關聯到 volunteers 表 |
-| date | DATE | 排班日期 |
-| startTime | TIME | 開始時間 |
-| endTime | TIME | 結束時間 |
-| shift | ENUM | morning / afternoon / evening |
-| task | TEXT | 工作內容 |
-| status | ENUM | scheduled / checked_in / checked_out / cancelled |
-| notes | TEXT | 備註 |
-| createdAt | TIMESTAMP | 建立時間 |
-| updatedAt | TIMESTAMP | 更新時間 |
+| 欄位        | 類型      | 說明                                             |
+| ----------- | --------- | ------------------------------------------------ |
+| id          | INT       | 主鍵，自動遞增                                   |
+| volunteerId | INT       | 關聯到 volunteers 表                             |
+| date        | DATE      | 排班日期                                         |
+| startTime   | TIME      | 開始時間                                         |
+| endTime     | TIME      | 結束時間                                         |
+| shift       | ENUM      | morning / afternoon / evening                    |
+| task        | TEXT      | 工作內容                                         |
+| status      | ENUM      | scheduled / checked_in / checked_out / cancelled |
+| notes       | TEXT      | 備註                                             |
+| createdAt   | TIMESTAMP | 建立時間                                         |
+| updatedAt   | TIMESTAMP | 更新時間                                         |
 
 ---
 
@@ -213,6 +217,7 @@ cancelled（已取消）
 ### 自動計算工時
 
 系統自動計算：
+
 - **單次服務時數** = 簽退時間 - 簽到時間
 - **累計服務時數** = 所有已簽退記錄的時數總和
 
@@ -221,12 +226,14 @@ cancelled（已取消）
 ### 查詢打卡記錄
 
 **管理員可以：**
+
 - 查看所有志工的打卡記錄
 - 按日期範圍篩選
 - 按志工篩選
 - 匯出打卡記錄（未來功能）
 
 **志工可以：**
+
 - 查看個人打卡記錄
 - 查看每次服務時數
 - 查看累計服務時數
@@ -235,17 +242,17 @@ cancelled（已取消）
 
 **attendances 表**
 
-| 欄位 | 類型 | 說明 |
-|------|------|------|
-| id | INT | 主鍵，自動遞增 |
-| scheduleId | INT | 關聯到 schedules 表 |
-| volunteerId | INT | 關聯到 volunteers 表 |
-| checkInTime | DATETIME | 簽到時間 |
-| checkOutTime | DATETIME | 簽退時間（可為空） |
-| workHours | INT | 服務時數（分鐘） |
-| notes | TEXT | 備註 |
-| createdAt | TIMESTAMP | 建立時間 |
-| updatedAt | TIMESTAMP | 更新時間 |
+| 欄位         | 類型      | 說明                 |
+| ------------ | --------- | -------------------- |
+| id           | INT       | 主鍵，自動遞增       |
+| scheduleId   | INT       | 關聯到 schedules 表  |
+| volunteerId  | INT       | 關聯到 volunteers 表 |
+| checkInTime  | DATETIME  | 簽到時間             |
+| checkOutTime | DATETIME  | 簽退時間（可為空）   |
+| workHours    | INT       | 服務時數（分鐘）     |
+| notes        | TEXT      | 備註                 |
+| createdAt    | TIMESTAMP | 建立時間             |
+| updatedAt    | TIMESTAMP | 更新時間             |
 
 ---
 
@@ -322,20 +329,20 @@ approved（已核准）或 rejected（已拒絕）
 
 **leaveRequests 表**
 
-| 欄位 | 類型 | 說明 |
-|------|------|------|
-| id | INT | 主鍵，自動遞增 |
-| scheduleId | INT | 關聯到 schedules 表 |
-| volunteerId | INT | 申請人（關聯到 volunteers 表） |
-| type | ENUM | leave（請假）/ swap（換班） |
-| reason | TEXT | 申請原因 |
-| replacementVolunteerId | INT | 替代志工 ID（換班時使用） |
-| status | ENUM | pending / approved / rejected |
-| reviewedBy | INT | 審核人（關聯到 users 表） |
-| reviewedAt | DATETIME | 審核時間 |
-| reviewNotes | TEXT | 審核備註 |
-| createdAt | TIMESTAMP | 申請時間 |
-| updatedAt | TIMESTAMP | 更新時間 |
+| 欄位                   | 類型      | 說明                           |
+| ---------------------- | --------- | ------------------------------ |
+| id                     | INT       | 主鍵，自動遞增                 |
+| scheduleId             | INT       | 關聯到 schedules 表            |
+| volunteerId            | INT       | 申請人（關聯到 volunteers 表） |
+| type                   | ENUM      | leave（請假）/ swap（換班）    |
+| reason                 | TEXT      | 申請原因                       |
+| replacementVolunteerId | INT       | 替代志工 ID（換班時使用）      |
+| status                 | ENUM      | pending / approved / rejected  |
+| reviewedBy             | INT       | 審核人（關聯到 users 表）      |
+| reviewedAt             | DATETIME  | 審核時間                       |
+| reviewNotes            | TEXT      | 審核備註                       |
+| createdAt              | TIMESTAMP | 申請時間                       |
+| updatedAt              | TIMESTAMP | 更新時間                       |
 
 ---
 
@@ -344,6 +351,7 @@ approved（已核准）或 rejected（已拒絕）
 ### 志工管理 API
 
 #### 建立志工
+
 ```typescript
 trpc.volunteers.create.useMutation({
   userId: number,
@@ -355,13 +363,15 @@ trpc.volunteers.create.useMutation({
 ```
 
 #### 查詢所有志工（管理員）
+
 ```typescript
-trpc.volunteers.getAll.useQuery()
+trpc.volunteers.getAll.useQuery();
 ```
 
 #### 查詢個人檔案（志工）
+
 ```typescript
-trpc.volunteers.getMyProfile.useQuery()
+trpc.volunteers.getMyProfile.useQuery();
 ```
 
 ---
@@ -369,6 +379,7 @@ trpc.volunteers.getMyProfile.useQuery()
 ### 排班管理 API
 
 #### 建立排班（管理員）
+
 ```typescript
 trpc.schedules.create.useMutation({
   volunteerId: number,
@@ -382,21 +393,24 @@ trpc.schedules.create.useMutation({
 ```
 
 #### 查詢所有排班（管理員）
+
 ```typescript
-trpc.schedules.getAll.useQuery()
+trpc.schedules.getAll.useQuery();
 ```
 
 #### 查詢個人班表（志工）
+
 ```typescript
-trpc.schedules.getMySchedules.useQuery()
+trpc.schedules.getMySchedules.useQuery();
 ```
 
 #### 更新排班狀態
+
 ```typescript
 trpc.schedules.updateStatus.useMutation({
   scheduleId: number,
-  status: 'scheduled' | 'checked_in' | 'checked_out' | 'cancelled'
-})
+  status: "scheduled" | "checked_in" | "checked_out" | "cancelled",
+});
 ```
 
 ---
@@ -404,6 +418,7 @@ trpc.schedules.updateStatus.useMutation({
 ### 打卡系統 API
 
 #### 簽到
+
 ```typescript
 trpc.attendances.checkIn.useMutation({
   scheduleId: number,
@@ -412,6 +427,7 @@ trpc.attendances.checkIn.useMutation({
 ```
 
 **返回：**
+
 ```typescript
 {
   id: number,
@@ -425,6 +441,7 @@ trpc.attendances.checkIn.useMutation({
 ```
 
 #### 簽退
+
 ```typescript
 trpc.attendances.checkOut.useMutation({
   attendanceId: number,
@@ -433,6 +450,7 @@ trpc.attendances.checkOut.useMutation({
 ```
 
 **返回：**
+
 ```typescript
 {
   id: number,
@@ -442,13 +460,15 @@ trpc.attendances.checkOut.useMutation({
 ```
 
 #### 查詢打卡記錄（志工）
+
 ```typescript
-trpc.attendances.getMyRecords.useQuery()
+trpc.attendances.getMyRecords.useQuery();
 ```
 
 #### 查詢所有打卡記錄（管理員）
+
 ```typescript
-trpc.attendances.getAll.useQuery()
+trpc.attendances.getAll.useQuery();
 ```
 
 ---
@@ -456,6 +476,7 @@ trpc.attendances.getAll.useQuery()
 ### 請假換班 API
 
 #### 建立請假/換班申請
+
 ```typescript
 trpc.leaveRequests.create.useMutation({
   scheduleId: number,
@@ -467,16 +488,19 @@ trpc.leaveRequests.create.useMutation({
 ```
 
 #### 查詢我的申請（志工）
+
 ```typescript
-trpc.leaveRequests.getMyRequests.useQuery()
+trpc.leaveRequests.getMyRequests.useQuery();
 ```
 
 #### 查詢所有申請（管理員）
+
 ```typescript
-trpc.leaveRequests.getAll.useQuery()
+trpc.leaveRequests.getAll.useQuery();
 ```
 
 #### 審核申請（管理員）
+
 ```typescript
 trpc.leaveRequests.approve.useMutation({
   requestId: number,
@@ -498,6 +522,7 @@ trpc.leaveRequests.reject.useMutation({
 #### 情境一：正常排班與打卡
 
 1. **管理員建立排班**
+
    ```
    日期：2024-11-25
    志工：王小明
@@ -534,6 +559,7 @@ trpc.leaveRequests.reject.useMutation({
    - 點擊「申請請假」
 
 2. **填寫請假申請**
+
    ```
    類型：請假
    原因：家中有事
@@ -565,6 +591,7 @@ trpc.leaveRequests.reject.useMutation({
    - 點擊「申請換班」
 
 2. **填寫換班申請**
+
    ```
    類型：換班
    替代志工：李小華（志工B）
@@ -613,7 +640,8 @@ trpc.leaveRequests.reject.useMutation({
 
 ### Q5：可以查看其他志工的班表嗎？
 
-**A：** 
+**A：**
+
 - **志工**：只能查看個人班表
 - **管理員**：可以查看所有志工的班表
 
@@ -645,7 +673,8 @@ trpc.leaveRequests.reject.useMutation({
 
 ### Q10：如何查看累計服務時數？
 
-**A：** 
+**A：**
+
 - **志工**：登入後在個人檔案頁面查看
 - **管理員**：在志工管理頁面查看所有志工的服務時數
 

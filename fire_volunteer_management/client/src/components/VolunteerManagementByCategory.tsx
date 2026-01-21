@@ -1,9 +1,26 @@
 import { useState } from "react";
 import { trpc } from "@/lib/trpc";
 import { Button } from "@/components/ui/button";
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
-import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
-import { Collapsible, CollapsibleContent, CollapsibleTrigger } from "@/components/ui/collapsible";
+import {
+  Card,
+  CardContent,
+  CardDescription,
+  CardHeader,
+  CardTitle,
+} from "@/components/ui/card";
+import {
+  Table,
+  TableBody,
+  TableCell,
+  TableHead,
+  TableHeader,
+  TableRow,
+} from "@/components/ui/table";
+import {
+  Collapsible,
+  CollapsibleContent,
+  CollapsibleTrigger,
+} from "@/components/ui/collapsible";
 import { ChevronDown, ChevronUp } from "lucide-react";
 
 interface VolunteerManagementByCategoryProps {
@@ -21,8 +38,12 @@ export function VolunteerManagementByCategory({
   const [deliveryVolunteersOpen, setDeliveryVolunteersOpen] = useState(true);
 
   // 按分類分組志工
-  const guideVolunteers = volunteers.filter(v => v.volunteer.category === "導覽館志工");
-  const deliveryVolunteers = volunteers.filter(v => v.volunteer.category === "送餐志工");
+  const guideVolunteers = volunteers.filter(
+    v => v.volunteer.category === "導覽館志工"
+  );
+  const deliveryVolunteers = volunteers.filter(
+    v => v.volunteer.category === "送餐志工"
+  );
 
   const renderVolunteerTable = (volunteerList: any[]) => (
     <Table>
@@ -40,26 +61,38 @@ export function VolunteerManagementByCategory({
       <TableBody>
         {volunteerList.length === 0 ? (
           <TableRow>
-            <TableCell colSpan={7} className="text-center text-muted-foreground">
+            <TableCell
+              colSpan={7}
+              className="text-center text-muted-foreground"
+            >
               目前沒有此分類的志工
             </TableCell>
           </TableRow>
         ) : (
-          volunteerList.map((item) => (
+          volunteerList.map(item => (
             <TableRow key={item.volunteer.id}>
-              <TableCell className="font-medium">{item.user?.name || '-'}</TableCell>
-              <TableCell>{item.volunteer.employeeId || '-'}</TableCell>
-              <TableCell>{item.volunteer.department || '-'}</TableCell>
-              <TableCell>{item.volunteer.position || '-'}</TableCell>
+              <TableCell className="font-medium">
+                {item.user?.name || "-"}
+              </TableCell>
+              <TableCell>{item.volunteer.employeeId || "-"}</TableCell>
+              <TableCell>{item.volunteer.department || "-"}</TableCell>
+              <TableCell>{item.volunteer.position || "-"}</TableCell>
               <TableCell>{item.volunteer.totalHours || 0} 小時</TableCell>
               <TableCell>
-                <span className={`badge-status ${
-                  item.volunteer.status === 'active' ? 'badge-confirmed' :
-                  item.volunteer.status === 'inactive' ? 'bg-gray-100 text-gray-800' :
-                  'badge-pending'
-                }`}>
-                  {item.volunteer.status === 'active' ? '在職' :
-                   item.volunteer.status === 'inactive' ? '離職' : '請假中'}
+                <span
+                  className={`badge-status ${
+                    item.volunteer.status === "active"
+                      ? "badge-confirmed"
+                      : item.volunteer.status === "inactive"
+                        ? "bg-gray-100 text-gray-800"
+                        : "badge-pending"
+                  }`}
+                >
+                  {item.volunteer.status === "active"
+                    ? "在職"
+                    : item.volunteer.status === "inactive"
+                      ? "離職"
+                      : "請假中"}
                 </span>
               </TableCell>
               <TableCell>
@@ -90,7 +123,10 @@ export function VolunteerManagementByCategory({
   return (
     <div className="space-y-4">
       {/* 導覽館志工 */}
-      <Collapsible open={guideVolunteersOpen} onOpenChange={setGuideVolunteersOpen}>
+      <Collapsible
+        open={guideVolunteersOpen}
+        onOpenChange={setGuideVolunteersOpen}
+      >
         <Card>
           <CardHeader>
             <CollapsibleTrigger asChild>
@@ -115,15 +151,16 @@ export function VolunteerManagementByCategory({
             </CollapsibleTrigger>
           </CardHeader>
           <CollapsibleContent>
-            <CardContent>
-              {renderVolunteerTable(guideVolunteers)}
-            </CardContent>
+            <CardContent>{renderVolunteerTable(guideVolunteers)}</CardContent>
           </CollapsibleContent>
         </Card>
       </Collapsible>
 
       {/* 送餐志工 */}
-      <Collapsible open={deliveryVolunteersOpen} onOpenChange={setDeliveryVolunteersOpen}>
+      <Collapsible
+        open={deliveryVolunteersOpen}
+        onOpenChange={setDeliveryVolunteersOpen}
+      >
         <Card>
           <CardHeader>
             <CollapsibleTrigger asChild>

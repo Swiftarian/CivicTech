@@ -1,6 +1,6 @@
 /**
  * LINE Messaging API 整合模組
- * 
+ *
  * 提供發送LINE訊息、處理webhook事件等功能
  */
 
@@ -29,7 +29,7 @@ export async function sendLineMessage(
 ): Promise<{ success: boolean; error?: string }> {
   try {
     const accessToken = process.env.LINE_CHANNEL_ACCESS_TOKEN;
-    
+
     if (!accessToken) {
       console.error("[LINE] Channel Access Token not configured");
       return { success: false, error: "LINE credentials not configured" };
@@ -72,7 +72,7 @@ export async function replyLineMessage(
 ): Promise<{ success: boolean; error?: string }> {
   try {
     const accessToken = process.env.LINE_CHANNEL_ACCESS_TOKEN;
-    
+
     if (!accessToken) {
       console.error("[LINE] Channel Access Token not configured");
       return { success: false, error: "LINE credentials not configured" };
@@ -109,12 +109,14 @@ export async function replyLineMessage(
 /**
  * 取得LINE使用者資料
  */
-export async function getLineUserProfile(
-  userId: string
-): Promise<{ success: boolean; profile?: { displayName: string; userId: string; pictureUrl?: string }; error?: string }> {
+export async function getLineUserProfile(userId: string): Promise<{
+  success: boolean;
+  profile?: { displayName: string; userId: string; pictureUrl?: string };
+  error?: string;
+}> {
   try {
     const accessToken = process.env.LINE_CHANNEL_ACCESS_TOKEN;
-    
+
     if (!accessToken) {
       console.error("[LINE] Channel Access Token not configured");
       return { success: false, error: "LINE credentials not configured" };
@@ -127,12 +129,15 @@ export async function getLineUserProfile(
       return { success: false, error: "Invalid userId format" };
     }
 
-    const response = await fetch(`https://api.line.me/v2/bot/profile/${userId}`, {
-      method: "GET",
-      headers: {
-        Authorization: `Bearer ${accessToken}`,
-      },
-    });
+    const response = await fetch(
+      `https://api.line.me/v2/bot/profile/${userId}`,
+      {
+        method: "GET",
+        headers: {
+          Authorization: `Bearer ${accessToken}`,
+        },
+      }
+    );
 
     if (!response.ok) {
       const errorText = await response.text();
@@ -152,13 +157,10 @@ export async function getLineUserProfile(
 /**
  * 驗證LINE webhook簽名
  */
-export function verifyLineSignature(
-  body: string,
-  signature: string
-): boolean {
+export function verifyLineSignature(body: string, signature: string): boolean {
   try {
     const channelSecret = process.env.LINE_CHANNEL_SECRET;
-    
+
     if (!channelSecret) {
       console.error("[LINE] Channel Secret not configured");
       return false;

@@ -46,7 +46,9 @@ describe("scheduledTasks - sendBookingReminders", () => {
     ];
 
     vi.mocked(db.getBookingsNeedingReminder).mockResolvedValue(mockBookings);
-    vi.mocked(emailService.sendPublicBookingReminderEmail).mockResolvedValue(true);
+    vi.mocked(emailService.sendPublicBookingReminderEmail).mockResolvedValue(
+      true
+    );
     vi.mocked(db.markBookingReminderSent).mockResolvedValue(undefined);
 
     const results = await sendBookingReminders();
@@ -57,7 +59,9 @@ describe("scheduledTasks - sendBookingReminders", () => {
     expect(results.errors).toHaveLength(0);
 
     // 驗證Email發送函數被調用
-    expect(emailService.sendPublicBookingReminderEmail).toHaveBeenCalledTimes(1);
+    expect(emailService.sendPublicBookingReminderEmail).toHaveBeenCalledTimes(
+      1
+    );
     expect(emailService.sendPublicBookingReminderEmail).toHaveBeenCalledWith(
       "zhang@example.com",
       "張三",
@@ -101,7 +105,9 @@ describe("scheduledTasks - sendBookingReminders", () => {
     ];
 
     vi.mocked(db.getBookingsNeedingReminder).mockResolvedValue(mockBookings);
-    vi.mocked(emailService.sendGroupBookingReminderEmail).mockResolvedValue(true);
+    vi.mocked(emailService.sendGroupBookingReminderEmail).mockResolvedValue(
+      true
+    );
     vi.mocked(db.markBookingReminderSent).mockResolvedValue(undefined);
 
     const results = await sendBookingReminders();
@@ -175,8 +181,12 @@ describe("scheduledTasks - sendBookingReminders", () => {
     ];
 
     vi.mocked(db.getBookingsNeedingReminder).mockResolvedValue(mockBookings);
-    vi.mocked(emailService.sendPublicBookingReminderEmail).mockResolvedValue(true);
-    vi.mocked(emailService.sendGroupBookingReminderEmail).mockResolvedValue(true);
+    vi.mocked(emailService.sendPublicBookingReminderEmail).mockResolvedValue(
+      true
+    );
+    vi.mocked(emailService.sendGroupBookingReminderEmail).mockResolvedValue(
+      true
+    );
     vi.mocked(db.markBookingReminderSent).mockResolvedValue(undefined);
 
     const results = await sendBookingReminders();
@@ -185,7 +195,9 @@ describe("scheduledTasks - sendBookingReminders", () => {
     expect(results.success).toBe(2);
     expect(results.failed).toBe(0);
 
-    expect(emailService.sendPublicBookingReminderEmail).toHaveBeenCalledTimes(1);
+    expect(emailService.sendPublicBookingReminderEmail).toHaveBeenCalledTimes(
+      1
+    );
     expect(emailService.sendGroupBookingReminderEmail).toHaveBeenCalledTimes(1);
     expect(db.markBookingReminderSent).toHaveBeenCalledTimes(2);
   });
@@ -220,7 +232,9 @@ describe("scheduledTasks - sendBookingReminders", () => {
 
     vi.mocked(db.getBookingsNeedingReminder).mockResolvedValue(mockBookings);
     // Mock Email發送失敗
-    vi.mocked(emailService.sendPublicBookingReminderEmail).mockResolvedValue(false);
+    vi.mocked(emailService.sendPublicBookingReminderEmail).mockResolvedValue(
+      false
+    );
 
     const results = await sendBookingReminders();
 
@@ -231,8 +245,10 @@ describe("scheduledTasks - sendBookingReminders", () => {
     expect(results.errors[0]).toContain("BK3333333333");
 
     // 驗證Email發送函數被調用
-    expect(emailService.sendPublicBookingReminderEmail).toHaveBeenCalledTimes(1);
-    
+    expect(emailService.sendPublicBookingReminderEmail).toHaveBeenCalledTimes(
+      1
+    );
+
     // 驗證沒有標記為已發送（因為發送失敗）
     expect(db.markBookingReminderSent).not.toHaveBeenCalled();
   });
@@ -302,12 +318,12 @@ describe("scheduledTasks - sendBookingReminders", () => {
     ];
 
     vi.mocked(db.getBookingsNeedingReminder).mockResolvedValue(mockBookings);
-    
+
     // 第一筆拋出異常，第二筆成功
     vi.mocked(emailService.sendPublicBookingReminderEmail)
       .mockRejectedValueOnce(new Error("SMTP連線失敗"))
       .mockResolvedValueOnce(true);
-    
+
     vi.mocked(db.markBookingReminderSent).mockResolvedValue(undefined);
 
     const results = await sendBookingReminders();

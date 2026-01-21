@@ -17,7 +17,9 @@ function createMockContext(user?: AuthenticatedUser): TrpcContext {
   };
 }
 
-function createMockUser(overrides?: Partial<AuthenticatedUser>): AuthenticatedUser {
+function createMockUser(
+  overrides?: Partial<AuthenticatedUser>
+): AuthenticatedUser {
   return {
     id: 1,
     openId: "test-user",
@@ -48,7 +50,7 @@ describe("Bookings API", () => {
         visitDate: new Date("2025-12-01"),
         visitTime: "09:00-11:00",
         purpose: "校外教學",
-        specialNeeds: "需要無障礙設施"
+        specialNeeds: "需要無障礙設施",
       };
 
       const result = await caller.bookings.create(bookingData);
@@ -70,7 +72,7 @@ describe("Bookings API", () => {
         contactPhone: "0987654321",
         numberOfPeople: 5,
         visitDate: new Date("2025-12-15"),
-        visitTime: "14:00-15:00"
+        visitTime: "14:00-15:00",
       };
 
       const result = await caller.bookings.create(bookingData);
@@ -98,14 +100,14 @@ describe("Bookings API", () => {
         contactPhone: "0933333333",
         numberOfPeople: 3,
         visitDate: new Date("2025-12-20"),
-        visitTime: "10:00-11:00"
+        visitTime: "10:00-11:00",
       };
 
       const created = await caller.bookings.create(bookingData);
 
       // Then retrieve it
       const retrieved = await caller.bookings.getByNumber({
-        bookingNumber: created.bookingNumber
+        bookingNumber: created.bookingNumber,
       });
 
       expect(retrieved).toBeDefined();
@@ -118,7 +120,7 @@ describe("Bookings API", () => {
       const caller = appRouter.createCaller(ctx);
 
       const result = await caller.bookings.getByNumber({
-        bookingNumber: "BK9999999999"
+        bookingNumber: "BK9999999999",
       });
 
       expect(result).toBeUndefined();
@@ -134,7 +136,7 @@ describe("Bookings API", () => {
       await expect(
         caller.bookings.updateStatus({
           id: 1,
-          status: "confirmed"
+          status: "confirmed",
         })
       ).rejects.toThrow();
     });

@@ -1,12 +1,24 @@
 import { useState } from "react";
 import { Button } from "@/components/ui/button";
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
+import {
+  Card,
+  CardContent,
+  CardDescription,
+  CardHeader,
+  CardTitle,
+} from "@/components/ui/card";
 import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
 import { Calendar } from "@/components/ui/calendar";
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select";
 import { trpc } from "@/lib/trpc";
 import { toast } from "sonner";
 import { format } from "date-fns";
@@ -26,41 +38,41 @@ export default function IndividualBooking() {
     adultCount: "",
     childCount: "",
     visitTime: "",
-    notes: ""
+    notes: "",
   });
 
   // 查詢當月的個人預約（只查individualBookings表）
   const { data: monthBookings } = trpc.bookings.getIndividualByMonth.useQuery({
     year: currentMonth.getFullYear(),
-    month: currentMonth.getMonth() + 1
+    month: currentMonth.getMonth() + 1,
   });
 
   // 查詢選擇日期的可用時段（傳遞 type 參數以查詢個人預約表）
   const { data: timeSlotData } = trpc.bookings.getAvailableTimeSlots.useQuery(
-    { date: date!, type: 'individual' },
+    { date: date!, type: "individual" },
     { enabled: !!date }
   );
 
   // 計算每日是否已滿額
   const getDateStatus = (checkDate: Date) => {
     if (!monthBookings) {
-      return { isFull: false, bookedCount: 0, status: 'available' as const };
+      return { isFull: false, bookedCount: 0, status: "available" as const };
     }
-    
+
     // 使用 UTC 日期字串進行比較，避免時區轉換導致的日期偏移
-    const dateStr = format(checkDate, 'yyyy-MM-dd');
+    const dateStr = format(checkDate, "yyyy-MM-dd");
     const dayBookings = monthBookings.filter(b => {
       // 將 timestamp 轉換為 Date 物件，然後使用 UTC 方法取得年月日
       const bookingDate = new Date(b.visitDate);
       // 使用 UTC 方法取得年月日，避免時區轉換
       const year = bookingDate.getUTCFullYear();
-      const month = String(bookingDate.getUTCMonth() + 1).padStart(2, '0');
-      const day = String(bookingDate.getUTCDate()).padStart(2, '0');
+      const month = String(bookingDate.getUTCMonth() + 1).padStart(2, "0");
+      const day = String(bookingDate.getUTCDate()).padStart(2, "0");
       const bookingDateStr = `${year}-${month}-${day}`;
-      const match = bookingDateStr === dateStr && b.status !== 'cancelled';
+      const match = bookingDateStr === dateStr && b.status !== "cancelled";
       return match;
     });
-    
+
     // 使用Set去除重複時段，只計算唯一的已預約時段
     const bookedTimeSlotsSet = new Set(dayBookings.map(b => b.visitTime));
     const allTimeSlots = [
@@ -69,40 +81,40 @@ export default function IndividualBooking() {
       "11:00-12:00",
       "14:00-15:00",
       "15:00-16:00",
-      "16:00-17:00"
+      "16:00-17:00",
     ];
-    
+
     const bookedCount = bookedTimeSlotsSet.size;
     // 只有當所有時段都被預約時才視為已滿額
     const isFull = bookedCount === allTimeSlots.length;
-    
+
     // 決定顏色狀態
-    let status: 'available' | 'partial' | 'warning' | 'full';
+    let status: "available" | "partial" | "warning" | "full";
     if (bookedCount === 0) {
-      status = 'available'; // 綠色：所有時段可預約
+      status = "available"; // 綠色：所有時段可預約
     } else if (bookedCount <= 3) {
-      status = 'partial'; // 黃色：部分時段已預約（1-3個）
+      status = "partial"; // 黃色：部分時段已預約（1-3個）
     } else if (bookedCount < allTimeSlots.length) {
-      status = 'warning'; // 橘色：即將額滿（4-5個）
+      status = "warning"; // 橘色：即將額滿（4-5個）
     } else {
-      status = 'full'; // 紅色：所有時段已滿
+      status = "full"; // 紅色：所有時段已滿
     }
-    
+
     return {
       isFull,
       bookedCount,
-      status
+      status,
     };
   };
 
   const createBooking = trpc.bookings.create.useMutation({
-    onSuccess: (data) => {
+    onSuccess: data => {
       setSuccessMessage(data.bookingNumber);
-      window.scrollTo({ top: 0, behavior: 'smooth' });
+      window.scrollTo({ top: 0, behavior: "smooth" });
       toast.success("預約成功！", {
         description: `您的預約編號：${data.bookingNumber}，請妥善保存以便查詢。`,
         duration: 8000,
-        className: "text-lg"
+        className: "text-lg",
       });
       setFormData({
         contactName: "",
@@ -111,24 +123,24 @@ export default function IndividualBooking() {
         adultCount: "",
         childCount: "",
         visitTime: "",
-        notes: ""
+        notes: "",
       });
       setDate(undefined);
-      
+
       setTimeout(() => {
         setLocation(`/booking/query?booking=${data.bookingNumber}`);
       }, 3000);
     },
-    onError: (error) => {
+    onError: error => {
       toast.error("預約失敗", {
-        description: error.message
+        description: error.message,
       });
-    }
+    },
   });
 
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
-    
+
     if (!date) {
       toast.error("請選擇參訪日期");
       return;
@@ -156,12 +168,9 @@ export default function IndividualBooking() {
     }
 
     // 標準化日期為當天的 UTC 00:00:00，避免時區轉換問題
-    const normalizedDate = new Date(Date.UTC(
-      date.getFullYear(),
-      date.getMonth(),
-      date.getDate(),
-      0, 0, 0, 0
-    ));
+    const normalizedDate = new Date(
+      Date.UTC(date.getFullYear(), date.getMonth(), date.getDate(), 0, 0, 0, 0)
+    );
 
     createBooking.mutate({
       type: "individual",
@@ -173,7 +182,7 @@ export default function IndividualBooking() {
       childCount,
       visitDate: normalizedDate,
       visitTime: formData.visitTime,
-      notes: formData.notes || undefined
+      notes: formData.notes || undefined,
     });
   };
 
@@ -202,20 +211,29 @@ export default function IndividualBooking() {
             {successMessage && (
               <Alert className="mb-6 bg-green-50 border-green-200">
                 <CheckCircle2 className="h-5 w-5 text-green-600" />
-                <AlertTitle className="text-green-800 text-lg font-semibold">預約成功！</AlertTitle>
+                <AlertTitle className="text-green-800 text-lg font-semibold">
+                  預約成功！
+                </AlertTitle>
                 <AlertDescription className="text-green-700 text-base mt-2">
-                  <p className="font-medium">您的預約編號：<span className="text-lg font-bold">{successMessage}</span></p>
-                  <p className="mt-1">請妥善保存以便查詢。我們已將確認信寄至您的信箱。</p>
+                  <p className="font-medium">
+                    您的預約編號：
+                    <span className="text-lg font-bold">{successMessage}</span>
+                  </p>
+                  <p className="mt-1">
+                    請妥善保存以便查詢。我們已將確認信寄至您的信箱。
+                  </p>
                   <div className="mt-3 flex gap-2">
-                    <Button 
-                      size="sm" 
-                      onClick={() => setLocation(`/booking/query?booking=${successMessage}`)}
+                    <Button
+                      size="sm"
+                      onClick={() =>
+                        setLocation(`/booking/query?booking=${successMessage}`)
+                      }
                       className="bg-green-600 hover:bg-green-700"
                     >
                       查詢預約
                     </Button>
-                    <Button 
-                      size="sm" 
+                    <Button
+                      size="sm"
                       variant="outline"
                       onClick={() => setSuccessMessage(null)}
                       className="border-green-600 text-green-700 hover:bg-green-50"
@@ -234,7 +252,9 @@ export default function IndividualBooking() {
                     id="contactName"
                     required
                     value={formData.contactName}
-                    onChange={(e) => handleInputChange("contactName", e.target.value)}
+                    onChange={e =>
+                      handleInputChange("contactName", e.target.value)
+                    }
                     placeholder="請輸入聯絡人姓名"
                   />
                 </div>
@@ -246,7 +266,9 @@ export default function IndividualBooking() {
                     required
                     type="tel"
                     value={formData.contactPhone}
-                    onChange={(e) => handleInputChange("contactPhone", e.target.value)}
+                    onChange={e =>
+                      handleInputChange("contactPhone", e.target.value)
+                    }
                     placeholder="請輸入聯絡電話"
                   />
                 </div>
@@ -257,7 +279,9 @@ export default function IndividualBooking() {
                     id="contactEmail"
                     type="email"
                     value={formData.contactEmail}
-                    onChange={(e) => handleInputChange("contactEmail", e.target.value)}
+                    onChange={e =>
+                      handleInputChange("contactEmail", e.target.value)
+                    }
                     placeholder="請輸入聯絡信箱"
                     required
                   />
@@ -271,7 +295,9 @@ export default function IndividualBooking() {
                     type="number"
                     min="0"
                     value={formData.adultCount}
-                    onChange={(e) => handleInputChange("adultCount", e.target.value)}
+                    onChange={e =>
+                      handleInputChange("adultCount", e.target.value)
+                    }
                     placeholder="成人人數"
                   />
                 </div>
@@ -284,10 +310,14 @@ export default function IndividualBooking() {
                     type="number"
                     min="0"
                     value={formData.childCount}
-                    onChange={(e) => handleInputChange("childCount", e.target.value)}
+                    onChange={e =>
+                      handleInputChange("childCount", e.target.value)
+                    }
                     placeholder="兒童人數"
                   />
-                  <p className="text-sm text-muted-foreground">總人數需在5-19人之間（不接待散客）</p>
+                  <p className="text-sm text-muted-foreground">
+                    總人數需在5-19人之間（不接待散客）
+                  </p>
                 </div>
 
                 <div className="space-y-2 md:col-span-2">
@@ -299,12 +329,12 @@ export default function IndividualBooking() {
                       onSelect={setDate}
                       month={currentMonth}
                       onMonthChange={setCurrentMonth}
-                      disabled={(checkDate) => {
+                      disabled={checkDate => {
                         // 禁用過去的日期
                         const today = new Date();
                         today.setHours(0, 0, 0, 0);
                         if (checkDate < today) return true;
-                        
+
                         // 禁用已滿額的日期
                         const status = getDateStatus(checkDate);
                         return status.isFull;
@@ -318,7 +348,7 @@ export default function IndividualBooking() {
                       已選擇：{format(date, "PPP", { locale: zhTW })}
                     </p>
                   )}
-                  
+
                   {/* 預約狀態說明 */}
                   <div className="mt-4 p-3 border rounded-lg bg-muted/30">
                     <h4 className="text-sm font-semibold mb-2">本月預約狀態</h4>
@@ -326,50 +356,76 @@ export default function IndividualBooking() {
                       {(() => {
                         const year = currentMonth.getFullYear();
                         const month = currentMonth.getMonth();
-                        const daysInMonth = new Date(year, month + 1, 0).getDate();
+                        const daysInMonth = new Date(
+                          year,
+                          month + 1,
+                          0
+                        ).getDate();
                         const today = new Date();
                         today.setHours(0, 0, 0, 0);
-                        
+
                         const statusList = [];
                         for (let day = 1; day <= daysInMonth; day++) {
                           const checkDate = new Date(year, month, day);
                           if (checkDate < today) continue; // 跳過過去的日期
-                          
+
                           const status = getDateStatus(checkDate);
-                          if (status.bookedCount > 0 || status.status === 'full') {
+                          if (
+                            status.bookedCount > 0 ||
+                            status.status === "full"
+                          ) {
                             statusList.push({
                               date: checkDate,
-                              ...status
+                              ...status,
                             });
                           }
                         }
-                        
+
                         if (statusList.length === 0) {
-                          return <p className="text-muted-foreground">本月尚無預約，所有日期均可預約</p>;
-                        }
-                        
-                        return statusList.map(({ date: statusDate, status: dateStatus, bookedCount }) => {
-                          const dateStr = format(statusDate, 'M月d日 (EEE)', { locale: zhTW });
-                          const statusText = dateStatus === 'full' 
-                            ? '已滿額' 
-                            : dateStatus === 'warning'
-                            ? `即將額滿！剩餘 ${6 - bookedCount} 個時段`
-                            : `已預約 ${bookedCount}/6 個時段`;
-                          const statusColor = dateStatus === 'full'
-                            ? 'text-red-600 font-semibold'
-                            : dateStatus === 'warning'
-                            ? 'text-orange-600 font-semibold'
-                            : dateStatus === 'partial'
-                            ? 'text-yellow-700 font-medium'
-                            : 'text-green-600';
-                          
                           return (
-                            <div key={statusDate.toISOString()} className="flex justify-between items-center">
-                              <span>{dateStr}</span>
-                              <span className={statusColor}>{statusText}</span>
-                            </div>
+                            <p className="text-muted-foreground">
+                              本月尚無預約，所有日期均可預約
+                            </p>
                           );
-                        });
+                        }
+
+                        return statusList.map(
+                          ({
+                            date: statusDate,
+                            status: dateStatus,
+                            bookedCount,
+                          }) => {
+                            const dateStr = format(statusDate, "M月d日 (EEE)", {
+                              locale: zhTW,
+                            });
+                            const statusText =
+                              dateStatus === "full"
+                                ? "已滿額"
+                                : dateStatus === "warning"
+                                  ? `即將額滿！剩餘 ${6 - bookedCount} 個時段`
+                                  : `已預約 ${bookedCount}/6 個時段`;
+                            const statusColor =
+                              dateStatus === "full"
+                                ? "text-red-600 font-semibold"
+                                : dateStatus === "warning"
+                                  ? "text-orange-600 font-semibold"
+                                  : dateStatus === "partial"
+                                    ? "text-yellow-700 font-medium"
+                                    : "text-green-600";
+
+                            return (
+                              <div
+                                key={statusDate.toISOString()}
+                                className="flex justify-between items-center"
+                              >
+                                <span>{dateStr}</span>
+                                <span className={statusColor}>
+                                  {statusText}
+                                </span>
+                              </div>
+                            );
+                          }
+                        );
                       })()}
                     </div>
                   </div>
@@ -380,18 +436,23 @@ export default function IndividualBooking() {
                   <Select
                     required
                     value={formData.visitTime}
-                    onValueChange={(value) => handleInputChange("visitTime", value)}
+                    onValueChange={value =>
+                      handleInputChange("visitTime", value)
+                    }
                     disabled={!date}
                   >
                     <SelectTrigger>
-                      <SelectValue placeholder={date ? "請選擇參訪時段" : "請先選擇日期"} />
+                      <SelectValue
+                        placeholder={date ? "請選擇參訪時段" : "請先選擇日期"}
+                      />
                     </SelectTrigger>
                     <SelectContent>
-                      {timeSlotData?.allTimeSlots.map((slot) => {
-                        const isBooked = timeSlotData.bookedTimeSlots.includes(slot);
+                      {timeSlotData?.allTimeSlots.map(slot => {
+                        const isBooked =
+                          timeSlotData.bookedTimeSlots.includes(slot);
                         return (
-                          <SelectItem 
-                            key={slot} 
+                          <SelectItem
+                            key={slot}
                             value={slot}
                             disabled={isBooked}
                           >
@@ -406,16 +467,18 @@ export default function IndividualBooking() {
                       )}
                     </SelectContent>
                   </Select>
-                  {timeSlotData && timeSlotData.availableTimeSlots.length === 0 && (
-                    <p className="text-sm text-destructive">
-                      該日所有時段已滿，請選擇其他日期
-                    </p>
-                  )}
-                  {timeSlotData && timeSlotData.availableTimeSlots.length > 0 && (
-                    <p className="text-sm text-muted-foreground">
-                      還有 {timeSlotData.availableTimeSlots.length} 個時段可選
-                    </p>
-                  )}
+                  {timeSlotData &&
+                    timeSlotData.availableTimeSlots.length === 0 && (
+                      <p className="text-sm text-destructive">
+                        該日所有時段已滿，請選擇其他日期
+                      </p>
+                    )}
+                  {timeSlotData &&
+                    timeSlotData.availableTimeSlots.length > 0 && (
+                      <p className="text-sm text-muted-foreground">
+                        還有 {timeSlotData.availableTimeSlots.length} 個時段可選
+                      </p>
+                    )}
                 </div>
 
                 <div className="space-y-2 md:col-span-2">
@@ -423,7 +486,7 @@ export default function IndividualBooking() {
                   <Textarea
                     id="notes"
                     value={formData.notes}
-                    onChange={(e) => handleInputChange("notes", e.target.value)}
+                    onChange={e => handleInputChange("notes", e.target.value)}
                     placeholder="例如：無障礙設施需求、嬰兒車、參訪目的等"
                     rows={3}
                   />

@@ -2,7 +2,7 @@ import { describe, expect, it } from "vitest";
 
 /**
  * LINE Messaging API 憑證驗證測試
- * 
+ *
  * 此測試會驗證LINE憑證是否有效，透過呼叫LINE API檢查Channel Access Token
  */
 describe("LINE Messaging API Credentials", () => {
@@ -24,7 +24,7 @@ describe("LINE Messaging API Credentials", () => {
     expect(response.ok).toBe(true);
 
     const data = await response.json();
-    
+
     // 驗證返回的資料包含必要欄位
     expect(data).toHaveProperty("userId");
     expect(data).toHaveProperty("basicId");

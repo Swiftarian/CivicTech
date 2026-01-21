@@ -5,13 +5,13 @@ import { nanoid } from "nanoid";
 import path from "path";
 import { createServer as createViteServer } from "vite";
 import viteConfig from "../../vite.config";
-import rateLimit from 'express-rate-limit';
+import rateLimit from "express-rate-limit";
 
 // Rate limiter for Vite dev server requests
 const viteDevLimiter = rateLimit({
   windowMs: 1 * 60 * 1000, // 1 minute
   max: 100, // Limit each IP to 100 requests per minute (generous for HMR)
-  message: 'Too many requests to dev server',
+  message: "Too many requests to dev server",
   standardHeaders: true,
   legacyHeaders: false,
 });
@@ -61,7 +61,7 @@ export async function setupVite(app: Express, server: Server) {
 const staticFileLimiter = rateLimit({
   windowMs: 1 * 60 * 1000, // 1 minute
   max: 100, // Limit each IP to 100 requests per minute
-  message: 'Too many requests to static files',
+  message: "Too many requests to static files",
   standardHeaders: true,
   legacyHeaders: false,
 });

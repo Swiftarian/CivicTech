@@ -1,12 +1,32 @@
 import { useState } from "react";
 import { trpc } from "@/lib/trpc";
 import { Button } from "@/components/ui/button";
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
-import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle } from "@/components/ui/dialog";
+import {
+  Card,
+  CardContent,
+  CardDescription,
+  CardHeader,
+  CardTitle,
+} from "@/components/ui/card";
+import {
+  Dialog,
+  DialogContent,
+  DialogDescription,
+  DialogFooter,
+  DialogHeader,
+  DialogTitle,
+} from "@/components/ui/dialog";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
-import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
+import {
+  Table,
+  TableBody,
+  TableCell,
+  TableHead,
+  TableHeader,
+  TableRow,
+} from "@/components/ui/table";
 import { Badge } from "@/components/ui/badge";
 import { toast } from "sonner";
 import { Plus, QrCode, Link as LinkIcon, Unlink, Loader2 } from "lucide-react";
@@ -15,11 +35,17 @@ export default function RecipientManagement() {
   const [isCreateDialogOpen, setIsCreateDialogOpen] = useState(false);
   const [isQrDialogOpen, setIsQrDialogOpen] = useState(false);
   const [isBindDialogOpen, setIsBindDialogOpen] = useState(false);
-  const [selectedRecipient, setSelectedRecipient] = useState<number | null>(null);
+  const [selectedRecipient, setSelectedRecipient] = useState<number | null>(
+    null
+  );
   const [lineUserId, setLineUserId] = useState("");
 
   // 查詢收餐人列表
-  const { data: recipients, isLoading, refetch } = trpc.recipients.getAll.useQuery();
+  const {
+    data: recipients,
+    isLoading,
+    refetch,
+  } = trpc.recipients.getAll.useQuery();
 
   // 查詢LINE機器人資訊
   const { data: lineBotInfo } = trpc.recipients.getLineBotInfo.useQuery();
@@ -31,20 +57,20 @@ export default function RecipientManagement() {
       setIsCreateDialogOpen(false);
       refetch();
     },
-    onError: (error) => {
+    onError: error => {
       toast.error(`建立失敗：${error.message}`);
     },
   });
 
   // 綁定LINE
   const bindLineMutation = trpc.recipients.bindLine.useMutation({
-    onSuccess: (data) => {
+    onSuccess: data => {
       toast.success(`LINE綁定成功：${data.displayName}`);
       setIsBindDialogOpen(false);
       setLineUserId("");
       refetch();
     },
-    onError: (error) => {
+    onError: error => {
       toast.error(`綁定失敗：${error.message}`);
     },
   });
@@ -55,7 +81,7 @@ export default function RecipientManagement() {
       toast.success("LINE綁定已解除");
       refetch();
     },
-    onError: (error) => {
+    onError: error => {
       toast.error(`解除綁定失敗：${error.message}`);
     },
   });
@@ -66,8 +92,8 @@ export default function RecipientManagement() {
     createMutation.mutate({
       name: formData.get("name") as string,
       phone: formData.get("phone") as string,
-      address: formData.get("address") as string || undefined,
-      notes: formData.get("notes") as string || undefined,
+      address: (formData.get("address") as string) || undefined,
+      notes: (formData.get("notes") as string) || undefined,
     });
   };
 
@@ -139,16 +165,23 @@ export default function RecipientManagement() {
             <TableBody>
               {recipients?.length === 0 ? (
                 <TableRow>
-                  <TableCell colSpan={6} className="text-center text-muted-foreground">
+                  <TableCell
+                    colSpan={6}
+                    className="text-center text-muted-foreground"
+                  >
                     尚無收餐人資料
                   </TableCell>
                 </TableRow>
               ) : (
-                recipients?.map((recipient) => (
+                recipients?.map(recipient => (
                   <TableRow key={recipient.id}>
-                    <TableCell className="font-medium">{recipient.name}</TableCell>
+                    <TableCell className="font-medium">
+                      {recipient.name}
+                    </TableCell>
                     <TableCell>{recipient.phone}</TableCell>
-                    <TableCell className="max-w-xs truncate">{recipient.address || "-"}</TableCell>
+                    <TableCell className="max-w-xs truncate">
+                      {recipient.address || "-"}
+                    </TableCell>
                     <TableCell>
                       {recipient.lineUserId ? (
                         <Badge variant="default">
@@ -160,7 +193,9 @@ export default function RecipientManagement() {
                     </TableCell>
                     <TableCell>
                       <Badge variant="outline">
-                        {recipient.preferredNotificationMethod === "line" ? "LINE" : "SMS"}
+                        {recipient.preferredNotificationMethod === "line"
+                          ? "LINE"
+                          : "SMS"}
                       </Badge>
                     </TableCell>
                     <TableCell>
@@ -202,9 +237,7 @@ export default function RecipientManagement() {
         <DialogContent>
           <DialogHeader>
             <DialogTitle>新增收餐人</DialogTitle>
-            <DialogDescription>
-              填寫收餐人的基本資訊
-            </DialogDescription>
+            <DialogDescription>填寫收餐人的基本資訊</DialogDescription>
           </DialogHeader>
           <form onSubmit={handleCreateSubmit}>
             <div className="space-y-4">
@@ -226,11 +259,17 @@ export default function RecipientManagement() {
               </div>
             </div>
             <DialogFooter className="mt-6">
-              <Button type="button" variant="outline" onClick={() => setIsCreateDialogOpen(false)}>
+              <Button
+                type="button"
+                variant="outline"
+                onClick={() => setIsCreateDialogOpen(false)}
+              >
                 取消
               </Button>
               <Button type="submit" disabled={createMutation.isPending}>
-                {createMutation.isPending && <Loader2 className="w-4 h-4 mr-2 animate-spin" />}
+                {createMutation.isPending && (
+                  <Loader2 className="w-4 h-4 mr-2 animate-spin" />
+                )}
                 建立
               </Button>
             </DialogFooter>
@@ -292,7 +331,7 @@ export default function RecipientManagement() {
               <Input
                 id="lineUserId"
                 value={lineUserId}
-                onChange={(e) => setLineUserId(e.target.value)}
+                onChange={e => setLineUserId(e.target.value)}
                 placeholder="例如：U1234567890abcdef..."
               />
               <p className="text-sm text-muted-foreground mt-2">
@@ -301,11 +340,19 @@ export default function RecipientManagement() {
             </div>
           </div>
           <DialogFooter>
-            <Button variant="outline" onClick={() => setIsBindDialogOpen(false)}>
+            <Button
+              variant="outline"
+              onClick={() => setIsBindDialogOpen(false)}
+            >
               取消
             </Button>
-            <Button onClick={handleBindLine} disabled={bindLineMutation.isPending}>
-              {bindLineMutation.isPending && <Loader2 className="w-4 h-4 mr-2 animate-spin" />}
+            <Button
+              onClick={handleBindLine}
+              disabled={bindLineMutation.isPending}
+            >
+              {bindLineMutation.isPending && (
+                <Loader2 className="w-4 h-4 mr-2 animate-spin" />
+              )}
               綁定
             </Button>
           </DialogFooter>

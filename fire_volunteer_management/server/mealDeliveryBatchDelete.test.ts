@@ -66,8 +66,10 @@ describe("mealDeliveries.batchDelete", () => {
 
     // 這個測試只驗證API接受請求，不驗證實際刪除結果
     // 因為測試環境可能沒有這些ID的資料
-    const result = await caller.mealDeliveries.batchDelete({ ids: [999, 998, 997] });
-    
+    const result = await caller.mealDeliveries.batchDelete({
+      ids: [999, 998, 997],
+    });
+
     expect(result).toHaveProperty("count");
     expect(typeof result.count).toBe("number");
     expect(result.count).toBeGreaterThanOrEqual(0);
@@ -78,7 +80,7 @@ describe("mealDeliveries.batchDelete", () => {
     const caller = appRouter.createCaller(ctx);
 
     const result = await caller.mealDeliveries.batchDelete({ ids: [] });
-    
+
     expect(result.count).toBe(0);
   });
 
@@ -88,10 +90,10 @@ describe("mealDeliveries.batchDelete", () => {
 
     // 測試批次刪除不存在的ID，應該返回count為刪除的數量
     // 注意：Drizzle ORM的delete操作即使找不到資料也會返回成功
-    const result = await caller.mealDeliveries.batchDelete({ 
-      ids: [99999, 99998, 99997] 
+    const result = await caller.mealDeliveries.batchDelete({
+      ids: [99999, 99998, 99997],
     });
-    
+
     expect(result.count).toBeGreaterThanOrEqual(0);
   });
 });
