@@ -19,26 +19,24 @@ export async function createContext(
     // 嘗試使用Manus SDK認證
     user = await sdk.authenticateRequest(opts.req);
   } catch (error) {
-    // Manus認證失敗，嘗試測試登入JWT token
-    if (process.env.ENABLE_TEST_LOGIN === "true") {
-      try {
-        const token = opts.req.cookies?.[COOKIE_NAME];
-        if (token) {
-          const jwt = await import("jsonwebtoken");
-          const decoded = jwt.default.verify(
-            token,
-            process.env.JWT_SECRET || "test-secret"
-          ) as { openId: string };
+    // Manus認證失敗，嘗試JWT token認證（用於Google OAuth）
+    try {
+      const token = opts.req.cookies?.[COOKIE_NAME];
+      if (token) {
+        const jwt = await import("jsonwebtoken");
+        const decoded = jwt.default.verify(
+          token,
+          process.env.JWT_SECRET || "test-secret"
+        ) as { openId: string };
 
-          if (decoded.openId) {
-            const foundUser = await getUserByOpenId(decoded.openId);
-            user = foundUser || null;
-          }
+        if (decoded.openId) {
+          const foundUser = await getUserByOpenId(decoded.openId);
+          user = foundUser || null;
         }
-      } catch (jwtError) {
-        // JWT認證也失敗，用戶未登入
-        user = null;
       }
+    } catch (jwtError) {
+      // JWT認證也失敗，用戶未登入
+      user = null;
     }
   }
 
