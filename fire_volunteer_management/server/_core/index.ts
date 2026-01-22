@@ -4,6 +4,7 @@ import { createServer } from "http";
 import net from "net";
 import { createExpressMiddleware } from "@trpc/server/adapters/express";
 import { registerOAuthRoutes } from "./oauth";
+import { registerGoogleOAuthRoutes } from "./googleOAuth";
 import { appRouter } from "../routers";
 import { createContext } from "./context";
 import { serveStatic, setupVite } from "./vite";
@@ -33,11 +34,11 @@ async function findAvailablePort(startPort: number = 3000): Promise<number> {
 async function startServer() {
   const app = express();
   const server = createServer(app);
-  
+
   // Enable trust proxy for rate limiting to work correctly behind proxies
   // Use 1 to trust only the first proxy (recommended for most deployments)
-  app.set('trust proxy', 1);
-  
+  app.set("trust proxy", 1);
+
   // Configure body parser with larger size limit for file uploads
   app.use(express.json({ limit: "50mb" }));
   app.use(express.urlencoded({ limit: "50mb", extended: true }));
@@ -47,6 +48,9 @@ async function startServer() {
 
   // OAuth callback under /api/oauth/callback
   registerOAuthRoutes(app);
+
+  // Google OAuth routes under /api/auth/google
+  registerGoogleOAuthRoutes(app);
 
   // LINE webhook under /api/line/webhook with stricter rate limiting
   app.post("/api/line/webhook", webhookLimiter, handleLineWebhook);

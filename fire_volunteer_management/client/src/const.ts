@@ -20,3 +20,8 @@ export const getLoginUrl = () => {
 
   return url.toString();
 };
+
+// Google OAuth login URL
+export const getGoogleLoginUrl = () => {
+  return `/api/auth/google`;
+};
