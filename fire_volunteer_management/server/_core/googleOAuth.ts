@@ -3,8 +3,8 @@ import type { Express, Request, Response } from "express";
 import * as db from "../db";
 import { COOKIE_NAME, ONE_YEAR_MS } from "@shared/const";
 import { getSessionCookieOptions } from "./cookies";
-import { sdk } from "./sdk";
 import { ENV } from "./env";
+import jwt from "jsonwebtoken";
 
 const oauth2Client = new google.auth.OAuth2(
   ENV.googleClientId,
@@ -70,11 +70,17 @@ export function registerGoogleOAuthRoutes(app: Express) {
         lastSignedIn: new Date(),
       });
 
-      // 創建 session token
-      const sessionToken = await sdk.createSessionToken(openId, {
-        name: data.name || data.email,
-        expiresInMs: ONE_YEAR_MS,
-      });
+      // 創建 JWT session token
+      const sessionToken = jwt.sign(
+        {
+          openId,
+          name: data.name || data.email,
+          email: data.email,
+          role,
+        },
+        ENV.cookieSecret,
+        { expiresIn: "365d" }
+      );
 
       // 設定 cookie
       const cookieOptions = getSessionCookieOptions(req);
