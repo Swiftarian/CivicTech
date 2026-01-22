@@ -20,6 +20,7 @@ function getQueryParam(req: Request, key: string): string | undefined {
 export function registerGoogleOAuthRoutes(app: Express) {
   // 登入路由 - 重定向到 Google OAuth
   app.get("/api/auth/google", (req: Request, res: Response) => {
+    console.log("[Google OAuth] Login route accessed");
     const authUrl = oauth2Client.generateAuthUrl({
       access_type: "offline",
       scope: [
@@ -32,6 +33,7 @@ export function registerGoogleOAuthRoutes(app: Express) {
 
   // 回調路由 - 處理 Google OAuth 回調
   app.get("/api/auth/google/callback", async (req: Request, res: Response) => {
+    console.log("[Google OAuth] Callback route accessed");
     const code = getQueryParam(req, "code");
 
     if (!code) {
