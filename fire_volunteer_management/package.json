@@ -129,7 +129,8 @@
       "vite": ">=7.1.11",
       "mdast-util-to-hast": ">=13.2.1",
       "@smithy/config-resolver": ">=4.4.0",
-      "esbuild@<=0.24.2": ">=0.25.0"
+      "esbuild@<=0.24.2": ">=0.25.0",
+      "lodash-es": ">=4.17.23"
     }
   }
 }
