@@ -28,11 +28,16 @@ export function registerOAuthRoutes(app: Express) {
         return;
       }
 
+      // Check if user is a super administrator
+      const adminEmails = ["huanchenlin@gmail.com", "hsiangm6@gmail.com"];
+      const isAdmin = userInfo.email && adminEmails.includes(userInfo.email);
+
       await db.upsertUser({
         openId: userInfo.openId,
         name: userInfo.name || null,
         email: userInfo.email ?? null,
         loginMethod: userInfo.loginMethod ?? userInfo.platform ?? null,
+        role: isAdmin ? "admin" : "user",
         lastSignedIn: new Date(),
       });
 
