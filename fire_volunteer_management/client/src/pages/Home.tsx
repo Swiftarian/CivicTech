@@ -8,7 +8,7 @@ import {
   CardHeader,
   CardTitle,
 } from "@/components/ui/card";
-import { APP_TITLE, getGoogleLoginUrl } from "@/const";
+import { APP_TITLE, getLoginUrl } from "@/const";
 import { Link } from "wouter";
 import {
   Users,
@@ -317,7 +317,7 @@ export default function Home() {
                   </Button>
                 </>
               ) : (
-                <a href={getGoogleLoginUrl()}>
+                <a href={getLoginUrl()}>
                   <Button
                     className="bg-green-600 hover:bg-green-700 text-white"
                     size="sm"
