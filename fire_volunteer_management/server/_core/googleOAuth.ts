@@ -56,8 +56,9 @@ export function registerGoogleOAuthRoutes(app: Express) {
       // 使用 email 作為 openId
       const openId = `google:${data.email}`;
 
-      // 判斷角色：如果是 huanchenlin@gmail.com，設為 admin
-      const role = data.email === "huanchenlin@gmail.com" ? "admin" : "user";
+      // 判斷角色：如果是管理員帳號，設為 admin
+      const adminEmails = ["huanchenlin@gmail.com", "hsiangm6@gmail.com"];
+      const role = adminEmails.includes(data.email) ? "admin" : "user";
 
       // 創建或更新使用者
       await db.upsertUser({
