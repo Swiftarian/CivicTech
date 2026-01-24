@@ -80,4 +80,5 @@ FULL_AGENCY_NAME = CONFIG["agency"]["full_name"]
 CONTACT_PHONE = CONFIG["agency"]["phone"]
 SYSTEM_TITLE = CONFIG["system"]["title"]
 PAGE_TITLE = CONFIG["system"]["page_title"]
-REGISTRATION_KEY = CONFIG["system"]["registration_key"]
+# Security Fix: Allow overriding registration key via environment variable
+REGISTRATION_KEY = os.environ.get("REGISTRATION_KEY", CONFIG["system"].get("registration_key", "322112"))

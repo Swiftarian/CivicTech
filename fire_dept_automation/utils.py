@@ -765,7 +765,9 @@ def save_delivery_photo(uploaded_file, task_id):
         os.makedirs(upload_dir)
 
     timestamp = datetime.datetime.now().strftime("%Y%m%d_%H%M%S")
-    filename = f"delivery_{task_id}_{timestamp}.jpg"
+    # Security Fix: Sanitize task_id to prevent path manipulation
+    safe_task_id = os.path.basename(str(task_id))
+    filename = f"delivery_{safe_task_id}_{timestamp}.jpg"
     file_path = os.path.join(upload_dir, filename)
 
     with open(file_path, "wb") as f:
@@ -803,7 +805,9 @@ def save_proof_photo(file_buffer, task_id):
 
     # 生成檔名
     timestamp = now.strftime("%Y%m%d_%H%M%S")
-    filename = f"{task_id}_{timestamp}.jpg"
+    # Security Fix: Sanitize task_id to prevent path manipulation
+    safe_task_id = os.path.basename(str(task_id))
+    filename = f"{safe_task_id}_{timestamp}.jpg"
     file_path = os.path.join(upload_dir, filename)
 
     try:
