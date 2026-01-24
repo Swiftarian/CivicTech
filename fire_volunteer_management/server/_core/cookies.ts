@@ -43,6 +43,8 @@ export function getSessionCookieOptions(
     httpOnly: true,
     path: "/",
     sameSite: "lax",
-    secure: isSecureRequest(req),
+    // In production, always use secure cookies (requires HTTPS)
+    // In development, mainly rely on protocol check
+    secure: process.env.NODE_ENV === "production" || isSecureRequest(req),
   };
 }
