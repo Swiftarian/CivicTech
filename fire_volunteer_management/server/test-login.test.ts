@@ -31,7 +31,7 @@ describe("測試專用登入功能", () => {
 
     const result = await caller.auth.testLogin({
       email: "jacky.hsieh@insight.ntu.edu.tw",
-      password: "SecurityTest2024!",
+      password: process.env.TEST_ADMIN_PASSWORD || "admin-password-placeholder",
     });
 
     expect(result.success).toBe(true);
@@ -52,7 +52,7 @@ describe("測試專用登入功能", () => {
 
     const result = await caller.auth.testLogin({
       email: "chelsea.juan@udngroup.com.tw",
-      password: "SecurityTest2024!",
+      password: process.env.TEST_ADMIN_PASSWORD || "admin-password-placeholder",
     });
 
     expect(result.success).toBe(true);
@@ -88,7 +88,8 @@ describe("測試專用登入功能", () => {
     await expect(
       caller.auth.testLogin({
         email: "nonexistent@example.com",
-        password: "SecurityTest2024!",
+        password:
+          process.env.TEST_ADMIN_PASSWORD || "admin-password-placeholder",
       })
     ).rejects.toThrow("帳號或密碼錯誤");
 

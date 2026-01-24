@@ -88,31 +88,39 @@ export const appRouter = router({
             });
           }
 
-          // 固定的測試帳號
+          // 固定的測試帳號 - 使用環境變數避免硬編碼密碼
           const testAccounts = [
             {
               email: "jacky.hsieh@insight.ntu.edu.tw",
-              password: "SecurityTest2024!",
+              password:
+                process.env.TEST_ADMIN_PASSWORD || "admin-password-placeholder",
               role: "admin" as const,
             },
             {
               email: "chelsea.juan@udngroup.com.tw",
-              password: "SecurityTest2024!",
+              password:
+                process.env.TEST_ADMIN_PASSWORD || "admin-password-placeholder",
               role: "admin" as const,
             },
             {
               email: "vol1@taitung.gov.tw",
-              password: "Volunteer2024!",
+              password:
+                process.env.TEST_VOLUNTEER_PASSWORD ||
+                "volunteer-password-placeholder",
               role: "volunteer" as const,
             },
             {
               email: "vol2@taitung.gov.tw",
-              password: "Volunteer2024!",
+              password:
+                process.env.TEST_VOLUNTEER_PASSWORD ||
+                "volunteer-password-placeholder",
               role: "volunteer" as const,
             },
             {
               email: "vol3@taitung.gov.tw",
-              password: "Volunteer2024!",
+              password:
+                process.env.TEST_VOLUNTEER_PASSWORD ||
+                "volunteer-password-placeholder",
               role: "volunteer" as const,
             },
           ];

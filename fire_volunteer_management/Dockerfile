@@ -58,5 +58,11 @@ ENV PORT=3000
 # 暴露端口
 EXPOSE 3000
 
+# 設定檔案權限並切換至非 root 使用者
+RUN chown -R node:node /app
+
+# 切換至 node 使用者
+USER node
+
 # 啟動應用程式
 CMD ["pnpm", "start"]

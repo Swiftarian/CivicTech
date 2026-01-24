@@ -119,13 +119,10 @@ export default function TestLogin() {
                 <strong>管理員2:</strong> chelsea.juan@udngroup.com.tw
               </div>
               <div>
-                <strong>密碼:</strong> SecurityTest2024!
-              </div>
-              <div className="mt-3 pt-3 border-t border-gray-300">
                 <strong>志工帳號:</strong> vol3@taitung.gov.tw
               </div>
-              <div>
-                <strong>密碼:</strong> Volunteer2024!
+              <div className="mt-3 pt-3 border-t border-gray-300">
+                <p>請聯繫管理員獲取測試密碼。</p>
               </div>
               <div className="text-orange-600 mt-2">
                 ⚠️ 僅供資安掃描測試使用
