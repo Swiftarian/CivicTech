@@ -593,22 +593,19 @@ def get_all_cases(status_filter=None, include_archived=False):
     conn = get_connection()
     c = conn.cursor()
 
-    # 建構查詢條件
-    if include_archived:
-        # 只顯示已封存案件
-        archived_condition = "is_archived = 1"
-    else:
-        # 預設只顯示未封存案件
-        archived_condition = "is_archived = 0"
+    # Optimized query construction to avoid f-strings (mitigate SQL Injection warnings)
+    sql = "SELECT * FROM cases WHERE is_archived = ?"
+    params = [1 if include_archived else 0]
 
     if status_filter and status_filter != "全部":
-        # nosemgrep: python.sqlalchemy.security.sqlalchemy-execute-raw-query
-        c.execute(f'SELECT * FROM cases WHERE {archived_condition} AND status = ? ORDER BY submission_date DESC', (status_filter,))
-    else:
-        # nosemgrep: python.sqlalchemy.security.sqlalchemy-execute-raw-query
-        # nosemgrep: python.lang.security.audit.formatted-sql-query
-        c.execute(f'SELECT * FROM cases WHERE {archived_condition} ORDER BY submission_date DESC')
-
+        sql += " AND status = ?"
+        params.append(status_filter)
+    
+    sql += " ORDER BY submission_date DESC"
+    
+    # nosemgrep: python.sqlalchemy.security.sqlalchemy-execute-raw-query
+    c.execute(sql, params)
+    
     cases = c.fetchall()
     conn.close()
     return cases
@@ -618,22 +615,18 @@ def get_cases_by_assignee(username, status_filter=None, include_archived=False):
     conn = get_connection()
     c = conn.cursor()
 
-    # 建構查詢條件
-    if include_archived:
-        # 只顯示已封存案件
-        archived_condition = "is_archived = 1"
-    else:
-        # 預設只顯示未封存案件
-        archived_condition = "is_archived = 0"
+    # Optimized query construction to avoid f-strings
+    sql = "SELECT * FROM cases WHERE assigned_to = ? AND is_archived = ?"
+    params = [username, 1 if include_archived else 0]
 
     if status_filter and status_filter != "全部":
-        # nosemgrep: python.sqlalchemy.security.sqlalchemy-execute-raw-query
-        c.execute(f'SELECT * FROM cases WHERE assigned_to = ? AND {archived_condition} AND status = ? ORDER BY submission_date DESC',
-                  (username, status_filter))
-    else:
-        # nosemgrep: python.sqlalchemy.security.sqlalchemy-execute-raw-query
-        c.execute(f'SELECT * FROM cases WHERE assigned_to = ? AND {archived_condition} ORDER BY submission_date DESC',
-                  (username,))
+        sql += " AND status = ?"
+        params.append(status_filter)
+
+    sql += " ORDER BY submission_date DESC"
+
+    # nosemgrep: python.sqlalchemy.security.sqlalchemy-execute-raw-query
+    c.execute(sql, params)
 
     cases = c.fetchall()
     conn.close()
