@@ -22,8 +22,10 @@ RUN apt-get update && apt-get install -y --no-install-recommends \
 WORKDIR /app
 
 # 複製依賴檔案並安裝 Python 套件
-COPY requirements.txt .
-RUN pip install --no-cache-dir -r requirements.txt
+# 複製依賴檔案並安裝 Python 套件
+COPY pyproject.toml .
+# 安裝專案及其依賴
+RUN pip install --no-cache-dir .
 
 # 複製專案檔案（排除敏感資料）
 COPY *.py ./

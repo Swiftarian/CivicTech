@@ -1,0 +1,38 @@
+[project]
+name = "fire_dept_automation"
+version = "1.0.0"
+description = "Fire Safety Equipment Inspection Automation System"
+authors = [
+    {name = "Taitung Fire Department", email = "fire@taitung.gov.tw"},
+]
+readme = "README.md"
+requires-python = ">=3.11"
+dependencies = [
+    "streamlit==1.31.0",
+    "pandas==2.1.4",
+    "Pillow==10.2.0",
+    "PyMuPDF==1.23.8",
+    "pytesseract==0.3.10",
+    "bcrypt==4.1.2",
+    "secure-smtplib==0.1.1",
+    "line-bot-sdk==3.9.0",
+    "tomli==2.0.1",
+]
+
+[project.optional-dependencies]
+ocr-enhanced = [
+    "paddlepaddle>=2.6.0",
+    "paddleocr>=2.8.0",
+]
+
+[build-system]
+requires = ["setuptools>=61.0"]
+build-backend = "setuptools.build_meta"
+
+[tool.setuptools]
+# By default, setuptools tries to auto-discover packages.
+# For this project structure, we can explicitly tell it where to look.
+packages = ["ocr_system", "pages"]
+
+[tool.setuptools.package-dir]
+"" = "." # Root directory
