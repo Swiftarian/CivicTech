@@ -123,6 +123,14 @@ def perform_ocr(image, tesseract_cmd):
     """對圖片進行 OCR 辨識 (改用 subprocess 以解決編碼問題)"""
     temp_img_path = os.path.join(os.getcwd(), "temp_ocr_image.png")
     try:
+        # Security Fix: Validate tesseract_cmd to prevent command injection
+        if not tesseract_cmd or not isinstance(tesseract_cmd, str):
+             return "Error: Invalid Tesseract command path"
+        
+        tesseract_cmd = os.path.abspath(tesseract_cmd)
+        if not os.path.exists(tesseract_cmd) or not os.path.isfile(tesseract_cmd):
+            return f"Error: Tesseract executable not found at {tesseract_cmd}"
+
         # 1. 先將圖片存為暫存檔
         image.save(temp_img_path)
 
@@ -140,6 +148,8 @@ def perform_ocr(image, tesseract_cmd):
         startupinfo = subprocess.STARTUPINFO()
         startupinfo.dwFlags |= subprocess.STARTF_USESHOWWINDOW
 
+        # Security Note: shell=False is default in subprocess.run, which is safe against shell injection 
+        # when args is a list. We have also validated tesseract_cmd exists as a file.
         process = subprocess.run(
             cmd,
             capture_output=True,

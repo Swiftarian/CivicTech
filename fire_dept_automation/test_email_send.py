@@ -20,11 +20,11 @@ def test_email_connection():
     secrets_path = ".streamlit/secrets.toml"
     
     if not os.path.exists(secrets_path):
-        print(f"\n❌ 找不到 {secrets_path}")
+        print(f"\n❌ 找不到 secrets.toml")
         print("請確認 .streamlit/secrets.toml 檔案存在")
         return False
     
-    print(f"\n✅ 找到 {secrets_path}")
+    print(f"\n✅ 找到 secrets.toml")
     
     # 2. 讀取 secrets.toml (手動解析)
     sender_email = None
