@@ -17,7 +17,7 @@
 ### 連線字串
 
 ```
-DATABASE_URL=mysql://taitung_user:YOUR_STRONG_PASSWORD@localhost:3306/taitung_disaster
+DATABASE_URL=mysql://taitung_user:[PASSWORD]@localhost:3306/taitung_disaster
 ```
 
 ## 🗄️ 資料表結構
