@@ -2242,7 +2242,32 @@ export const appRouter = router({
     get: publicProcedure.query(async () => {
       const content = await db.getHomeContent();
       if (!content) {
-        throw new TRPCError({ code: "NOT_FOUND", message: "首頁內容不存在" });
+        console.warn(
+          "[homeContent.get] No content found in database, returning default values"
+        );
+        // 返回預設值而不是拋出錯誤
+        return {
+          id: 0,
+          aboutTitle: "關於臺東災害警覺教育館",
+          aboutParagraph1: "臺東災害警覺教育館致力於提供全民防災教育。",
+          aboutParagraph2: "我們提供專業的導覽服務和互動體驗。",
+          aboutParagraph3: "歡迎預約參訪，一起學習防災知識。",
+          heroImage1: "/images/gallery/taitung-fire-dept-exterior.jpg",
+          heroImage1Title: "臺東災害警覺教育館外觀",
+          heroImage1Desc: "現代化的防災教育場館",
+          heroImage2: "/images/gallery/earthquake-simulation.jpg",
+          heroImage2Title: "地震模擬區",
+          heroImage2Desc: "體驗地震並學習避難技巧",
+          heroImage3: "/images/gallery/climate-projection-globe.jpg",
+          heroImage3Title: "即時氣候投影球",
+          heroImage3Desc: "了解全球氣候變化",
+          heroImage4: "/images/gallery/fire-rescue-experience.jpg",
+          heroImage4Title: "消防救災體驗區",
+          heroImage4Desc: "模擬消防救災情境",
+          createdAt: new Date(),
+          updatedAt: new Date(),
+          updatedBy: null,
+        };
       }
       return content;
     }),
