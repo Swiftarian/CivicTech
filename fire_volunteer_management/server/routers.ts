@@ -133,7 +133,7 @@ export const appRouter = router({
         const sessionData = JSON.stringify(testUser);
         ctx.res.cookie(COOKIE_NAME, sessionData, cookieOptions);
 
-        return { success: true, user: testUser };
+        return { success: true } as const;
       }),
   }),
 
