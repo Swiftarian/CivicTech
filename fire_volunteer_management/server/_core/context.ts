@@ -35,8 +35,29 @@ export async function createContext(
         }
       }
     } catch (jwtError) {
-      // JWT認證也失敗，用戶未登入
-      user = null;
+      // JWT認證也失敗，嘗試解析測試登入的 JSON 格式 cookie
+      try {
+        const token = opts.req.cookies?.[COOKIE_NAME];
+        if (token) {
+          const testUser = JSON.parse(token);
+          // 驗證資料結構
+          if (testUser && testUser.id && testUser.email && testUser.role) {
+            // 將測試使用者資料轉換為 User 格式
+            user = {
+              id: testUser.id,
+              email: testUser.email,
+              name: testUser.name,
+              role: testUser.role,
+              openId: testUser.email, // 使用 email 作為 openId
+              createdAt: new Date(),
+              updatedAt: new Date(),
+            } as User;
+          }
+        }
+      } catch (parseError) {
+        // 解析測試登入 cookie 也失敗，用戶未登入
+        user = null;
+      }
     }
   }
 
