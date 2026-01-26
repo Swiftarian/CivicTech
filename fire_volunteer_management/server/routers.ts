@@ -53,7 +53,29 @@ export const appRouter = router({
   system: systemRouter,
 
   auth: router({
-    me: publicProcedure.query(opts => opts.ctx.user),
+    me: publicProcedure.query((opts) => {
+      // 優先使用 OAuth session 的使用者
+      if (opts.ctx.user) {
+        return opts.ctx.user;
+      }
+
+      // 如果沒有 OAuth session，嘗試從 cookie 讀取測試登入的使用者資料
+      const sessionCookie = opts.ctx.req.cookies[COOKIE_NAME];
+      if (sessionCookie) {
+        try {
+          const testUser = JSON.parse(sessionCookie);
+          // 驗證資料結構
+          if (testUser && testUser.id && testUser.email && testUser.role) {
+            return testUser;
+          }
+        } catch (error) {
+          console.error('[auth.me] Failed to parse session cookie:', error);
+        }
+      }
+
+      // 如果都沒有，返回 null（未登入）
+      return null;
+    }),
     logout: publicProcedure.mutation(({ ctx }) => {
       const cookieOptions = getSessionCookieOptions(ctx.req);
       ctx.res.clearCookie(COOKIE_NAME, { ...cookieOptions, maxAge: -1 });
