@@ -60,6 +60,14 @@ export const appRouter = router({
       return { success: true } as const;
     }),
     
+    // 環境變數檢查 API（僅供調試使用）
+    checkEnv: publicProcedure.query(() => {
+      return {
+        ENABLE_TEST_LOGIN: process.env.ENABLE_TEST_LOGIN || "undefined",
+        NODE_ENV: process.env.NODE_ENV || "undefined",
+      };
+    }),
+    
     // 測試登入 API（僅供資安掃描使用）
     testLogin: publicProcedure
       .input(
