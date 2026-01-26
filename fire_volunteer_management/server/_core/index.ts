@@ -1,5 +1,6 @@
 import "dotenv/config";
 import express from "express";
+import compression from "compression";
 import { createServer } from "http";
 import net from "net";
 import { createExpressMiddleware } from "@trpc/server/adapters/express";
@@ -38,6 +39,9 @@ async function startServer() {
   // Enable trust proxy for rate limiting to work correctly behind proxies
   // Use 1 to trust only the first proxy (recommended for most deployments)
   app.set("trust proxy", 1);
+
+  // Enable gzip compression for all responses
+  app.use(compression());
 
   // Configure body parser with larger size limit for file uploads
   app.use(express.json({ limit: "50mb" }));
