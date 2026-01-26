@@ -59,6 +59,74 @@ export const appRouter = router({
       ctx.res.clearCookie(COOKIE_NAME, { ...cookieOptions, maxAge: -1 });
       return { success: true } as const;
     }),
+    
+    // 測試登入 API（僅供資安掃描使用）
+    testLogin: publicProcedure
+      .input(
+        z.object({
+          email: z.string().email(),
+          password: z.string(),
+        })
+      )
+      .mutation(async ({ input, ctx }) => {
+        // 檢查是否啟用測試登入
+        const enableTestLogin = process.env.ENABLE_TEST_LOGIN === "true";
+        if (!enableTestLogin) {
+          throw new TRPCError({
+            code: "FORBIDDEN",
+            message: "測試登入功能未啟用",
+          });
+        }
+
+        // 測試帳號列表
+        const testAccounts = [
+          {
+            email: "jacky.hsieh@insight.ntu.edu.tw",
+            password: "SecurityTest2024!",
+            role: "admin" as const,
+            name: "Jacky Hsieh",
+          },
+          {
+            email: "chelsea.juan@udngroup.com.tw",
+            password: "SecurityTest2024!",
+            role: "admin" as const,
+            name: "Chelsea Juan",
+          },
+          {
+            email: "vol3@taitung.gov.tw",
+            password: "Volunteer2024!",
+            role: "volunteer" as const,
+            name: "志工三號",
+          },
+        ];
+
+        // 驗證帳號密碼
+        const account = testAccounts.find(
+          acc => acc.email === input.email && acc.password === input.password
+        );
+
+        if (!account) {
+          throw new TRPCError({
+            code: "UNAUTHORIZED",
+            message: "帳號或密碼錯誤",
+          });
+        }
+
+        // 建立測試用的 session
+        const testUser = {
+          id: account.email.split("@")[0], // 使用 email 前綴作為 ID
+          email: account.email,
+          name: account.name,
+          role: account.role,
+        };
+
+        // 設定 session cookie
+        const cookieOptions = getSessionCookieOptions(ctx.req);
+        const sessionData = JSON.stringify(testUser);
+        ctx.res.cookie(COOKIE_NAME, sessionData, cookieOptions);
+
+        return { success: true, user: testUser };
+      }),
   }),
 
   // ============ 使用者管理 ============
