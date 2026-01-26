@@ -18,6 +18,9 @@ const redirectToLoginIfUnauthorized = (error: unknown) => {
 
   if (!isUnauthorized) return;
 
+  // 不要在測試登入頁面重定向到 OAuth
+  if (window.location.pathname === "/test-login") return;
+
   window.location.href = getLoginUrl();
 };
 
