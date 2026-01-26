@@ -177,7 +177,13 @@ export default function Home() {
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
 
   // 獲取首頁內容
-  const { data: homeContent } = trpc.homeContent.get.useQuery();
+  const { data: homeContent, error: homeContentError } =
+    trpc.homeContent.get.useQuery(undefined, {
+      retry: false,
+      onError: error => {
+        console.error("[Home] Failed to load home content:", error.message);
+      },
+    });
 
   // 獲取最新消息（前3則）
   const { data: latestNews } = trpc.news.getPublished.useQuery({ limit: 3 });
