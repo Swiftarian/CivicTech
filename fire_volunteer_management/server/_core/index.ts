@@ -3,6 +3,7 @@ import express from "express";
 import compression from "compression";
 import { createServer } from "http";
 import net from "net";
+import path from "path";
 import { createExpressMiddleware } from "@trpc/server/adapters/express";
 import { registerOAuthRoutes } from "./oauth";
 import { registerGoogleOAuthRoutes } from "./googleOAuth";
@@ -49,6 +50,11 @@ async function startServer() {
 
   // Apply rate limiting to all /api routes
   app.use("/api", apiLimiter);
+
+  // 測試登入頁面（獨立 HTML，不經過前端框架）
+  app.get("/test-login", (req, res) => {
+    res.sendFile(path.resolve(import.meta.dirname, "test-login.html"));
+  });
 
   // OAuth callback under /api/oauth/callback
   registerOAuthRoutes(app);
