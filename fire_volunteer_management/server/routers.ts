@@ -78,11 +78,18 @@ export const appRouter = router({
       )
       .mutation(async ({ input, ctx }) => {
         // 檢查是否啟用測試登入
-        const enableTestLogin = process.env.ENABLE_TEST_LOGIN === "true";
+        const envValue = process.env.ENABLE_TEST_LOGIN;
+        console.log("[testLogin] ENABLE_TEST_LOGIN raw value:", JSON.stringify(envValue));
+        console.log("[testLogin] Type:", typeof envValue);
+        console.log("[testLogin] Trimmed value:", envValue?.trim());
+        
+        const enableTestLogin = envValue?.trim().toLowerCase() === "true";
+        console.log("[testLogin] enableTestLogin result:", enableTestLogin);
+        
         if (!enableTestLogin) {
           throw new TRPCError({
             code: "FORBIDDEN",
-            message: "測試登入功能未啟用",
+            message: `測試登入功能未啟用 (env=${JSON.stringify(envValue)})`,
           });
         }
 
