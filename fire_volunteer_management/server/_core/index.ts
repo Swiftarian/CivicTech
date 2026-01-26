@@ -1,6 +1,7 @@
 import "dotenv/config";
 import express from "express";
 import compression from "compression";
+import cookieParser from "cookie-parser";
 import { createServer } from "http";
 import net from "net";
 import path from "path";
@@ -43,6 +44,9 @@ async function startServer() {
 
   // Enable gzip compression for all responses
   app.use(compression());
+
+  // Configure cookie parser to read cookies from requests
+  app.use(cookieParser());
 
   // Configure body parser with larger size limit for file uploads
   app.use(express.json({ limit: "50mb" }));
