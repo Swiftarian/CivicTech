@@ -7,7 +7,7 @@ export const APP_LOGO = "/images/taitung-fire-dept-logo.png";
 // Generate login URL at runtime so redirect URI reflects the current origin.
 export const getLoginUrl = () => {
   const oauthPortalUrl =
-    import.meta.env.VITE_OAUTH_PORTAL_URL || "https://oauth.manus.space";
+    import.meta.env.VITE_OAUTH_PORTAL_URL || "https://oauth.manus.im";
   const appId = import.meta.env.VITE_APP_ID || "dev-app-id";
   const redirectUri = `${window.location.origin}/api/oauth/callback`;
   const state = btoa(redirectUri);
