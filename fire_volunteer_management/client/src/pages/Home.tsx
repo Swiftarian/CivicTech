@@ -428,7 +428,7 @@ export default function Home() {
               </>
             ) : (
               <div className="px-4">
-                <a href={getGoogleLoginUrl()} className="block">
+                <a href={getLoginUrl()} className="block">
                   <Button
                     className="bg-green-600 hover:bg-green-700 text-white w-full"
                     size="sm"
