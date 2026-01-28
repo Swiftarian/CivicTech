@@ -1,4 +1,4 @@
-import { storagePut } from "./storageS3";
+import { storagePut } from "./storageImgur";
 import { TRPCError } from "@trpc/server";
 
 // 支援的圖片格式
