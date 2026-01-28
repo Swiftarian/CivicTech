@@ -78,7 +78,16 @@ export async function storagePutHttp(
     };
 
     // 生成簽名
+    const sortedKeys = Object.keys(params).sort();
+    const signatureString = sortedKeys
+      .map(key => `${key}=${params[key]}`)
+      .join('&');
+    
+    console.log("[StorageCloudinaryHttp] Signature string:", signatureString);
+    console.log("[StorageCloudinaryHttp] API Secret (first 5 chars):", config.apiSecret.substring(0, 5));
+    
     const signature = generateSignature(params, config.apiSecret);
+    console.log("[StorageCloudinaryHttp] Generated signature:", signature);
 
     // 準備表單資料
     const formData = new FormData();

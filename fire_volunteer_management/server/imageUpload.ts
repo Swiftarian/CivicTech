@@ -81,9 +81,9 @@ export async function uploadImage(
   const buffer = Buffer.from(base64Data, "base64");
 
   try {
-    // 嘗試使用 HTTP API 上傳到 Cloudinary
-    console.log("[ImageUpload] Trying HTTP API upload...");
-    const result = await storagePutHttp(fileKey, buffer, mimeType);
+    // 使用 Cloudinary SDK 上傳
+    console.log("[ImageUpload] Uploading to Cloudinary...");
+    const result = await storagePut(fileKey, buffer, mimeType);
 
     return {
       url: result.url,
