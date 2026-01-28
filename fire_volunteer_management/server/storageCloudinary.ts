@@ -62,13 +62,13 @@ export async function storagePut(
   console.log("[StorageCloudinary] Uploading with publicId:", publicId);
   console.log("[StorageCloudinary] Content type:", contentType);
   console.log("[StorageCloudinary] Data URI length:", dataUri.length);
+  console.log("[StorageCloudinary] Using unsigned upload with preset: taitung_disaster");
 
   try {
-    const result = await cloudinary.uploader.upload(dataUri, {
-      public_id: publicId,  // 不包含 folder
-      folder: "taitung-disaster-system",  // 使用 folder 參數
+    // 使用 unsigned upload
+    const result = await cloudinary.uploader.unsigned_upload(dataUri, "taitung_disaster", {
       resource_type: "auto",
-      overwrite: true,
+      public_id: publicId,  // 可選，如果不指定則使用檔名
     });
     
     console.log("[StorageCloudinary] Upload successful!");
