@@ -89,9 +89,16 @@ export async function uploadImage(
     };
   } catch (error) {
     console.error("[ImageUpload] Failed to upload image:", error);
+    console.error("[ImageUpload] Error details:", {
+      message: error instanceof Error ? error.message : "Unknown error",
+      stack: error instanceof Error ? error.stack : undefined,
+      fileKey,
+      mimeType,
+      bufferSize: buffer.length,
+    });
     throw new TRPCError({
       code: "INTERNAL_SERVER_ERROR",
-      message: "圖片上傳失敗，請稍後再試",
+      message: `圖片上傳失敗：${error instanceof Error ? error.message : "未知錯誤"}`,
     });
   }
 }

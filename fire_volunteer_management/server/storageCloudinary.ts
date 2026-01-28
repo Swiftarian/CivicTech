@@ -26,6 +26,7 @@ let isConfigured = false;
 function configureCloudinary() {
   if (!isConfigured) {
     const config = getStorageConfig();
+    console.log("[StorageCloudinary] Configuring Cloudinary with cloud_name:", config.cloudName);
     cloudinary.config({
       cloud_name: config.cloudName,
       api_key: config.apiKey,
@@ -33,6 +34,7 @@ function configureCloudinary() {
       secure: true,
     });
     isConfigured = true;
+    console.log("[StorageCloudinary] Cloudinary configured successfully");
   }
 }
 
@@ -71,6 +73,12 @@ export async function storagePut(
     };
   } catch (error) {
     console.error("[StorageCloudinary] Failed to upload file:", error);
+    console.error("[StorageCloudinary] Error details:", {
+      message: error instanceof Error ? error.message : "Unknown error",
+      stack: error instanceof Error ? error.stack : undefined,
+      publicId,
+      contentType,
+    });
     throw new Error(
       `Cloudinary upload failed: ${error instanceof Error ? error.message : "Unknown error"}`
     );
