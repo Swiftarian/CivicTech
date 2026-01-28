@@ -60,9 +60,11 @@ export async function storagePut(
   const dataUri = `data:${contentType};base64,${base64}`;
 
   try {
+    // 將 folder 整合到 public_id 中，避免參數衝突
+    const fullPublicId = `taitung-disaster-system/${publicId}`;
+    
     const result = await cloudinary.uploader.upload(dataUri, {
-      public_id: publicId,
-      folder: "taitung-disaster-system", // 組織圖片到資料夾
+      public_id: fullPublicId,
       resource_type: "auto", // 自動偵測資源類型
       overwrite: true, // 允許覆蓋同名檔案
     });
