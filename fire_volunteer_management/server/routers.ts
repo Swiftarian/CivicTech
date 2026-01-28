@@ -118,18 +118,21 @@ export const appRouter = router({
         // 測試帳號列表
         const testAccounts = [
           {
+            id: 9999,  // 測試帳號使用高數字 ID 以避免與真實使用者衝突
             email: "jacky.hsieh@insight.ntu.edu.tw",
             password: "SecurityTest2024!",
             role: "admin" as const,
             name: "Jacky Hsieh",
           },
           {
+            id: 9998,
             email: "chelsea.juan@udngroup.com.tw",
             password: "SecurityTest2024!",
             role: "admin" as const,
             name: "Chelsea Juan",
           },
           {
+            id: 9997,
             email: "vol3@taitung.gov.tw",
             password: "Volunteer2024!",
             role: "volunteer" as const,
@@ -151,7 +154,7 @@ export const appRouter = router({
 
         // 建立測試用的 session
         const testUser = {
-          id: account.email.split("@")[0], // 使用 email 前綴作為 ID
+          id: account.id, // 使用整數 ID
           email: account.email,
           name: account.name,
           role: account.role,
