@@ -102,7 +102,6 @@ export async function storagePut(
     
     console.error("[StorageCloudinary] Upload context:", {
       publicId,
-      fullPublicId,
       contentType,
       dataUriLength: dataUri.length,
       dataUriPrefix: dataUri.substring(0, 50) + "...",
