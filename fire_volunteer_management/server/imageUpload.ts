@@ -1,4 +1,5 @@
 import { storagePut } from "./storageCloudinary";
+import { storagePutHttp } from "./storageCloudinaryHttp";
 import { TRPCError } from "@trpc/server";
 
 // 支援的圖片格式
@@ -80,8 +81,9 @@ export async function uploadImage(
   const buffer = Buffer.from(base64Data, "base64");
 
   try {
-    // 上傳到 Cloudinary
-    const result = await storagePut(fileKey, buffer, mimeType);
+    // 嘗試使用 HTTP API 上傳到 Cloudinary
+    console.log("[ImageUpload] Trying HTTP API upload...");
+    const result = await storagePutHttp(fileKey, buffer, mimeType);
 
     return {
       url: result.url,
