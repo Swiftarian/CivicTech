@@ -58,10 +58,11 @@ export async function storagePut(
   const buffer = typeof data === "string" ? Buffer.from(data) : Buffer.from(data);
   const base64 = buffer.toString("base64");
   const dataUri = `data:${contentType};base64,${base64}`;
+  
+  // 將 folder 整合到 public_id 中，避免參數衝突
+  const fullPublicId = `taitung-disaster-system/${publicId}`;
 
   try {
-    // 將 folder 整合到 public_id 中，避免參數衝突
-    const fullPublicId = `taitung-disaster-system/${publicId}`;
     
     const result = await cloudinary.uploader.upload(dataUri, {
       public_id: fullPublicId,
