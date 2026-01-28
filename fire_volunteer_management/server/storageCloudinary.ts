@@ -75,28 +75,34 @@ export async function storagePut(
       url: result.secure_url, // 使用 HTTPS URL
     };
   } catch (error) {
-    console.error("[StorageCloudinary] Failed to upload file:", error);
-    console.error("[StorageCloudinary] Error details:", {
-      message: error instanceof Error ? error.message : "Unknown error",
-      stack: error instanceof Error ? error.stack : undefined,
-      errorObject: JSON.stringify(error, null, 2),
+    console.error("[StorageCloudinary] ========== UPLOAD FAILED ==========");
+    console.error("[StorageCloudinary] Error object:", error);
+    console.error("[StorageCloudinary] Error type:", typeof error);
+    console.error("[StorageCloudinary] Error constructor:", error?.constructor?.name);
+    
+    // 記錄所有錯誤屬性
+    if (error && typeof error === 'object') {
+      const errorObj = error as any;
+      console.error("[StorageCloudinary] Error properties:", {
+        message: errorObj.message,
+        name: errorObj.name,
+        http_code: errorObj.http_code,
+        error: errorObj.error,
+        stack: errorObj.stack,
+      });
+      
+      // 記錄所有可枚舉屬性
+      console.error("[StorageCloudinary] All error keys:", Object.keys(errorObj));
+    }
+    
+    console.error("[StorageCloudinary] Upload context:", {
       publicId,
       fullPublicId,
       contentType,
       dataUriLength: dataUri.length,
+      dataUriPrefix: dataUri.substring(0, 50) + "...",
     });
-    
-    // 如果是 Cloudinary 特定錯誤，提取更多資訊
-    if (error && typeof error === 'object') {
-      const cloudinaryError = error as any;
-      if (cloudinaryError.http_code) {
-        console.error("[StorageCloudinary] Cloudinary HTTP error:", {
-          http_code: cloudinaryError.http_code,
-          message: cloudinaryError.message,
-          name: cloudinaryError.name,
-        });
-      }
-    }
+    console.error("[StorageCloudinary] =====================================");
     
     throw new Error(
       `Cloudinary upload failed: ${error instanceof Error ? error.message : "Unknown error"}`
