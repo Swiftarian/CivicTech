@@ -5,6 +5,7 @@ import { publicProcedure, protectedProcedure, router } from "./_core/trpc";
 import { z } from "zod";
 import { TRPCError } from "@trpc/server";
 import * as db from "./db";
+import { users } from "../drizzle/schema";
 import {
   getEmailLogs,
   getEmailStats,
@@ -157,12 +158,19 @@ export const appRouter = router({
           const existingUser = await db.getUserById(account.id);
           if (!existingUser) {
             // 如果使用者不存在，建立新使用者
-            await db.createUser({
-              id: account.id,
-              email: account.email,
-              name: account.name,
-              role: account.role as "admin" | "volunteer",
-            });
+            const dbInstance = await db.getDb();
+            if (dbInstance) {
+              await dbInstance.insert(users).values({
+                id: account.id,
+                openId: `test_${account.id}`, // 使用 test_ 前綴作為 openId
+                email: account.email,
+                name: account.name,
+                role: account.role as "admin" | "volunteer",
+              });
+              console.log(`[testLogin] Created test user with ID ${account.id}`);
+            }
+          } else {
+            console.log(`[testLogin] Test user ${account.id} already exists`);
           }
         } catch (error) {
           console.error("[testLogin] Failed to ensure user exists:", error);
