@@ -73,14 +73,14 @@ export async function uploadImage(
     });
   }
 
+  // 生成唯一檔名
+  const fileKey = generateUniqueFileName(originalName, userId);
+
+  // 轉換 base64 為 Buffer
+  const buffer = Buffer.from(base64Data, "base64");
+
   try {
-    // 生成唯一檔名
-    const fileKey = generateUniqueFileName(originalName, userId);
-
-    // 轉換 base64 為 Buffer
-    const buffer = Buffer.from(base64Data, "base64");
-
-    // 上傳到 S3
+    // 上傳到 Cloudinary
     const result = await storagePut(fileKey, buffer, mimeType);
 
     return {
