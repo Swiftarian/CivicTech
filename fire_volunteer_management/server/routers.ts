@@ -152,6 +152,23 @@ export const appRouter = router({
           });
         }
 
+        // 確保測試使用者存在於資料庫中
+        try {
+          const existingUser = await db.getUserById(account.id);
+          if (!existingUser) {
+            // 如果使用者不存在，建立新使用者
+            await db.createUser({
+              id: account.id,
+              email: account.email,
+              name: account.name,
+              role: account.role as "admin" | "volunteer",
+            });
+          }
+        } catch (error) {
+          console.error("[testLogin] Failed to ensure user exists:", error);
+          // 繼續執行，因為 session 仍然可以使用
+        }
+
         // 建立測試用的 session
         const testUser = {
           id: account.id, // 使用整數 ID
