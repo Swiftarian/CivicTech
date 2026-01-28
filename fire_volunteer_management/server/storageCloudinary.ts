@@ -58,17 +58,22 @@ export async function storagePut(
   const buffer = typeof data === "string" ? Buffer.from(data) : Buffer.from(data);
   const base64 = buffer.toString("base64");
   const dataUri = `data:${contentType};base64,${base64}`;
-  
-  // 將 folder 整合到 public_id 中，避免參數衝突
-  const fullPublicId = `taitung-disaster-system/${publicId}`;
+
+  console.log("[StorageCloudinary] Uploading with publicId:", publicId);
+  console.log("[StorageCloudinary] Content type:", contentType);
+  console.log("[StorageCloudinary] Data URI length:", dataUri.length);
 
   try {
-    
     const result = await cloudinary.uploader.upload(dataUri, {
-      public_id: fullPublicId,
-      resource_type: "auto", // 自動偵測資源類型
-      overwrite: true, // 允許覆蓋同名檔案
+      public_id: publicId,  // 不包含 folder
+      folder: "taitung-disaster-system",  // 使用 folder 參數
+      resource_type: "auto",
+      overwrite: true,
     });
+    
+    console.log("[StorageCloudinary] Upload successful!");
+    console.log("[StorageCloudinary] Result public_id:", result.public_id);
+    console.log("[StorageCloudinary] Result URL:", result.secure_url);
 
     return {
       key: result.public_id,
