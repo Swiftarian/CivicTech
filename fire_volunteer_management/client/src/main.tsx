@@ -5,7 +5,7 @@ import { httpBatchLink, TRPCClientError } from "@trpc/client";
 import { createRoot } from "react-dom/client";
 import superjson from "superjson";
 import App from "./App";
-import { getLoginUrl } from "./const";
+// import { getLoginUrl } from "./const"; // 已移除 Manus OAuth
 import "./index.css";
 
 const queryClient = new QueryClient();
@@ -21,7 +21,8 @@ const redirectToLoginIfUnauthorized = (error: unknown) => {
   // 不要在測試登入頁面重定向到 OAuth
   if (window.location.pathname === "/test-login") return;
 
-  window.location.href = getLoginUrl();
+  // 重定向到測試登入頁面而不是 Manus OAuth
+  window.location.href = "/test-login";
 };
 
 queryClient.getQueryCache().subscribe(event => {
