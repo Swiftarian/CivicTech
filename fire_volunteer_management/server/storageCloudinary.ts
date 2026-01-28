@@ -78,9 +78,25 @@ export async function storagePut(
     console.error("[StorageCloudinary] Error details:", {
       message: error instanceof Error ? error.message : "Unknown error",
       stack: error instanceof Error ? error.stack : undefined,
+      errorObject: JSON.stringify(error, null, 2),
       publicId,
+      fullPublicId,
       contentType,
+      dataUriLength: dataUri.length,
     });
+    
+    // 如果是 Cloudinary 特定錯誤，提取更多資訊
+    if (error && typeof error === 'object') {
+      const cloudinaryError = error as any;
+      if (cloudinaryError.http_code) {
+        console.error("[StorageCloudinary] Cloudinary HTTP error:", {
+          http_code: cloudinaryError.http_code,
+          message: cloudinaryError.message,
+          name: cloudinaryError.name,
+        });
+      }
+    }
+    
     throw new Error(
       `Cloudinary upload failed: ${error instanceof Error ? error.message : "Unknown error"}`
     );
