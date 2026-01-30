@@ -78,3 +78,6 @@ _archive/
 
 # Ignore security report
 security_*.md
+
+# Ignore root test files
+/test_*.py
