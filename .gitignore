@@ -81,7 +81,7 @@ yarn-debug.log*
 
 # Ignore root .md except README.md
 /*.md
-!README.md
+!README*.md
 !CODE_OF_CONDUCT.md
 !CONTRIBUTING.md
 !SECURITY.md
