@@ -16,6 +16,7 @@
 
 | 文件 | 說明 |
 |------|------|
+| [🏗️ 系統架構](docs/ARCHITECTURE.md) | 技術架構與 Mermaid 圖表 |
 | [⚡ 快速參考卡](docs/QUICK_REFERENCE.md) | 常用指令和問題解決 |
 | [🔗 系統整合說明](docs/SYSTEM_INTEGRATION.md) | 完整的連接和配置指南 |
 | [📋 貢獻指南](CONTRIBUTING.md) | 如何參與這個專案 |

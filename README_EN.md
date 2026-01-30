@@ -16,6 +16,7 @@ English | **[繁體中文](README.md)**
 
 | Document | Description |
 |----------|-------------|
+| [🏗️ System Architecture](docs/ARCHITECTURE_EN.md) | Tech architecture with Mermaid diagrams |
 | [⚡ Quick Reference](docs/QUICK_REFERENCE.md) | Common commands and troubleshooting |
 | [🔗 System Integration](docs/SYSTEM_INTEGRATION.md) | Complete connection and configuration guide |
 | [📋 Contributing Guide](CONTRIBUTING.md) | How to contribute to this project |
