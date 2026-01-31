@@ -109,16 +109,17 @@ graph TB
 
 | 類別 | 技術 | 版本 | 說明 |
 |------|------|------|------|
-| **框架** | Streamlit | 1.31+ | Python Web 應用框架 |
-| **語言** | Python | 3.12+ | 主要程式語言 |
+| **框架** | Streamlit | 1.37+ | Python Web 應用框架 |
+| **語言** | Python | 3.11+ | 主要程式語言 |
 | **資料庫** | SQLite | 3.x | 輕量級嵌入式資料庫 |
 | **OCR** | Tesseract | 5.x | 開源 OCR 引擎 |
-| **OCR** | PaddleOCR | 2.x | 高精度中文 OCR |
-| **PDF** | PyMuPDF | 1.x | PDF 處理與轉換 |
-| **資料處理** | Pandas | 2.x | 資料分析與處理 |
-| **加密** | bcrypt | 4.x | 密碼雜湊加密 |
-| **圖像** | Pillow | 10.x | 圖像處理 |
+| **OCR** | PaddleOCR | 2.8+ | 高精度中文 OCR（選用） |
+| **PDF** | PyMuPDF | 1.23+ | PDF 處理與轉換 |
+| **資料處理** | Pandas | 2.1+ | 資料分析與處理 |
+| **加密** | PBKDF2-SHA256 | - | 密碼雜湊加密（10萬次迭代） |
+| **圖像** | Pillow | 10.3+ | 圖像處理 |
 | **郵件** | smtplib | - | SMTP 郵件發送 |
+| **LINE 整合** | line-bot-sdk | 3.9+ | LINE Bot 訊息推播 |
 
 ### 功能模組
 
@@ -250,19 +251,23 @@ graph TB
 
 | 類別 | 技術 | 版本 | 說明 |
 |------|------|------|------|
-| **前端框架** | React | 19 | 使用者介面函式庫 |
-| **型別系統** | TypeScript | 5.x | 靜態型別檢查 |
-| **UI 組件** | shadcn/ui | - | 可自訂 UI 組件庫 |
-| **CSS 框架** | Tailwind CSS | 4 | Utility-first CSS |
-| **狀態管理** | TanStack Query | 5.x | 伺服器狀態管理 |
-| **路由** | Wouter | 3.x | 輕量級路由 |
-| **API** | tRPC | 11 | 端到端型別安全 API |
-| **後端框架** | Express | 4.x | Node.js Web 框架 |
+| **前端框架** | React | 19.1+ | 使用者介面函式庫 |
+| **型別系統** | TypeScript | 5.9+ | 靜態型別檢查 |
+| **UI 組件** | shadcn/ui + Radix | - | 可自訂 UI 組件庫 |
+| **CSS 框架** | Tailwind CSS | 4.1+ | Utility-first CSS |
+| **狀態管理** | TanStack Query | 5.90+ | 伺服器狀態管理 |
+| **路由** | Wouter | 3.3+ | 輕量級路由 |
+| **API** | tRPC | 11.8+ | 端到端型別安全 API |
+| **後端框架** | Express | 4.21+ | Node.js Web 框架 |
 | **執行環境** | Node.js | 22.x | JavaScript 執行環境 |
-| **ORM** | Drizzle | - | TypeScript ORM |
+| **ORM** | Drizzle | 0.44+ | TypeScript ORM |
 | **資料庫** | MySQL/TiDB | 8.x | 關聯式資料庫 |
-| **檔案儲存** | AWS S3 | - | 雲端物件儲存 |
-| **測試** | Vitest | 2.x | 單元測試框架 |
+| **檔案儲存** | AWS S3 / Cloudinary | - | 雲端物件儲存 |
+| **測試** | Vitest | 2.1+ | 單元測試框架 |
+| **簡訊服務** | Twilio | 5.10+ | SMS 簡訊通知 |
+| **LINE 整合** | LINE Messaging API | - | LINE 推播與 Webhook |
+| **OAuth** | Google OAuth 2.0 | - | 第三方登入 |
+| **構建工具** | Vite | 7.1+ | 前端構建與 HMR |
 
 ### 功能模組
 
@@ -301,68 +306,119 @@ mindmap
 erDiagram
     USERS {
         int id PK
-        string manus_id UK
+        string openId UK
         string email
         string name
-        string role
-        string avatar_url
-        datetime created_at
+        string phone
+        string loginMethod
+        enum role "user/volunteer/admin"
+        datetime createdAt
+        datetime lastSignedIn
     }
     
     VOLUNTEERS {
         int id PK
-        int user_id FK
-        string phone
-        string emergency_contact
-        string skills
-        boolean is_active
+        int userId FK
+        string employeeId
+        string department
+        string skills "JSON"
+        string lineUserId
+        enum category "導覽館志工/送餐志工"
+        int totalHours
+        enum status "active/inactive/leave"
     }
     
     BOOKINGS {
         int id PK
-        string booking_number UK
-        string type
-        string contact_name
-        string contact_phone
-        date booking_date
-        string time_slot
-        int group_size
-        string status
+        string bookingNumber UK
+        enum type "group/individual"
+        string contactName
+        string contactPhone
+        datetime visitDate
+        string visitTime
+        int numberOfPeople
+        enum status "pending/confirmed/cancelled/completed"
+        int assignedVolunteerId FK
     }
     
     SCHEDULES {
         int id PK
-        int volunteer_id FK
-        date schedule_date
-        string shift_type
-        string status
+        int volunteerId FK
+        datetime shiftDate
+        string shiftTime
+        enum shiftType "morning/afternoon/fullday"
+        enum status "scheduled/completed/absent/leave"
     }
     
     MEAL_DELIVERIES {
         int id PK
-        int volunteer_id FK
-        string recipient_name
-        string recipient_address
-        string status
-        string qr_code
-        datetime delivered_at
+        int recipientId FK
+        int volunteerId FK
+        string recipientName
+        string deliveryAddress
+        datetime deliveryDate
+        enum status "pending/assigned/in_transit/delivered/cancelled"
+        string qrCode
+        string verificationCode
+        string photo
     }
     
     ATTENDANCES {
         int id PK
-        int volunteer_id FK
-        int schedule_id FK
-        datetime check_in
-        datetime check_out
+        int volunteerId FK
+        int scheduleId FK
+        datetime checkInTime
+        datetime checkOutTime
+        int workHours
         string location
+    }
+    
+    RECIPIENTS {
+        int id PK
+        string name
+        string phone UK
+        string address
+        string lineUserId
+        enum preferredNotificationMethod "line/sms/both"
+    }
+    
+    LEAVE_REQUESTS {
+        int id PK
+        int volunteerId FK
+        int scheduleId FK
+        enum type "leave/swap"
+        enum status "pending/approved/rejected"
+    }
+    
+    NOTIFICATIONS {
+        int id PK
+        int userId FK
+        string type
+        string title
+        text message
+        boolean isRead
+    }
+    
+    NEWS {
+        int id PK
+        string title
+        text content
+        string coverImage
+        enum category "防災宣導/活動公告/新聞稿/其他"
+        boolean isPublished
     }
     
     USERS ||--o| VOLUNTEERS : has
     VOLUNTEERS ||--o{ SCHEDULES : assigned
     VOLUNTEERS ||--o{ MEAL_DELIVERIES : handles
     VOLUNTEERS ||--o{ ATTENDANCES : records
+    VOLUNTEERS ||--o{ LEAVE_REQUESTS : requests
     SCHEDULES ||--o{ ATTENDANCES : tracks
+    RECIPIENTS ||--o{ MEAL_DELIVERIES : receives
+    USERS ||--o{ NOTIFICATIONS : receives
 ```
+
+> 💡 **完整資料表清單**：`users`, `volunteers`, `bookings`, `schedules`, `attendances`, `leaveRequests`, `cases`, `caseProgress`, `recipients`, `mealDeliveries`, `deliveryTracking`, `deliveryTasks`, `deliveryPoints`, `notifications`, `emailLogs`, `individualBookings`, `groupBookings`, `news`, `gallery`, `homeContent`
 
 ---
 
@@ -383,8 +439,7 @@ graph LR
     end
     
     subgraph CodeQuality["✨ 程式碼品質"]
-        PRETTIER[Prettier 3.x<br/>格式化]
-        ESLINT[ESLint<br/>JS/TS Lint]
+        PRETTIER[Prettier 3.6+<br/>格式化]
     end
     
     subgraph CI["🔄 CI/CD"]
@@ -394,8 +449,8 @@ graph LR
     PNPM --> HUSKY
     UV --> HUSKY
     HUSKY --> LINT_STAGED
-    LINT_STAGED --> PRETTIER & ESLINT
-    PRETTIER & ESLINT --> GITHUB
+    LINT_STAGED --> PRETTIER
+    PRETTIER --> GITHUB
     
     style PackageManagers fill:#f39c12,color:#000
     style GitHooks fill:#9b59b6,color:#fff
@@ -439,7 +494,8 @@ CivicTech/
 │   ├── QUICK_REFERENCE.md          # 快速參考
 │   └── SYSTEM_INTEGRATION.md       # 系統整合
 │
-├── start-all.ps1                   # 整合啟動腳本
+├── start-all.ps1                   # 整合啟動腳本 (PowerShell)
+├── start-all.bat                   # 整合啟動腳本 (Batch)
 ├── package.json                    # Monorepo 設定
 ├── .husky/                         # Git Hooks
 └── .prettierrc                     # Prettier 設定

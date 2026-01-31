@@ -109,16 +109,17 @@ graph TB
 
 | Category | Technology | Version | Description |
 |----------|------------|---------|-------------|
-| **Framework** | Streamlit | 1.31+ | Python Web application framework |
-| **Language** | Python | 3.12+ | Primary programming language |
+| **Framework** | Streamlit | 1.37+ | Python Web application framework |
+| **Language** | Python | 3.11+ | Primary programming language |
 | **Database** | SQLite | 3.x | Lightweight embedded database |
 | **OCR** | Tesseract | 5.x | Open-source OCR engine |
-| **OCR** | PaddleOCR | 2.x | High-accuracy Chinese OCR |
-| **PDF** | PyMuPDF | 1.x | PDF processing and conversion |
-| **Data Processing** | Pandas | 2.x | Data analysis and processing |
-| **Encryption** | bcrypt | 4.x | Password hashing |
-| **Image** | Pillow | 10.x | Image processing |
+| **OCR** | PaddleOCR | 2.8+ | High-accuracy Chinese OCR (optional) |
+| **PDF** | PyMuPDF | 1.23+ | PDF processing and conversion |
+| **Data Processing** | Pandas | 2.1+ | Data analysis and processing |
+| **Encryption** | PBKDF2-SHA256 | - | Password hashing (100k iterations) |
+| **Image** | Pillow | 10.3+ | Image processing |
 | **Email** | smtplib | - | SMTP email sending |
+| **LINE Integration** | line-bot-sdk | 3.9+ | LINE Bot messaging |
 
 ### Feature Modules
 
@@ -250,19 +251,23 @@ graph TB
 
 | Category | Technology | Version | Description |
 |----------|------------|---------|-------------|
-| **Frontend Framework** | React | 19 | UI component library |
-| **Type System** | TypeScript | 5.x | Static type checking |
-| **UI Components** | shadcn/ui | - | Customizable UI components |
-| **CSS Framework** | Tailwind CSS | 4 | Utility-first CSS |
-| **State Management** | TanStack Query | 5.x | Server state management |
-| **Routing** | Wouter | 3.x | Lightweight router |
-| **API** | tRPC | 11 | End-to-end type-safe API |
-| **Backend Framework** | Express | 4.x | Node.js web framework |
+| **Frontend Framework** | React | 19.1+ | UI component library |
+| **Type System** | TypeScript | 5.9+ | Static type checking |
+| **UI Components** | shadcn/ui + Radix | - | Customizable UI components |
+| **CSS Framework** | Tailwind CSS | 4.1+ | Utility-first CSS |
+| **State Management** | TanStack Query | 5.90+ | Server state management |
+| **Routing** | Wouter | 3.3+ | Lightweight router |
+| **API** | tRPC | 11.8+ | End-to-end type-safe API |
+| **Backend Framework** | Express | 4.21+ | Node.js web framework |
 | **Runtime** | Node.js | 22.x | JavaScript runtime |
-| **ORM** | Drizzle | - | TypeScript ORM |
+| **ORM** | Drizzle | 0.44+ | TypeScript ORM |
 | **Database** | MySQL/TiDB | 8.x | Relational database |
-| **File Storage** | AWS S3 | - | Cloud object storage |
-| **Testing** | Vitest | 2.x | Unit testing framework |
+| **File Storage** | AWS S3 / Cloudinary | - | Cloud object storage |
+| **Testing** | Vitest | 2.1+ | Unit testing framework |
+| **SMS Service** | Twilio | 5.10+ | SMS notifications |
+| **LINE Integration** | LINE Messaging API | - | LINE push & webhook |
+| **OAuth** | Google OAuth 2.0 | - | Third-party login |
+| **Build Tool** | Vite | 7.1+ | Frontend build & HMR |
 
 ### Feature Modules
 
@@ -301,68 +306,119 @@ mindmap
 erDiagram
     USERS {
         int id PK
-        string manus_id UK
+        string openId UK
         string email
         string name
-        string role
-        string avatar_url
-        datetime created_at
+        string phone
+        string loginMethod
+        enum role "user/volunteer/admin"
+        datetime createdAt
+        datetime lastSignedIn
     }
     
     VOLUNTEERS {
         int id PK
-        int user_id FK
-        string phone
-        string emergency_contact
-        string skills
-        boolean is_active
+        int userId FK
+        string employeeId
+        string department
+        string skills "JSON"
+        string lineUserId
+        enum category "Museum Guide/Meal Delivery"
+        int totalHours
+        enum status "active/inactive/leave"
     }
     
     BOOKINGS {
         int id PK
-        string booking_number UK
-        string type
-        string contact_name
-        string contact_phone
-        date booking_date
-        string time_slot
-        int group_size
-        string status
+        string bookingNumber UK
+        enum type "group/individual"
+        string contactName
+        string contactPhone
+        datetime visitDate
+        string visitTime
+        int numberOfPeople
+        enum status "pending/confirmed/cancelled/completed"
+        int assignedVolunteerId FK
     }
     
     SCHEDULES {
         int id PK
-        int volunteer_id FK
-        date schedule_date
-        string shift_type
-        string status
+        int volunteerId FK
+        datetime shiftDate
+        string shiftTime
+        enum shiftType "morning/afternoon/fullday"
+        enum status "scheduled/completed/absent/leave"
     }
     
     MEAL_DELIVERIES {
         int id PK
-        int volunteer_id FK
-        string recipient_name
-        string recipient_address
-        string status
-        string qr_code
-        datetime delivered_at
+        int recipientId FK
+        int volunteerId FK
+        string recipientName
+        string deliveryAddress
+        datetime deliveryDate
+        enum status "pending/assigned/in_transit/delivered/cancelled"
+        string qrCode
+        string verificationCode
+        string photo
     }
     
     ATTENDANCES {
         int id PK
-        int volunteer_id FK
-        int schedule_id FK
-        datetime check_in
-        datetime check_out
+        int volunteerId FK
+        int scheduleId FK
+        datetime checkInTime
+        datetime checkOutTime
+        int workHours
         string location
+    }
+    
+    RECIPIENTS {
+        int id PK
+        string name
+        string phone UK
+        string address
+        string lineUserId
+        enum preferredNotificationMethod "line/sms/both"
+    }
+    
+    LEAVE_REQUESTS {
+        int id PK
+        int volunteerId FK
+        int scheduleId FK
+        enum type "leave/swap"
+        enum status "pending/approved/rejected"
+    }
+    
+    NOTIFICATIONS {
+        int id PK
+        int userId FK
+        string type
+        string title
+        text message
+        boolean isRead
+    }
+    
+    NEWS {
+        int id PK
+        string title
+        text content
+        string coverImage
+        enum category "Disaster Prevention/Announcements/Press/Other"
+        boolean isPublished
     }
     
     USERS ||--o| VOLUNTEERS : has
     VOLUNTEERS ||--o{ SCHEDULES : assigned
     VOLUNTEERS ||--o{ MEAL_DELIVERIES : handles
     VOLUNTEERS ||--o{ ATTENDANCES : records
+    VOLUNTEERS ||--o{ LEAVE_REQUESTS : requests
     SCHEDULES ||--o{ ATTENDANCES : tracks
+    RECIPIENTS ||--o{ MEAL_DELIVERIES : receives
+    USERS ||--o{ NOTIFICATIONS : receives
 ```
+
+> 💡 **Complete Table List**: `users`, `volunteers`, `bookings`, `schedules`, `attendances`, `leaveRequests`, `cases`, `caseProgress`, `recipients`, `mealDeliveries`, `deliveryTracking`, `deliveryTasks`, `deliveryPoints`, `notifications`, `emailLogs`, `individualBookings`, `groupBookings`, `news`, `gallery`, `homeContent`
 
 ---
 
@@ -383,8 +439,7 @@ graph LR
     end
     
     subgraph CodeQuality["✨ Code Quality"]
-        PRETTIER[Prettier 3.x<br/>Formatting]
-        ESLINT[ESLint<br/>JS/TS Lint]
+        PRETTIER[Prettier 3.6+<br/>Formatting]
     end
     
     subgraph CI["🔄 CI/CD"]
@@ -394,8 +449,8 @@ graph LR
     PNPM --> HUSKY
     UV --> HUSKY
     HUSKY --> LINT_STAGED
-    LINT_STAGED --> PRETTIER & ESLINT
-    PRETTIER & ESLINT --> GITHUB
+    LINT_STAGED --> PRETTIER
+    PRETTIER --> GITHUB
     
     style PackageManagers fill:#f39c12,color:#000
     style GitHooks fill:#9b59b6,color:#fff
@@ -439,7 +494,8 @@ CivicTech/
 │   ├── QUICK_REFERENCE.md          # Quick reference
 │   └── SYSTEM_INTEGRATION.md       # System integration
 │
-├── start-all.ps1                   # Integrated startup script
+├── start-all.ps1                   # Integrated startup script (PowerShell)
+├── start-all.bat                   # Integrated startup script (Batch)
 ├── package.json                    # Monorepo configuration
 ├── .husky/                         # Git hooks
 └── .prettierrc                     # Prettier configuration
