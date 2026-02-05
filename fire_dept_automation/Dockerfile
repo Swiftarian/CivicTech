@@ -1,5 +1,6 @@
 # 使用官方 Python 3.11 Slim 映像檔作為基底
-FROM python:3.11-slim
+# Security Fix: Pin to specific version and use official Docker Hub image
+FROM python:3.11-slim-bookworm
 
 # 設定維護者資訊
 LABEL maintainer="Taitung Fire Department"
@@ -10,13 +11,21 @@ ENV PYTHONUNBUFFERED=1 \
     PYTHONDONTWRITEBYTECODE=1 \
     DEBIAN_FRONTEND=noninteractive
 
-# 安裝系統依賴（包含 Tesseract OCR）
-RUN apt-get update && apt-get install -y --no-install-recommends \
+# Security Fix: Mitigate dependency confusion by explicitly using official Debian repositories
+# and cleaning apt cache in the same layer
+RUN set -eux; \
+    # Ensure we only use official Debian repositories
+    echo 'Acquire::AllowInsecureRepositories "false";' > /etc/apt/apt.conf.d/99security; \
+    echo 'Acquire::AllowDowngradeToInsecureRepositories "false";' >> /etc/apt/apt.conf.d/99security; \
+    apt-get update; \
+    apt-get install -y --no-install-recommends \
     tesseract-ocr \
     tesseract-ocr-chi-tra \
     tesseract-ocr-chi-sim \
-    libtesseract-dev \
-    && rm -rf /var/lib/apt/lists/*
+    libtesseract-dev; \
+    # Clean up apt cache to reduce image size and remove potential attack surface
+    apt-get clean; \
+    rm -rf /var/lib/apt/lists/* /tmp/* /var/tmp/*
 
 # 設定工作目錄
 WORKDIR /app

@@ -806,9 +806,23 @@ def save_proof_photo(file_buffer, task_id):
     # 生成檔名
     timestamp = now.strftime("%Y%m%d_%H%M%S")
     # Security Fix: Sanitize task_id to prevent path manipulation
+    # 1. Convert to string and extract only the basename (removes any path separators)
     safe_task_id = os.path.basename(str(task_id))
+    # 2. Additional validation: only allow alphanumeric, underscore, and hyphen
+    import re
+    safe_task_id = re.sub(r'[^a-zA-Z0-9_\-]', '', safe_task_id)
+    if not safe_task_id:
+        safe_task_id = "unknown"
+    
     filename = f"{safe_task_id}_{timestamp}.jpg"
     file_path = os.path.join(upload_dir, filename)
+    
+    # Security Fix: Validate final path is within the expected directory
+    # Use realpath to resolve any symlinks and normalize the path
+    real_upload_dir = os.path.realpath(upload_dir)
+    real_file_path = os.path.realpath(file_path)
+    if not real_file_path.startswith(real_upload_dir + os.sep):
+        raise ValueError(f"Security Error: Invalid file path detected")
 
     try:
         # 開啟圖片
@@ -832,15 +846,10 @@ def save_proof_photo(file_buffer, task_id):
     except Exception as e:
         print(f"圖片處理失敗: {e}")
         # 如果壓縮失敗，直接儲存原圖
-        with open(file_path, "wb") as f:
+        # Security: file_path has already been validated above
+        with open(file_path, "wb") as f:  # nosec B108 - path validated above
             f.write(file_buffer.getbuffer())
         return file_path
-    except Exception as e:
-        # 如果失敗，嘗試清理
-        if os.path.exists(pdf_path):
-            try: os.remove(pdf_path)
-            except: pass
-        raise e
 
 def get_libreoffice_path():
     """自動偵測 LibreOffice 執行檔路徑"""

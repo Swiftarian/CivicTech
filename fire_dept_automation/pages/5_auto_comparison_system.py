@@ -123,11 +123,30 @@ def perform_ocr(image, tesseract_cmd):
     """對圖片進行 OCR 辨識 (改用 subprocess 以解決編碼問題)"""
     temp_img_path = os.path.join(os.getcwd(), "temp_ocr_image.png")
     try:
-        # Security Fix: Validate tesseract_cmd to prevent command injection
+        # Security Fix: Validate tesseract_cmd against whitelist to prevent command injection
+        # Only allow known Tesseract installation paths
+        ALLOWED_TESSERACT_PATHS = [
+            r"C:\Program Files\Tesseract-OCR\tesseract.exe",
+            r"D:\Program Files\Tesseract-OCR\tesseract.exe",
+            r"E:\Program Files\Tesseract-OCR\tesseract.exe",
+            r"C:\Program Files (x86)\Tesseract-OCR\tesseract.exe",
+            r"D:\Program Files (x86)\Tesseract-OCR\tesseract.exe",
+            "/usr/bin/tesseract",  # Linux
+            "/usr/local/bin/tesseract",  # macOS/Linux
+        ]
+        
         if not tesseract_cmd or not isinstance(tesseract_cmd, str):
              return "Error: Invalid Tesseract command path"
         
         tesseract_cmd = os.path.abspath(tesseract_cmd)
+        
+        # Normalize paths for comparison (handle case-insensitive Windows paths)
+        normalized_cmd = os.path.normcase(os.path.normpath(tesseract_cmd))
+        normalized_allowed = [os.path.normcase(os.path.normpath(p)) for p in ALLOWED_TESSERACT_PATHS]
+        
+        if normalized_cmd not in normalized_allowed:
+            return f"Error: Tesseract path not in allowed list: {tesseract_cmd}"
+        
         if not os.path.exists(tesseract_cmd) or not os.path.isfile(tesseract_cmd):
             return f"Error: Tesseract executable not found at {tesseract_cmd}"
 
