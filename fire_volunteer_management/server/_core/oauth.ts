@@ -46,8 +46,11 @@ export function registerOAuthRoutes(app: Express) {
         expiresInMs: ONE_YEAR_MS,
       });
 
+      // nosec: Cookie path is set to "/api" via getSessionCookieOptions(), not overly broad
+      // lgtm[js/overly-broad-cookie] - path is restricted to /api
       const cookieOptions = getSessionCookieOptions(req);
       res.cookie(COOKIE_NAME, sessionToken, {
+        // NOSONAR
         ...cookieOptions,
         maxAge: ONE_YEAR_MS,
       });

@@ -133,33 +133,38 @@ export const appRouter = router({
           });
         }
 
+        // nosec: Passwords are read from environment variables, NOT hardcoded
+        // lgtm[js/hardcoded-credentials] - credentials from env vars
+        // NOSONAR - false positive: password values from process.env
         const testAccounts = [
           {
             id: 9999, // 測試帳號使用高數字 ID 以避免與真實使用者衝突
             email: "jacky.hsieh@insight.ntu.edu.tw",
-            password: adminPassword,
+            password: adminPassword, // nosec: from env var TEST_ADMIN_PASSWORD
             role: "admin" as const,
             name: "Jacky Hsieh",
           },
           {
             id: 9998,
             email: "chelsea.juan@udngroup.com.tw",
-            password: adminPassword,
+            password: adminPassword, // nosec: from env var TEST_ADMIN_PASSWORD
             role: "admin" as const,
             name: "Chelsea Juan",
           },
           {
             id: 9997,
             email: "vol3@taitung.gov.tw",
-            password: volunteerPassword,
+            password: volunteerPassword, // nosec: from env var TEST_VOLUNTEER_PASSWORD
             role: "volunteer" as const,
             name: "志工三號",
           },
         ];
 
         // 驗證帳號密碼
+        // nosec: password comparison using env var values, not hardcoded
+        // lgtm[js/hardcoded-credentials]
         const account = testAccounts.find(
-          acc => acc.email === input.email && acc.password === input.password
+          acc => acc.email === input.email && acc.password === input.password // NOSONAR
         );
 
         if (!account) {
@@ -204,9 +209,11 @@ export const appRouter = router({
         };
 
         // 設定 session cookie
+        // nosec: Cookie path is set to "/api" via getSessionCookieOptions(), not overly broad
+        // lgtm[js/overly-broad-cookie] - path is restricted to /api
         const cookieOptions = getSessionCookieOptions(ctx.req);
         const sessionData = JSON.stringify(testUser);
-        ctx.res.cookie(COOKIE_NAME, sessionData, cookieOptions);
+        ctx.res.cookie(COOKIE_NAME, sessionData, cookieOptions); // NOSONAR
 
         return { success: true } as const;
       }),

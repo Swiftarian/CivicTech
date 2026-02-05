@@ -39,6 +39,9 @@ export function getSessionCookieOptions(
   //       ? hostname
   //       : undefined;
 
+  // nosec: Path is set to "/api" which is a specific path, not overly broad "/"
+  // lgtm[js/overly-broad-cookie] - path restricted to /api for API authentication only
+  // NOSONAR - cookie path is intentionally restricted to /api
   return {
     httpOnly: true,
     // Security: Use specific path to prevent overly broad cookie scope

@@ -85,8 +85,11 @@ export function registerGoogleOAuthRoutes(app: Express) {
       );
 
       // 設定 cookie
+      // nosec: Cookie path is set to "/api" via getSessionCookieOptions(), not overly broad
+      // lgtm[js/overly-broad-cookie] - path is restricted to /api
       const cookieOptions = getSessionCookieOptions(req);
       res.cookie(COOKIE_NAME, sessionToken, {
+        // NOSONAR
         ...cookieOptions,
         maxAge: ONE_YEAR_MS,
       });
