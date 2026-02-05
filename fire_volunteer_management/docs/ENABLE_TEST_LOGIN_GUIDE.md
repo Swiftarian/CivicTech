@@ -80,6 +80,7 @@ https://railway.com/project/5160d4af-f567-4c7a-b20e-5655125afcba/service/5ec13ae
 **原因：** `ENABLE_TEST_LOGIN` 環境變數未設為 `true` 或部署未完成
 
 **解決方法：**
+
 1. 確認環境變數已正確設定為 `true`
 2. 確認 Railway 部署已完成（狀態為 "Deployment successful"）
 3. 清除瀏覽器快取後重試
@@ -89,6 +90,7 @@ https://railway.com/project/5160d4af-f567-4c7a-b20e-5655125afcba/service/5ec13ae
 **原因：** 輸入的帳號或密碼不正確
 
 **解決方法：**
+
 1. 仔細檢查 Email 地址是否完全正確
 2. 確認密碼包含正確的大小寫和特殊字元
 3. 使用複製貼上避免輸入錯誤
@@ -98,12 +100,14 @@ https://railway.com/project/5160d4af-f567-4c7a-b20e-5655125afcba/service/5ec13ae
 **原因：** 使用的是志工帳號而非管理員帳號
 
 **解決方法：**
+
 1. 登出當前帳號
 2. 使用管理員帳號重新登入（jacky.hsieh 或 chelsea.juan）
 
 ## 📞 聯絡支援
 
 如果遇到其他問題，請聯絡：
+
 - GitHub Issues: https://github.com/Swiftarian/CivicTech/issues
 - Manus 支援: https://help.manus.im/
 

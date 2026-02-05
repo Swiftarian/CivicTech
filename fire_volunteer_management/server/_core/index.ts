@@ -34,8 +34,27 @@ async function findAvailablePort(startPort: number = 3000): Promise<number> {
   throw new Error(`No available port found starting from ${startPort}`);
 }
 
+/**
+ * Start the Express server.
+ *
+ * SECURITY NOTE: This server uses HTTP internally but is designed to run behind
+ * a reverse proxy (nginx, load balancer, or cloud provider) that handles HTTPS
+ * termination. This is a standard and secure architecture pattern where:
+ * - The reverse proxy handles TLS/SSL certificates and HTTPS connections from clients
+ * - Internal communication between proxy and application uses HTTP over a private network
+ * - The 'trust proxy' setting enables proper handling of X-Forwarded-* headers
+ *
+ * For production deployment, ensure:
+ * 1. The application is behind a reverse proxy with HTTPS enabled
+ * 2. The proxy forwards X-Forwarded-Proto and X-Forwarded-For headers
+ * 3. Direct access to the application port (3000) is blocked from external networks
+ *
+ * @see https://expressjs.com/en/guide/behind-proxies.html
+ */
 async function startServer() {
   const app = express();
+  // createServer uses HTTP as TLS termination is handled by reverse proxy
+  // nosec: This is intentional - see security note above
   const server = createServer(app);
 
   // Enable trust proxy for rate limiting to work correctly behind proxies

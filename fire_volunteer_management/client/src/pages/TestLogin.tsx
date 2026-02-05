@@ -40,10 +40,10 @@ export default function TestLogin() {
 
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
-    console.log("[TestLogin] handleSubmit called", { email, password: "***" });
+    // Security: Only log non-sensitive information
+    console.log("[TestLogin] Login attempt for:", email);
     setError("");
     loginMutation.mutate({ email, password });
-    console.log("[TestLogin] mutation.mutate called");
   };
 
   return (

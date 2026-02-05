@@ -26,7 +26,10 @@ let isConfigured = false;
 function configureCloudinary() {
   if (!isConfigured) {
     const config = getStorageConfig();
-    console.log("[StorageCloudinary] Configuring Cloudinary with cloud_name:", config.cloudName);
+    console.log(
+      "[StorageCloudinary] Configuring Cloudinary with cloud_name:",
+      config.cloudName
+    );
     cloudinary.config({
       cloud_name: config.cloudName,
       api_key: config.apiKey,
@@ -55,22 +58,29 @@ export async function storagePut(
   const publicId = normalizeKey(relKey);
 
   // 轉換為 base64 data URI
-  const buffer = typeof data === "string" ? Buffer.from(data) : Buffer.from(data);
+  const buffer =
+    typeof data === "string" ? Buffer.from(data) : Buffer.from(data);
   const base64 = buffer.toString("base64");
   const dataUri = `data:${contentType};base64,${base64}`;
 
   console.log("[StorageCloudinary] Uploading with publicId:", publicId);
   console.log("[StorageCloudinary] Content type:", contentType);
   console.log("[StorageCloudinary] Data URI length:", dataUri.length);
-  console.log("[StorageCloudinary] Using unsigned upload with preset: taitung_disaster");
+  console.log(
+    "[StorageCloudinary] Using unsigned upload with preset: taitung_disaster"
+  );
 
   try {
     // 使用 unsigned upload
-    const result = await cloudinary.uploader.unsigned_upload(dataUri, "taitung_disaster", {
-      resource_type: "auto",
-      public_id: publicId,  // 可選，如果不指定則使用檔名
-    });
-    
+    const result = await cloudinary.uploader.unsigned_upload(
+      dataUri,
+      "taitung_disaster",
+      {
+        resource_type: "auto",
+        public_id: publicId, // 可選，如果不指定則使用檔名
+      }
+    );
+
     console.log("[StorageCloudinary] Upload successful!");
     console.log("[StorageCloudinary] Result public_id:", result.public_id);
     console.log("[StorageCloudinary] Result URL:", result.secure_url);
@@ -83,10 +93,13 @@ export async function storagePut(
     console.error("[StorageCloudinary] ========== UPLOAD FAILED ==========");
     console.error("[StorageCloudinary] Error object:", error);
     console.error("[StorageCloudinary] Error type:", typeof error);
-    console.error("[StorageCloudinary] Error constructor:", error?.constructor?.name);
-    
+    console.error(
+      "[StorageCloudinary] Error constructor:",
+      error?.constructor?.name
+    );
+
     // 記錄所有錯誤屬性
-    if (error && typeof error === 'object') {
+    if (error && typeof error === "object") {
       const errorObj = error as any;
       console.error("[StorageCloudinary] Error properties:", {
         message: errorObj.message,
@@ -95,11 +108,14 @@ export async function storagePut(
         error: errorObj.error,
         stack: errorObj.stack,
       });
-      
+
       // 記錄所有可枚舉屬性
-      console.error("[StorageCloudinary] All error keys:", Object.keys(errorObj));
+      console.error(
+        "[StorageCloudinary] All error keys:",
+        Object.keys(errorObj)
+      );
     }
-    
+
     console.error("[StorageCloudinary] Upload context:", {
       publicId,
       contentType,
@@ -107,7 +123,7 @@ export async function storagePut(
       dataUriPrefix: dataUri.substring(0, 50) + "...",
     });
     console.error("[StorageCloudinary] =====================================");
-    
+
     throw new Error(
       `Cloudinary upload failed: ${error instanceof Error ? error.message : "Unknown error"}`
     );

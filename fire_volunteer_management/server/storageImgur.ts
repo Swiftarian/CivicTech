@@ -53,9 +53,7 @@ export async function storagePut(
 
     if (!response.ok) {
       const errorText = await response.text();
-      throw new Error(
-        `Imgur upload failed (${response.status}): ${errorText}`
-      );
+      throw new Error(`Imgur upload failed (${response.status}): ${errorText}`);
     }
 
     const result = (await response.json()) as any;

@@ -41,7 +41,9 @@ export function getSessionCookieOptions(
 
   return {
     httpOnly: true,
-    path: "/",
+    // Security: Use specific path to prevent overly broad cookie scope
+    // The session cookie is only needed for API authentication
+    path: "/api",
     sameSite: "lax",
     // In production, always use secure cookies (requires HTTPS)
     // In development, mainly rely on protocol check

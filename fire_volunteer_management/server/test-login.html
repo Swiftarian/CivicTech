@@ -1,290 +1,344 @@
-<!DOCTYPE html>
+<!doctype html>
 <html lang="zh-TW">
-<head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <!-- Security: Enforce HTTPS for all form submissions in production -->
+    <meta
+      http-equiv="Content-Security-Policy"
+      content="default-src 'self'; script-src 'self' 'unsafe-inline'; style-src 'self' 'unsafe-inline'; form-action 'self'; upgrade-insecure-requests;"
+    />
+    <meta name="referrer" content="strict-origin-when-cross-origin" />
     <title>測試專用登入 - 台東防災館綜合管理系統</title>
     <style>
-        * {
-            margin: 0;
-            padding: 0;
-            box-sizing: border-box;
-        }
-        
-        body {
-            font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif;
-            background: linear-gradient(135deg, #fff5f0 0%, #ffe8d6 100%);
-            min-height: 100vh;
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            padding: 20px;
-        }
-        
-        .container {
-            background: white;
-            border-radius: 12px;
-            box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
-            max-width: 450px;
-            width: 100%;
-            padding: 32px;
-        }
-        
-        .header {
-            display: flex;
-            align-items: center;
-            gap: 12px;
-            margin-bottom: 8px;
-        }
-        
-        .icon {
-            width: 32px;
-            height: 32px;
-            color: #ea580c;
-        }
-        
-        h1 {
-            font-size: 24px;
-            color: #1f2937;
-        }
-        
-        .subtitle {
-            color: #6b7280;
-            font-size: 14px;
-            margin-bottom: 24px;
-        }
-        
-        .alert {
-            background: #fff7ed;
-            border: 1px solid #fed7aa;
-            border-radius: 8px;
-            padding: 16px;
-            margin-bottom: 24px;
-            display: flex;
-            gap: 12px;
-        }
-        
-        .alert-icon {
-            color: #ea580c;
-            flex-shrink: 0;
-        }
-        
-        .alert-content {
-            font-size: 14px;
-            color: #9a3412;
-        }
-        
-        .form-group {
-            margin-bottom: 20px;
-        }
-        
-        label {
-            display: block;
-            font-size: 14px;
-            font-weight: 500;
-            color: #374151;
-            margin-bottom: 8px;
-        }
-        
-        input {
-            width: 100%;
-            padding: 10px 12px;
-            border: 1px solid #d1d5db;
-            border-radius: 6px;
-            font-size: 14px;
-            transition: border-color 0.2s;
-        }
-        
-        input:focus {
-            outline: none;
-            border-color: #ea580c;
-            box-shadow: 0 0 0 3px rgba(234, 88, 12, 0.1);
-        }
-        
-        .error {
-            background: #fee2e2;
-            border: 1px solid #fecaca;
-            border-radius: 6px;
-            padding: 12px;
-            margin-bottom: 16px;
-            color: #991b1b;
-            font-size: 14px;
-            display: none;
-        }
-        
-        .error.show {
-            display: block;
-        }
-        
-        button {
-            width: 100%;
-            padding: 12px;
-            background: #16a34a;
-            color: white;
-            border: none;
-            border-radius: 6px;
-            font-size: 16px;
-            font-weight: 500;
-            cursor: pointer;
-            transition: background 0.2s;
-        }
-        
-        button:hover:not(:disabled) {
-            background: #15803d;
-        }
-        
-        button:disabled {
-            background: #9ca3af;
-            cursor: not-allowed;
-        }
-        
-        .test-accounts {
-            margin-top: 24px;
-            padding: 16px;
-            background: #f9fafb;
-            border: 1px solid #e5e7eb;
-            border-radius: 8px;
-        }
-        
-        .test-accounts h3 {
-            font-size: 14px;
-            font-weight: 600;
-            color: #374151;
-            margin-bottom: 12px;
-        }
-        
-        .account-item {
-            font-size: 12px;
-            color: #6b7280;
-            margin-bottom: 8px;
-        }
-        
-        .account-item strong {
-            color: #374151;
-        }
-        
-        .warning {
-            color: #ea580c;
-            font-size: 12px;
+      * {
+        margin: 0;
+        padding: 0;
+        box-sizing: border-box;
+      }
+
+      body {
+        font-family:
+          -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto,
+          "Helvetica Neue", Arial, sans-serif;
+        background: linear-gradient(135deg, #fff5f0 0%, #ffe8d6 100%);
+        min-height: 100vh;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        padding: 20px;
+      }
+
+      .container {
+        background: white;
+        border-radius: 12px;
+        box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+        max-width: 450px;
+        width: 100%;
+        padding: 32px;
+      }
+
+      .header {
+        display: flex;
+        align-items: center;
+        gap: 12px;
+        margin-bottom: 8px;
+      }
+
+      .icon {
+        width: 32px;
+        height: 32px;
+        color: #ea580c;
+      }
+
+      h1 {
+        font-size: 24px;
+        color: #1f2937;
+      }
+
+      .subtitle {
+        color: #6b7280;
+        font-size: 14px;
+        margin-bottom: 24px;
+      }
+
+      .alert {
+        background: #fff7ed;
+        border: 1px solid #fed7aa;
+        border-radius: 8px;
+        padding: 16px;
+        margin-bottom: 24px;
+        display: flex;
+        gap: 12px;
+      }
+
+      .alert-icon {
+        color: #ea580c;
+        flex-shrink: 0;
+      }
+
+      .alert-content {
+        font-size: 14px;
+        color: #9a3412;
+      }
+
+      .form-group {
+        margin-bottom: 20px;
+      }
+
+      label {
+        display: block;
+        font-size: 14px;
+        font-weight: 500;
+        color: #374151;
+        margin-bottom: 8px;
+      }
+
+      input {
+        width: 100%;
+        padding: 10px 12px;
+        border: 1px solid #d1d5db;
+        border-radius: 6px;
+        font-size: 14px;
+        transition: border-color 0.2s;
+      }
+
+      input:focus {
+        outline: none;
+        border-color: #ea580c;
+        box-shadow: 0 0 0 3px rgba(234, 88, 12, 0.1);
+      }
+
+      .error {
+        background: #fee2e2;
+        border: 1px solid #fecaca;
+        border-radius: 6px;
+        padding: 12px;
+        margin-bottom: 16px;
+        color: #991b1b;
+        font-size: 14px;
+        display: none;
+      }
+
+      .error.show {
+        display: block;
+      }
+
+      button {
+        width: 100%;
+        padding: 12px;
+        background: #16a34a;
+        color: white;
+        border: none;
+        border-radius: 6px;
+        font-size: 16px;
+        font-weight: 500;
+        cursor: pointer;
+        transition: background 0.2s;
+      }
+
+      button:hover:not(:disabled) {
+        background: #15803d;
+      }
+
+      button:disabled {
+        background: #9ca3af;
+        cursor: not-allowed;
+      }
+
+      .test-accounts {
+        margin-top: 24px;
+        padding: 16px;
+        background: #f9fafb;
+        border: 1px solid #e5e7eb;
+        border-radius: 8px;
+      }
+
+      .test-accounts h3 {
+        font-size: 14px;
+        font-weight: 600;
+        color: #374151;
+        margin-bottom: 12px;
+      }
+
+      .account-item {
+        font-size: 12px;
+        color: #6b7280;
+        margin-bottom: 8px;
+      }
+
+      .account-item strong {
+        color: #374151;
+      }
+
+      .warning {
+        color: #ea580c;
+        font-size: 12px;
+        margin-top: 12px;
+        padding-top: 12px;
+        border-top: 1px solid #e5e7eb;
+      }
+    </style>
+  </head>
+
+  <body>
+    <div class="container">
+      <div class="header">
+        <svg class="icon" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+          <path
+            stroke-linecap="round"
+            stroke-linejoin="round"
+            stroke-width="2"
+            d="M9 12l2 2 4-4m5.618-4.016A11.955 11.955 0 0112 2.944a11.955 11.955 0 01-8.618 3.04A12.02 12.02 0 003 9c0 5.591 3.824 10.29 9 11.622 5.176-1.332 9-6.03 9-11.622 0-1.042-.133-2.052-.382-3.016z"
+          />
+        </svg>
+        <h1>測試專用登入</h1>
+      </div>
+      <p class="subtitle">此登入頁面僅供資安掃描測試使用</p>
+
+      <div class="alert">
+        <svg
+          class="alert-icon"
+          width="20"
+          height="20"
+          fill="currentColor"
+          viewBox="0 0 20 20"
+        >
+          <path
+            fill-rule="evenodd"
+            d="M18 10a8 8 0 11-16 0 8 8 0 0116 0zm-7-4a1 1 0 11-2 0 1 1 0 012 0zM9 9a1 1 0 000 2v3a1 1 0 001 1h1a1 1 0 100-2v-3a1 1 0 00-1-1H9z"
+            clip-rule="evenodd"
+          />
+        </svg>
+        <div class="alert-content">
+          <strong>注意：</strong>此功能僅在測試環境啟用，測試完成後將被移除
+        </div>
+      </div>
+
+      <form id="loginForm">
+        <div class="form-group">
+          <label for="email">Email</label>
+          <input
+            type="email"
+            id="email"
+            name="email"
+            placeholder="your.email@example.com"
+            required
+            autocomplete="email"
+          />
+        </div>
+
+        <div class="form-group">
+          <label for="password">密碼</label>
+          <input
+            type="password"
+            id="password"
+            name="password"
+            placeholder="輸入密碼"
+            required
+            autocomplete="current-password"
+          />
+        </div>
+
+        <div id="error" class="error"></div>
+
+        <button type="submit" id="submitBtn">登入</button>
+      </form>
+
+      <div class="test-accounts">
+        <h3>測試帳號資訊</h3>
+        <div class="account-item">
+          <strong>管理員1:</strong> jacky.hsieh@insight.ntu.edu.tw
+        </div>
+        <div class="account-item">
+          <strong>管理員2:</strong> chelsea.juan@udngroup.com.tw
+        </div>
+        <div class="account-item">
+          <strong>志工帳號:</strong> vol3@taitung.gov.tw
+        </div>
+        <div
+          class="account-item"
+          style="
             margin-top: 12px;
             padding-top: 12px;
             border-top: 1px solid #e5e7eb;
-        }
-    </style>
-</head>
-<body>
-    <div class="container">
-        <div class="header">
-            <svg class="icon" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12l2 2 4-4m5.618-4.016A11.955 11.955 0 0112 2.944a11.955 11.955 0 01-8.618 3.04A12.02 12.02 0 003 9c0 5.591 3.824 10.29 9 11.622 5.176-1.332 9-6.03 9-11.622 0-1.042-.133-2.052-.382-3.016z" />
-            </svg>
-            <h1>測試專用登入</h1>
+          "
+        >
+          請聯繫管理員獲取測試密碼。
         </div>
-        <p class="subtitle">此登入頁面僅供資安掃描測試使用</p>
-        
-        <div class="alert">
-            <svg class="alert-icon" width="20" height="20" fill="currentColor" viewBox="0 0 20 20">
-                <path fill-rule="evenodd" d="M18 10a8 8 0 11-16 0 8 8 0 0116 0zm-7-4a1 1 0 11-2 0 1 1 0 012 0zM9 9a1 1 0 000 2v3a1 1 0 001 1h1a1 1 0 100-2v-3a1 1 0 00-1-1H9z" clip-rule="evenodd" />
-            </svg>
-            <div class="alert-content">
-                <strong>注意：</strong>此功能僅在測試環境啟用，測試完成後將被移除
-            </div>
-        </div>
-        
-        <form id="loginForm">
-            <div class="form-group">
-                <label for="email">Email</label>
-                <input type="email" id="email" name="email" placeholder="your.email@example.com" required autocomplete="email">
-            </div>
-            
-            <div class="form-group">
-                <label for="password">密碼</label>
-                <input type="password" id="password" name="password" placeholder="輸入密碼" required autocomplete="current-password">
-            </div>
-            
-            <div id="error" class="error"></div>
-            
-            <button type="submit" id="submitBtn">登入</button>
-        </form>
-        
-        <div class="test-accounts">
-            <h3>測試帳號資訊</h3>
-            <div class="account-item">
-                <strong>管理員1:</strong> jacky.hsieh@insight.ntu.edu.tw
-            </div>
-            <div class="account-item">
-                <strong>管理員2:</strong> chelsea.juan@udngroup.com.tw
-            </div>
-            <div class="account-item">
-                <strong>志工帳號:</strong> vol3@taitung.gov.tw
-            </div>
-            <div class="account-item" style="margin-top: 12px; padding-top: 12px; border-top: 1px solid #e5e7eb;">
-                請聯繫管理員獲取測試密碼。
-            </div>
-            <div class="warning">
-                ⚠️ 僅供資安掃描測試使用
-            </div>
-        </div>
+        <div class="warning">⚠️ 僅供資安掃描測試使用</div>
+      </div>
     </div>
-    
+
     <script>
-        const form = document.getElementById('loginForm');
-        const submitBtn = document.getElementById('submitBtn');
-        const errorDiv = document.getElementById('error');
-        
-        form.addEventListener('submit', async (e) => {
-            e.preventDefault();
-            
-            const email = document.getElementById('email').value;
-            const password = document.getElementById('password').value;
-            
-            // 清除錯誤訊息
-            errorDiv.classList.remove('show');
-            errorDiv.textContent = '';
-            
-            // 禁用按鈕
-            submitBtn.disabled = true;
-            submitBtn.textContent = '登入中...';
-            
-            try {
-                const response = await fetch('/api/trpc/auth.testLogin', {
-                    method: 'POST',
-                    headers: {
-                        'Content-Type': 'application/json',
-                    },
-                    credentials: 'include',
-                    body: JSON.stringify({
-                        json: { email, password }
-                    })
-                });
-                
-                const data = await response.json();
-                
-                if (response.ok && data.result?.data?.json?.success) {
-                    // 登入成功，延遲後跳轉
-                    setTimeout(() => {
-                        window.location.href = '/admin';
-                    }, 500);
-                } else {
-                    // 顯示錯誤訊息
-                    const errorMessage = data.error?.json?.message || '登入失敗';
-                    errorDiv.textContent = errorMessage;
-                    errorDiv.classList.add('show');
-                    
-                    // 恢復按鈕
-                    submitBtn.disabled = false;
-                    submitBtn.textContent = '登入';
-                }
-            } catch (error) {
-                console.error('Login error:', error);
-                errorDiv.textContent = '網路錯誤，請稍後再試';
-                errorDiv.classList.add('show');
-                
-                // 恢復按鈕
-                submitBtn.disabled = false;
-                submitBtn.textContent = '登入';
-            }
-        });
+      const form = document.getElementById("loginForm");
+      const submitBtn = document.getElementById("submitBtn");
+      const errorDiv = document.getElementById("error");
+
+      form.addEventListener("submit", async e => {
+        e.preventDefault();
+
+        // Security: Enforce HTTPS in production to prevent insecure password submission
+        const isLocalhost =
+          window.location.hostname === "localhost" ||
+          window.location.hostname === "127.0.0.1";
+        const isSecure = window.location.protocol === "https:";
+        if (!isLocalhost && !isSecure) {
+          errorDiv.textContent = "安全性警告：此頁面必須透過 HTTPS 連線存取";
+          errorDiv.classList.add("show");
+          return;
+        }
+
+        const email = document.getElementById("email").value;
+        const password = document.getElementById("password").value;
+
+        // 清除錯誤訊息
+        errorDiv.classList.remove("show");
+        errorDiv.textContent = "";
+
+        // 禁用按鈕
+        submitBtn.disabled = true;
+        submitBtn.textContent = "登入中...";
+
+        try {
+          const response = await fetch("/api/trpc/auth.testLogin", {
+            method: "POST",
+            headers: {
+              "Content-Type": "application/json",
+            },
+            credentials: "include",
+            body: JSON.stringify({
+              json: { email, password },
+            }),
+          });
+
+          const data = await response.json();
+
+          if (response.ok && data.result?.data?.json?.success) {
+            // 登入成功，延遲後跳轉
+            setTimeout(() => {
+              window.location.href = "/admin";
+            }, 500);
+          } else {
+            // 顯示錯誤訊息
+            const errorMessage = data.error?.json?.message || "登入失敗";
+            errorDiv.textContent = errorMessage;
+            errorDiv.classList.add("show");
+
+            // 恢復按鈕
+            submitBtn.disabled = false;
+            submitBtn.textContent = "登入";
+          }
+        } catch (error) {
+          console.error("Login error:", error);
+          errorDiv.textContent = "網路錯誤，請稍後再試";
+          errorDiv.classList.add("show");
+
+          // 恢復按鈕
+          submitBtn.disabled = false;
+          submitBtn.textContent = "登入";
+        }
+      });
     </script>
-</body>
+  </body>
 </html>

@@ -54,7 +54,7 @@ export const appRouter = router({
   system: systemRouter,
 
   auth: router({
-    me: publicProcedure.query((opts) => {
+    me: publicProcedure.query(opts => {
       // 優先使用 OAuth session 的使用者
       if (opts.ctx.user) {
         return opts.ctx.user;
@@ -70,7 +70,7 @@ export const appRouter = router({
             return testUser;
           }
         } catch (error) {
-          console.error('[auth.me] Failed to parse session cookie:', error);
+          console.error("[auth.me] Failed to parse session cookie:", error);
         }
       }
 
@@ -82,7 +82,7 @@ export const appRouter = router({
       ctx.res.clearCookie(COOKIE_NAME, { ...cookieOptions, maxAge: -1 });
       return { success: true } as const;
     }),
-    
+
     // 環境變數檢查 API（僅供調試使用）
     checkEnv: publicProcedure.query(() => {
       return {
@@ -90,7 +90,7 @@ export const appRouter = router({
         NODE_ENV: process.env.NODE_ENV || "undefined",
       };
     }),
-    
+
     // 測試登入 API（僅供資安掃描使用）
     testLogin: publicProcedure
       .input(
@@ -102,13 +102,16 @@ export const appRouter = router({
       .mutation(async ({ input, ctx }) => {
         // 檢查是否啟用測試登入
         const envValue = process.env.ENABLE_TEST_LOGIN;
-        console.log("[testLogin] ENABLE_TEST_LOGIN raw value:", JSON.stringify(envValue));
+        console.log(
+          "[testLogin] ENABLE_TEST_LOGIN raw value:",
+          JSON.stringify(envValue)
+        );
         console.log("[testLogin] Type:", typeof envValue);
         console.log("[testLogin] Trimmed value:", envValue?.trim());
-        
+
         const enableTestLogin = envValue?.trim().toLowerCase() === "true";
         console.log("[testLogin] enableTestLogin result:", enableTestLogin);
-        
+
         if (!enableTestLogin) {
           throw new TRPCError({
             code: "FORBIDDEN",
@@ -116,26 +119,39 @@ export const appRouter = router({
           });
         }
 
-        // 測試帳號列表
+        // Test accounts configuration
+        // Security: Passwords are stored in environment variables, not in code
+        // The TEST_ADMIN_PASSWORD and TEST_VOLUNTEER_PASSWORD must be set in .env
+        const adminPassword = process.env.TEST_ADMIN_PASSWORD;
+        const volunteerPassword = process.env.TEST_VOLUNTEER_PASSWORD;
+
+        if (!adminPassword || !volunteerPassword) {
+          throw new TRPCError({
+            code: "INTERNAL_SERVER_ERROR",
+            message:
+              "測試帳號密碼未設定 (環境變數 TEST_ADMIN_PASSWORD 和 TEST_VOLUNTEER_PASSWORD)",
+          });
+        }
+
         const testAccounts = [
           {
-            id: 9999,  // 測試帳號使用高數字 ID 以避免與真實使用者衝突
+            id: 9999, // 測試帳號使用高數字 ID 以避免與真實使用者衝突
             email: "jacky.hsieh@insight.ntu.edu.tw",
-            password: "SecurityTest2024!",
+            password: adminPassword,
             role: "admin" as const,
             name: "Jacky Hsieh",
           },
           {
             id: 9998,
             email: "chelsea.juan@udngroup.com.tw",
-            password: "SecurityTest2024!",
+            password: adminPassword,
             role: "admin" as const,
             name: "Chelsea Juan",
           },
           {
             id: 9997,
             email: "vol3@taitung.gov.tw",
-            password: "Volunteer2024!",
+            password: volunteerPassword,
             role: "volunteer" as const,
             name: "志工三號",
           },
@@ -167,7 +183,9 @@ export const appRouter = router({
                 name: account.name,
                 role: account.role as "admin" | "volunteer",
               });
-              console.log(`[testLogin] Created test user with ID ${account.id}`);
+              console.log(
+                `[testLogin] Created test user with ID ${account.id}`
+              );
             }
           } else {
             console.log(`[testLogin] Test user ${account.id} already exists`);

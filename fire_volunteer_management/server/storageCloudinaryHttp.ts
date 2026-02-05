@@ -96,10 +96,7 @@ export async function storagePutHttp(
       .join("&");
 
     console.log("[StorageCloudinaryHttp] Signature string:", signatureString);
-    console.log(
-      "[StorageCloudinaryHttp] API Secret (first 5 chars):",
-      config.apiSecret.substring(0, 5)
-    );
+    // Note: API secret is intentionally not logged for security reasons
 
     const signature = generateSignature(params, config.apiSecret);
     console.log("[StorageCloudinaryHttp] Generated signature:", signature);
