@@ -56,7 +56,8 @@ async function startServer() {
   app.use("/api", apiLimiter);
 
   // 測試登入頁面（獨立 HTML，不經過前端框架）
-  app.get("/test-login", (req, res) => {
+  // Apply rate limiting to prevent DoS attacks on file system access
+  app.get("/test-login", apiLimiter, (req, res) => {
     res.sendFile(path.resolve(import.meta.dirname, "test-login.html"));
   });
 
