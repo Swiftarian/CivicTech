@@ -292,16 +292,16 @@ export const mealDeliveries = mysqlTable("mealDeliveries", {
     "assigned",
     "in_transit",
     "delivered",
+    "undeliverable",
     "cancelled",
   ])
     .default("pending")
     .notNull(),
-  qrCode: varchar("qrCode", { length: 200 }), // QR Code 資料
-  verificationCode: varchar("verificationCode", { length: 20 }), // 驗證碼
   startTime: timestamp("startTime"), // 開始送餐時間
-  deliveredTime: timestamp("deliveredTime"), // 送達時間
-  recipientSignature: text("recipientSignature"), // 收餐人簽名（Base64）
-  photo: varchar("photo", { length: 500 }), // 送達照片URL
+  deliveredAt: timestamp("deliveredAt"), // 送達時間
+  deliveredLatitude: varchar("deliveredLatitude", { length: 50 }), // 送達時的緯度
+  deliveredLongitude: varchar("deliveredLongitude", { length: 50 }), // 送達時的經度
+  deliveryPhotoUrl: varchar("deliveryPhotoUrl", { length: 500 }), // 送達照片URL
   notes: text("notes"), // 備註
   createdAt: timestamp("createdAt").defaultNow().notNull(),
   updatedAt: timestamp("updatedAt").defaultNow().onUpdateNow().notNull(),
@@ -328,6 +328,40 @@ export const deliveryTracking = mysqlTable("deliveryTracking", {
 
 export type DeliveryTracking = typeof deliveryTracking.$inferSelect;
 export type InsertDeliveryTracking = typeof deliveryTracking.$inferInsert;
+
+/**
+ * 送餐服務回報表
+ * 記錄志工在每次送餐後填寫的服務狀況，用於衛福部查核。
+ */
+export const deliveryServiceLogs = mysqlTable("deliveryServiceLogs", {
+  id: int("id").autoincrement().primaryKey(),
+  deliveryId: int("deliveryId")
+    .notNull()
+    .references(() => mealDeliveries.id), // 關聯的送餐任務
+  volunteerId: int("volunteerId")
+    .notNull()
+    .references(() => volunteers.id), // 填寫的志工
+
+  // 服務回報內容
+  recipientStatus: mysqlEnum("recipientStatus", [
+    "normal", // 狀況正常
+    "needs_follow_up", // 需後續關懷
+    "emergency", // 緊急狀況
+  ]).notNull(),
+
+  mealStatus: mysqlEnum("mealStatus", [
+    "delivered", // 親手交遞
+    "left_at_door", // 置於門口
+    "not_home", // 無人在家
+    "refused", // 拒收
+  ]).notNull(),
+
+  notes: text("notes"), // 志工備註
+  createdAt: timestamp("createdAt").defaultNow().notNull(),
+});
+
+export type DeliveryServiceLog = typeof deliveryServiceLogs.$inferSelect;
+export type InsertDeliveryServiceLog = typeof deliveryServiceLogs.$inferInsert;
 
 /**
  * 系統通知表

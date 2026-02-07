@@ -1,18 +1,19 @@
-import { useState, useRef, useEffect } from "react";
+import { useState, useEffect, useRef } from "react";
 import { useRoute } from "wouter";
 import { trpc } from "@/lib/trpc";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
-import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
+import { Textarea } from "@/components/ui/textarea";
+import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group";
 import { toast } from "sonner";
 import {
   Camera,
-  QrCode,
   MapPin,
   CheckCircle,
   AlertCircle,
   Loader2,
+  Navigation,
 } from "lucide-react";
 import { useLocation } from "wouter";
 
@@ -21,14 +22,23 @@ export default function DeliveryVerification() {
   const deliveryId = params?.deliveryId ? parseInt(params.deliveryId) : null;
   const [, setLocation] = useLocation();
 
-  const [verificationCode, setVerificationCode] = useState("");
+  const [step, setStep] = useState<"confirm" | "report">("confirm");
   const [photo, setPhoto] = useState<string | null>(null);
   const [currentPosition, setCurrentPosition] = useState<{
     lat: number;
     lng: number;
   } | null>(null);
   const [isCapturing, setIsCapturing] = useState(false);
-  const [isVerifying, setIsVerifying] = useState(false);
+  const [isSubmitting, setIsSubmitting] = useState(false);
+
+  // 服務回報表單狀態
+  const [recipientStatus, setRecipientStatus] = useState<
+    "normal" | "needs_follow_up" | "emergency"
+  >("normal");
+  const [mealStatus, setMealStatus] = useState<
+    "delivered" | "left_at_door" | "not_home" | "refused"
+  >("delivered");
+  const [notes, setNotes] = useState("");
 
   const videoRef = useRef<HTMLVideoElement>(null);
   const canvasRef = useRef<HTMLCanvasElement>(null);
@@ -39,11 +49,6 @@ export default function DeliveryVerification() {
     { enabled: !!deliveryId }
   );
 
-  const verifyMutation = trpc.mealDeliveries.verify.useQuery(
-    { deliveryId: deliveryId!, verificationCode },
-    { enabled: false }
-  );
-
   const completeMutation = trpc.mealDeliveries.complete.useMutation({
     onSuccess: () => {
       toast.success("送餐任務已完成！");
@@ -51,6 +56,7 @@ export default function DeliveryVerification() {
     },
     onError: (error: any) => {
       toast.error(`完成失敗：${error.message}`);
+      setIsSubmitting(false);
     },
   });
 
@@ -98,121 +104,74 @@ export default function DeliveryVerification() {
   // 拍照
   const capturePhoto = () => {
     if (videoRef.current && canvasRef.current) {
-      const canvas = canvasRef.current;
-      const video = videoRef.current;
-
-      canvas.width = video.videoWidth;
-      canvas.height = video.videoHeight;
-
-      const ctx = canvas.getContext("2d");
-      if (ctx) {
-        ctx.drawImage(video, 0, 0);
-        const photoData = canvas.toDataURL("image/jpeg", 0.8);
-        setPhoto(photoData);
+      const context = canvasRef.current.getContext("2d");
+      if (context) {
+        canvasRef.current.width = videoRef.current.videoWidth;
+        canvasRef.current.height = videoRef.current.videoHeight;
+        context.drawImage(
+          videoRef.current,
+          0,
+          0,
+          canvasRef.current.width,
+          canvasRef.current.height
+        );
+        const imageData = canvasRef.current.toDataURL("image/jpeg");
+        setPhoto(imageData);
 
         // 停止相機
-        const stream = video.srcObject as MediaStream;
+        const stream = videoRef.current.srcObject as MediaStream;
         stream?.getTracks().forEach(track => track.stop());
         setIsCapturing(false);
-
-        toast.success("照片已拍攝");
       }
     }
   };
 
-  // 從檔案上傳照片
-  const handleFileUpload = (e: React.ChangeEvent<HTMLInputElement>) => {
+  // 從檔案選擇照片
+  const handleFileSelect = (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
     if (file) {
       const reader = new FileReader();
-      reader.onload = event => {
-        setPhoto(event.target?.result as string);
-        toast.success("照片已上傳");
+      reader.onload = () => {
+        setPhoto(reader.result as string);
       };
       reader.readAsDataURL(file);
     }
   };
 
-  // 驗證並完成送餐
-  const handleComplete = async () => {
-    if (!deliveryId) {
-      toast.error("送餐任務ID無效");
+  // 確認送達
+  const handleConfirmDelivery = () => {
+    if (!currentPosition) {
+      toast.error("無法獲取GPS位置，請稍後再試");
       return;
     }
-
-    // 驗證碼檢查
-    if (!verificationCode) {
-      toast.error("請輸入驗證碼");
-      return;
-    }
-
-    setIsVerifying(true);
-
-    try {
-      // 1. 驗證驗證碼
-      const verifyResult = await verifyMutation.refetch();
-      if (!verifyResult.data?.valid) {
-        toast.error("驗證碼錯誤");
-        setIsVerifying(false);
-        return;
-      }
-
-      // 2. GPS位置驗證（20公尺誤差範圍）
-      if (!currentPosition) {
-        toast.error("無法獲取GPS位置");
-        setIsVerifying(false);
-        return;
-      }
-
-      // 這裡應該與目的地地址進行距離計算
-      // 簡化版：假設已經在範圍內
-      const isWithinRange = true; // TODO: 實作GPS距離計算
-
-      if (!isWithinRange) {
-        toast.error("您不在送達地點20公尺範圍內");
-        setIsVerifying(false);
-        return;
-      }
-
-      // 3. 照片檢查
-      if (!photo) {
-        toast.error("請拍攝送達照片");
-        setIsVerifying(false);
-        return;
-      }
-
-      // 4. 完成送餐
-      completeMutation.mutate({
-        deliveryId,
-        photo,
-      });
-    } catch (error) {
-      console.error("驗證失敗", error);
-      toast.error("驗證過程發生錯誤");
-    } finally {
-      setIsVerifying(false);
-    }
+    setStep("report");
   };
 
-  if (!deliveryId) {
-    return (
-      <div className="container mx-auto py-8">
-        <Card>
-          <CardContent className="pt-6 text-center">
-            <AlertCircle className="h-12 w-12 mx-auto mb-4 text-destructive" />
-            <p>送餐任務ID無效</p>
-          </CardContent>
-        </Card>
-      </div>
-    );
-  }
+  // 提交服務回報
+  const handleSubmitReport = () => {
+    if (!currentPosition) {
+      toast.error("無法獲取GPS位置");
+      return;
+    }
+
+    setIsSubmitting(true);
+    completeMutation.mutate({
+      deliveryId: deliveryId!,
+      latitude: currentPosition.lat.toString(),
+      longitude: currentPosition.lng.toString(),
+      photo: photo || undefined,
+      recipientStatus,
+      mealStatus,
+      notes: notes || undefined,
+    });
+  };
 
   if (!delivery) {
     return (
       <div className="container mx-auto py-8">
         <Card>
-          <CardContent className="pt-6 text-center">
-            <Loader2 className="h-12 w-12 mx-auto mb-4 animate-spin" />
+          <CardContent className="py-8 text-center">
+            <Loader2 className="h-8 w-8 animate-spin mx-auto mb-4" />
             <p>載入中...</p>
           </CardContent>
         </Card>
@@ -221,171 +180,272 @@ export default function DeliveryVerification() {
   }
 
   return (
-    <div className="container mx-auto py-8 max-w-2xl">
+    <div className="container mx-auto py-8">
       <div className="mb-6">
-        <h1 className="text-3xl font-bold mb-2">送達驗證</h1>
-        <p className="text-muted-foreground">請完成以下驗證步驟以確認送達</p>
+        <h1 className="text-3xl font-bold mb-2">送餐服務確認</h1>
+        <p className="text-muted-foreground">
+          {step === "confirm" ? "確認送達並記錄位置" : "填寫服務回報"}
+        </p>
       </div>
 
-      <div className="space-y-4">
+      <div className="max-w-2xl mx-auto space-y-6">
         {/* 送餐資訊 */}
         <Card>
           <CardHeader>
-            <CardTitle className="text-lg">送餐資訊</CardTitle>
+            <CardTitle>送餐資訊</CardTitle>
           </CardHeader>
           <CardContent className="space-y-2">
-            <div>
-              <span className="font-semibold">收餐人：</span>
-              {delivery.recipientName}
+            <div className="flex justify-between">
+              <span className="text-muted-foreground">收餐人：</span>
+              <span className="font-semibold">{delivery.recipientName}</span>
             </div>
-            <div>
-              <span className="font-semibold">地址：</span>
-              {delivery.deliveryAddress}
+            <div className="flex justify-between">
+              <span className="text-muted-foreground">電話：</span>
+              <span>{delivery.recipientPhone}</span>
             </div>
-            <div>
-              <span className="font-semibold">電話：</span>
-              {delivery.recipientPhone}
-            </div>
-            <div>
-              <span className="font-semibold">送餐編號：</span>
-              {delivery.deliveryNumber}
+            <div className="flex justify-between">
+              <span className="text-muted-foreground">地址：</span>
+              <span className="text-right">{delivery.deliveryAddress}</span>
             </div>
           </CardContent>
         </Card>
 
-        {/* 步驟1：拍照 */}
-        <Card>
-          <CardHeader>
-            <CardTitle className="flex items-center gap-2">
-              <Camera className="h-5 w-5" />
-              步驟1：拍攝送達照片
-            </CardTitle>
-          </CardHeader>
-          <CardContent className="space-y-4">
-            {!photo && !isCapturing && (
-              <div className="space-y-2">
-                <Button onClick={startCamera} className="w-full">
-                  <Camera className="mr-2 h-4 w-4" />
-                  開啟相機拍照
-                </Button>
-                <Button
-                  variant="outline"
-                  onClick={() => fileInputRef.current?.click()}
-                  className="w-full"
-                >
-                  或從相簿選擇
-                </Button>
-                <input
-                  ref={fileInputRef}
-                  type="file"
-                  accept="image/*"
-                  onChange={handleFileUpload}
-                  className="hidden"
-                />
-              </div>
-            )}
+        {step === "confirm" && (
+          <>
+            {/* GPS 位置 */}
+            <Card>
+              <CardHeader>
+                <CardTitle className="flex items-center gap-2">
+                  <MapPin className="h-5 w-5" />
+                  GPS 位置
+                </CardTitle>
+              </CardHeader>
+              <CardContent>
+                {currentPosition ? (
+                  <div className="space-y-2">
+                    <div className="flex items-center gap-2 text-green-600">
+                      <CheckCircle className="h-5 w-5" />
+                      <span>已獲取GPS位置</span>
+                    </div>
+                    <div className="text-sm text-muted-foreground">
+                      緯度：{currentPosition.lat.toFixed(6)}
+                      <br />
+                      經度：{currentPosition.lng.toFixed(6)}
+                    </div>
+                  </div>
+                ) : (
+                  <div className="flex items-center gap-2 text-amber-600">
+                    <AlertCircle className="h-5 w-5" />
+                    <span>正在獲取GPS位置...</span>
+                  </div>
+                )}
+              </CardContent>
+            </Card>
 
-            {isCapturing && (
-              <div className="space-y-2">
-                <video
-                  ref={videoRef}
-                  className="w-full rounded-lg"
-                  autoPlay
-                  playsInline
-                />
-                <Button onClick={capturePhoto} className="w-full">
-                  拍攝
-                </Button>
-              </div>
-            )}
+            {/* 拍照（可選） */}
+            <Card>
+              <CardHeader>
+                <CardTitle className="flex items-center gap-2">
+                  <Camera className="h-5 w-5" />
+                  送達照片（選填）
+                </CardTitle>
+              </CardHeader>
+              <CardContent className="space-y-4">
+                {!photo && !isCapturing && (
+                  <div className="space-y-2">
+                    <Button onClick={startCamera} className="w-full">
+                      <Camera className="h-4 w-4 mr-2" />
+                      開啟相機拍照
+                    </Button>
+                    <Button
+                      variant="outline"
+                      className="w-full"
+                      onClick={() => fileInputRef.current?.click()}
+                    >
+                      選擇檔案
+                    </Button>
+                    <input
+                      ref={fileInputRef}
+                      type="file"
+                      accept="image/*"
+                      className="hidden"
+                      onChange={handleFileSelect}
+                    />
+                  </div>
+                )}
 
-            {photo && (
-              <div className="space-y-2">
-                <img src={photo} alt="送達照片" className="w-full rounded-lg" />
-                <Button
-                  variant="outline"
-                  onClick={() => setPhoto(null)}
-                  className="w-full"
-                >
-                  重新拍攝
-                </Button>
-              </div>
-            )}
-          </CardContent>
-        </Card>
+                {isCapturing && (
+                  <div className="space-y-2">
+                    <video
+                      ref={videoRef}
+                      className="w-full rounded-lg"
+                      autoPlay
+                      playsInline
+                    />
+                    <Button onClick={capturePhoto} className="w-full">
+                      拍攝
+                    </Button>
+                  </div>
+                )}
 
-        {/* 步驟2：驗證碼 */}
-        <Card>
-          <CardHeader>
-            <CardTitle className="flex items-center gap-2">
-              <QrCode className="h-5 w-5" />
-              步驟2：輸入驗證碼
-            </CardTitle>
-          </CardHeader>
-          <CardContent className="space-y-4">
-            <div>
-              <Label>請向收餐人索取6位數驗證碼</Label>
-              <Input
-                type="text"
-                maxLength={6}
-                value={verificationCode}
-                onChange={e =>
-                  setVerificationCode(e.target.value.replace(/\D/g, ""))
-                }
-                placeholder="輸入6位數驗證碼"
-                className="text-2xl text-center tracking-widest"
-              />
-            </div>
-          </CardContent>
-        </Card>
+                {photo && (
+                  <div className="space-y-2">
+                    <img
+                      src={photo}
+                      alt="送達照片"
+                      className="w-full rounded-lg"
+                    />
+                    <Button
+                      variant="outline"
+                      onClick={() => setPhoto(null)}
+                      className="w-full"
+                    >
+                      重新拍攝
+                    </Button>
+                  </div>
+                )}
 
-        {/* 步驟3：GPS定位 */}
-        <Card>
-          <CardHeader>
-            <CardTitle className="flex items-center gap-2">
-              <MapPin className="h-5 w-5" />
-              步驟3：GPS定位驗證
-            </CardTitle>
-          </CardHeader>
-          <CardContent>
-            {currentPosition ? (
-              <div className="flex items-center gap-2 text-green-600">
-                <CheckCircle className="h-5 w-5" />
-                <span>GPS定位成功（誤差20公尺內）</span>
-              </div>
-            ) : (
-              <div className="flex items-center gap-2 text-muted-foreground">
-                <Loader2 className="h-5 w-5 animate-spin" />
-                <span>正在獲取GPS位置...</span>
-              </div>
-            )}
-          </CardContent>
-        </Card>
+                <canvas ref={canvasRef} className="hidden" />
+              </CardContent>
+            </Card>
 
-        {/* 完成按鈕 */}
-        <Button
-          onClick={handleComplete}
-          size="lg"
-          className="w-full"
-          disabled={
-            !photo || !verificationCode || !currentPosition || isVerifying
-          }
-        >
-          {isVerifying ? (
-            <>
-              <Loader2 className="mr-2 h-5 w-5 animate-spin" />
-              驗證中...
-            </>
-          ) : (
-            <>
-              <CheckCircle className="mr-2 h-5 w-5" />
+            {/* 確認送達按鈕 */}
+            <Button
+              onClick={handleConfirmDelivery}
+              disabled={!currentPosition}
+              className="w-full"
+              size="lg"
+            >
+              <Navigation className="h-5 w-5 mr-2" />
               確認送達
-            </>
-          )}
-        </Button>
-      </div>
+            </Button>
+          </>
+        )}
 
-      <canvas ref={canvasRef} className="hidden" />
+        {step === "report" && (
+          <>
+            {/* 服務回報表單 */}
+            <Card>
+              <CardHeader>
+                <CardTitle>服務回報</CardTitle>
+              </CardHeader>
+              <CardContent className="space-y-6">
+                {/* 收餐者狀況 */}
+                <div className="space-y-3">
+                  <Label>收餐者狀況</Label>
+                  <RadioGroup
+                    value={recipientStatus}
+                    onValueChange={(value: any) => setRecipientStatus(value)}
+                  >
+                    <div className="flex items-center space-x-2">
+                      <RadioGroupItem value="normal" id="normal" />
+                      <Label htmlFor="normal" className="cursor-pointer">
+                        狀況正常
+                      </Label>
+                    </div>
+                    <div className="flex items-center space-x-2">
+                      <RadioGroupItem
+                        value="needs_follow_up"
+                        id="needs_follow_up"
+                      />
+                      <Label
+                        htmlFor="needs_follow_up"
+                        className="cursor-pointer"
+                      >
+                        需後續關懷
+                      </Label>
+                    </div>
+                    <div className="flex items-center space-x-2">
+                      <RadioGroupItem value="emergency" id="emergency" />
+                      <Label htmlFor="emergency" className="cursor-pointer">
+                        緊急狀況
+                      </Label>
+                    </div>
+                  </RadioGroup>
+                </div>
+
+                {/* 餐點狀態 */}
+                <div className="space-y-3">
+                  <Label>餐點狀態</Label>
+                  <RadioGroup
+                    value={mealStatus}
+                    onValueChange={(value: any) => setMealStatus(value)}
+                  >
+                    <div className="flex items-center space-x-2">
+                      <RadioGroupItem value="delivered" id="delivered" />
+                      <Label htmlFor="delivered" className="cursor-pointer">
+                        親手交遞
+                      </Label>
+                    </div>
+                    <div className="flex items-center space-x-2">
+                      <RadioGroupItem
+                        value="left_at_door"
+                        id="left_at_door"
+                      />
+                      <Label htmlFor="left_at_door" className="cursor-pointer">
+                        置於門口
+                      </Label>
+                    </div>
+                    <div className="flex items-center space-x-2">
+                      <RadioGroupItem value="not_home" id="not_home" />
+                      <Label htmlFor="not_home" className="cursor-pointer">
+                        無人在家
+                      </Label>
+                    </div>
+                    <div className="flex items-center space-x-2">
+                      <RadioGroupItem value="refused" id="refused" />
+                      <Label htmlFor="refused" className="cursor-pointer">
+                        拒收
+                      </Label>
+                    </div>
+                  </RadioGroup>
+                </div>
+
+                {/* 備註 */}
+                <div className="space-y-2">
+                  <Label htmlFor="notes">備註（選填）</Label>
+                  <Textarea
+                    id="notes"
+                    placeholder="請填寫其他需要記錄的資訊..."
+                    value={notes}
+                    onChange={e => setNotes(e.target.value)}
+                    rows={4}
+                  />
+                </div>
+              </CardContent>
+            </Card>
+
+            {/* 提交按鈕 */}
+            <div className="flex gap-4">
+              <Button
+                variant="outline"
+                onClick={() => setStep("confirm")}
+                className="flex-1"
+                disabled={isSubmitting}
+              >
+                返回
+              </Button>
+              <Button
+                onClick={handleSubmitReport}
+                disabled={isSubmitting}
+                className="flex-1"
+              >
+                {isSubmitting ? (
+                  <>
+                    <Loader2 className="h-4 w-4 mr-2 animate-spin" />
+                    提交中...
+                  </>
+                ) : (
+                  <>
+                    <CheckCircle className="h-4 w-4 mr-2" />
+                    完成送餐
+                  </>
+                )}
+              </Button>
+            </div>
+          </>
+        )}
+      </div>
     </div>
   );
 }

@@ -36,6 +36,8 @@ import {
   InsertMealDelivery,
   deliveryTracking,
   InsertDeliveryTracking,
+  deliveryServiceLogs,
+  InsertDeliveryServiceLog,
   deliveryTasks,
   InsertDeliveryTask,
   deliveryPoints,
@@ -1127,6 +1129,27 @@ export async function completeDelivery(
     .where(eq(mealDeliveries.id, deliveryId));
 }
 
+// 新的 GPS 送達完成功能
+export async function completeDeliveryWithGPS(
+  deliveryId: number,
+  latitude: string,
+  longitude: string,
+  photo?: string
+) {
+  const db = await getDb();
+  if (!db) return;
+  await db
+    .update(mealDeliveries)
+    .set({
+      status: "delivered",
+      deliveredAt: new Date(),
+      deliveredLatitude: latitude,
+      deliveredLongitude: longitude,
+      deliveryPhotoUrl: photo,
+    })
+    .where(eq(mealDeliveries.id, deliveryId));
+}
+
 // ============ 路徑追蹤相關 ============
 
 export async function createDeliveryTracking(data: InsertDeliveryTracking) {
@@ -1144,6 +1167,26 @@ export async function getDeliveryTrackingByDeliveryId(deliveryId: number) {
     .from(deliveryTracking)
     .where(eq(deliveryTracking.deliveryId, deliveryId))
     .orderBy(deliveryTracking.timestamp);
+}
+
+// ============ 服務回報相關 ============
+
+export async function createDeliveryServiceLog(data: InsertDeliveryServiceLog) {
+  const db = await getDb();
+  if (!db) return null;
+  const result = await db.insert(deliveryServiceLogs).values(data);
+  return result;
+}
+
+export async function getDeliveryServiceLogByDeliveryId(deliveryId: number) {
+  const db = await getDb();
+  if (!db) return null;
+  const result = await db
+    .select()
+    .from(deliveryServiceLogs)
+    .where(eq(deliveryServiceLogs.deliveryId, deliveryId))
+    .limit(1);
+  return result[0] || null;
 }
 
 // ============ 通知相關 ============

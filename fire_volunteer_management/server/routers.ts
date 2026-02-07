@@ -1569,16 +1569,41 @@ export const appRouter = router({
       .input(
         z.object({
           deliveryId: z.number(),
+          latitude: z.string(),
+          longitude: z.string(),
           photo: z.string().optional(),
-          signature: z.string().optional(),
+          recipientStatus: z.enum(["normal", "needs_follow_up", "emergency"]),
+          mealStatus: z.enum(["delivered", "left_at_door", "not_home", "refused"]),
+          notes: z.string().optional(),
         })
       )
-      .mutation(async ({ input }) => {
-        await db.completeDelivery(
+      .mutation(async ({ input, ctx }) => {
+        // 更新送餐任務狀態和 GPS 資訊
+        await db.completeDeliveryWithGPS(
           input.deliveryId,
-          input.photo,
-          input.signature
+          input.latitude,
+          input.longitude,
+          input.photo
         );
+
+        // 取得志工 ID
+        const volunteers = await db.getVolunteersByUserId(ctx.user.id);
+        if (!volunteers || volunteers.length === 0) {
+          throw new TRPCError({
+            code: "NOT_FOUND",
+            message: "找不到志工資料",
+          });
+        }
+
+        // 建立服務回報記錄
+        await db.createDeliveryServiceLog({
+          deliveryId: input.deliveryId,
+          volunteerId: volunteers[0].id,
+          recipientStatus: input.recipientStatus,
+          mealStatus: input.mealStatus,
+          notes: input.notes,
+        });
+
         return { success: true };
       }),
 
@@ -1857,6 +1882,89 @@ export const appRouter = router({
       .mutation(async ({ input }) => {
         await db.batchDeleteMealDeliveries(input.ids);
         return { success: true, count: input.ids.length };
+      }),
+
+    // 匯出衛福部查核報表（僅管理員可用）
+    exportReport: adminProcedure
+      .input(
+        z.object({
+          startDate: z.date(),
+          endDate: z.date(),
+        })
+      )
+      .query(async ({ input }) => {
+        const database = await db.getDb();
+        if (!database)
+          throw new TRPCError({
+            code: "INTERNAL_SERVER_ERROR",
+            message: "Database not available",
+          });
+
+        const { mealDeliveries, deliveryServiceLogs, volunteers, users } =
+          await import("../drizzle/schema");
+        const { eq, and, gte, lte } = await import("drizzle-orm");
+
+        // 查詢指定時間範圍內的送餐記錄
+        const deliveries = await database
+          .select({
+            delivery: mealDeliveries,
+            serviceLog: deliveryServiceLogs,
+            volunteer: volunteers,
+            user: users,
+          })
+          .from(mealDeliveries)
+          .leftJoin(
+            deliveryServiceLogs,
+            eq(mealDeliveries.id, deliveryServiceLogs.deliveryId)
+          )
+          .leftJoin(volunteers, eq(mealDeliveries.volunteerId, volunteers.id))
+          .leftJoin(users, eq(volunteers.userId, users.id))
+          .where(
+            and(
+              gte(mealDeliveries.deliveryDate, input.startDate),
+              lte(mealDeliveries.deliveryDate, input.endDate),
+              eq(mealDeliveries.status, "delivered")
+            )
+          )
+          .orderBy(mealDeliveries.deliveryDate);
+
+        // 格式化為 CSV 格式的資料
+        const reportData = deliveries.map(item => ({
+          送餐編號: item.delivery.deliveryNumber,
+          送餐日期: item.delivery.deliveryDate.toLocaleDateString("zh-TW"),
+          送餐時段: item.delivery.deliveryTime,
+          收餐人姓名: item.delivery.recipientName,
+          收餐人電話: item.delivery.recipientPhone,
+          送餐地址: item.delivery.deliveryAddress,
+          志工姓名: item.user?.name || "未指派",
+          送達時間: item.delivery.deliveredAt
+            ? item.delivery.deliveredAt.toLocaleString("zh-TW")
+            : "",
+          GPS緯度: item.delivery.deliveredLatitude || "",
+          GPS經度: item.delivery.deliveredLongitude || "",
+          收餐者狀況: item.serviceLog?.recipientStatus
+            ? {
+                normal: "狀況正常",
+                needs_follow_up: "需後續關懷",
+                emergency: "緊急狀況",
+              }[item.serviceLog.recipientStatus]
+            : "",
+          餐點狀態: item.serviceLog?.mealStatus
+            ? {
+                delivered: "親手交遞",
+                left_at_door: "置於門口",
+                not_home: "無人在家",
+                refused: "拒收",
+              }[item.serviceLog.mealStatus]
+            : "",
+          備註: item.serviceLog?.notes || "",
+        }));
+
+        return {
+          success: true,
+          data: reportData,
+          count: reportData.length,
+        };
       }),
   }),
 
