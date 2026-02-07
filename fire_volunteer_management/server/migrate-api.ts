@@ -5,7 +5,8 @@
  */
 
 import type { Express } from 'express';
-import mysql from 'mysql2/promise';
+import { getDb } from './db';
+import { sql } from 'drizzle-orm';
 
 export function setupMigrationAPI(app: Express) {
   // 臨時遷移 endpoint
@@ -23,24 +24,26 @@ export function setupMigrationAPI(app: Express) {
         });
       }
 
-      const DATABASE_URL = process.env.DATABASE_URL;
+      console.log('🔗 開始資料庫遷移...');
+      const db = await getDb();
       
-      if (!DATABASE_URL) {
+      if (!db) {
         return res.status(500).json({ 
-          error: 'DATABASE_URL 環境變數未設定' 
+          error: '資料庫連線失敗',
+          message: 'DATABASE_URL 未設定或連線失敗'
         });
       }
-
-      console.log('🔗 開始資料庫遷移...');
-      const connection = await mysql.createConnection(DATABASE_URL);
       
       try {
         // 檢查現有欄位
-        const [columns] = await connection.query(
-          "SELECT COLUMN_NAME FROM INFORMATION_SCHEMA.COLUMNS WHERE TABLE_SCHEMA = 'railway' AND TABLE_NAME = 'mealDeliveries'"
-        ) as any;
+        const columnsResult = await db.execute(sql`
+          SELECT COLUMN_NAME 
+          FROM INFORMATION_SCHEMA.COLUMNS 
+          WHERE TABLE_SCHEMA = 'railway' 
+          AND TABLE_NAME = 'mealDeliveries'
+        `);
         
-        const existingColumns = columns.map((col: any) => col.COLUMN_NAME);
+        const existingColumns = (columnsResult as any[]).map((row: any) => row.COLUMN_NAME);
         console.log('現有欄位:', existingColumns);
 
         // 需要新增的欄位
@@ -71,13 +74,11 @@ export function setupMigrationAPI(app: Express) {
             results.push({ field: field.name, status: 'already_exists' });
           } else {
             console.log(`➕ 新增欄位 ${field.name}...`);
-            await connection.query(field.sql);
+            await db.execute(sql.raw(field.sql));
             console.log(`✅ 欄位 ${field.name} 新增成功`);
             results.push({ field: field.name, status: 'added' });
           }
         }
-
-        await connection.end();
 
         return res.json({
           success: true,
@@ -87,11 +88,11 @@ export function setupMigrationAPI(app: Express) {
         });
 
       } catch (error: any) {
-        await connection.end();
         console.error('遷移失敗:', error);
         return res.status(500).json({
           error: '遷移失敗',
-          message: error.message
+          message: error.message,
+          stack: process.env.NODE_ENV === 'development' ? error.stack : undefined
         });
       }
 
@@ -99,7 +100,8 @@ export function setupMigrationAPI(app: Express) {
       console.error('遷移 API 錯誤:', error);
       return res.status(500).json({
         error: '伺服器錯誤',
-        message: error.message
+        message: error.message,
+        stack: process.env.NODE_ENV === 'development' ? error.stack : undefined
       });
     }
   });
