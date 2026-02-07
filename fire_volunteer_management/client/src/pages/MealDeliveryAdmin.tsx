@@ -286,7 +286,30 @@ export default function MealDeliveryAdmin() {
                 </div>
 
                 <div className="flex gap-2">
-                  <Button type="submit" disabled={createMutation.isPending}>
+                  <Button 
+                    type="button" 
+                    disabled={createMutation.isPending}
+                    onClick={(e) => {
+                      e.preventDefault();
+                      const form = e.currentTarget.closest('form');
+                      if (form) {
+                        const formData = new FormData(form);
+                        const dateTimeStr = formData.get("scheduledDate") as string;
+                        const dateTime = new Date(dateTimeStr);
+                        const timeStr = `${dateTime.getHours().toString().padStart(2, "0")}:${dateTime.getMinutes().toString().padStart(2, "0")}`;
+                        
+                        createMutation.mutate({
+                          recipientName: formData.get("recipientName") as string,
+                          recipientPhone: formData.get("recipientPhone") as string,
+                          deliveryAddress: formData.get("deliveryAddress") as string,
+                          deliveryDate: dateTime,
+                          deliveryTime: timeStr,
+                          mealType: (formData.get("mealType") as string) || undefined,
+                          specialInstructions: (formData.get("specialInstructions") as string) || undefined,
+                        });
+                      }
+                    }}
+                  >
                     {createMutation.isPending ? "建立中..." : "建立任務"}
                   </Button>
                   <Button
