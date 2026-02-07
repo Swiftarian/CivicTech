@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { trpc } from "@/lib/trpc";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
@@ -47,7 +47,7 @@ export default function MealDeliveryAdmin() {
   const { data: deliveries, refetch, error, isLoading } = trpc.mealDeliveries.getAll.useQuery();
 
   // Debug: 輸出查詢結果
-  React.useEffect(() => {
+  useEffect(() => {
     console.log('=== 送餐任務查詢狀態 ===');
     console.log('isLoading:', isLoading);
     console.log('error:', error);
