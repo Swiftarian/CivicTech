@@ -2566,6 +2566,40 @@ export const appRouter = router({
         return { success: true };
       }),
   }),
+
+  // ============ Debug API（臨時用於診斷問題）============
+  debug: router({
+    // 檢查當前用戶資訊和權限
+    checkCurrentUser: protectedProcedure.query(async ({ ctx }) => {
+      const user = await db.getUserById(ctx.user.id);
+      return {
+        userId: ctx.user.id,
+        email: ctx.user.email,
+        role: ctx.user.role,
+        userFromDb: user,
+      };
+    }),
+
+    // 檢查送餐任務資料庫記錄
+    checkMealDeliveries: adminProcedure.query(async () => {
+      const deliveries = await db.getAllMealDeliveries();
+      return {
+        count: deliveries.length,
+        deliveries: deliveries,
+      };
+    }),
+
+    // 檢查特定用戶的權限
+    checkUserPermission: adminProcedure
+      .input(z.object({ email: z.string() }))
+      .query(async ({ input }) => {
+        const user = await db.getUserByEmail(input.email);
+        return {
+          found: !!user,
+          user: user,
+        };
+      }),
+  }),
 });
 
 export type AppRouter = typeof appRouter;
