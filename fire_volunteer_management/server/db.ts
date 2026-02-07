@@ -1041,8 +1041,12 @@ export async function getMealDeliveriesByVolunteer(volunteerId: number) {
 }
 
 export async function getAllMealDeliveries() {
+  console.log('[getAllMealDeliveries] 開始查詢送餐任務');
   const db = await getDb();
-  if (!db) return [];
+  if (!db) {
+    console.log('[getAllMealDeliveries] 資料庫連線失敗');
+    return [];
+  }
 
   // 查詢所有送餐任務並加入志工名稱
   const deliveries = await db
@@ -1075,6 +1079,10 @@ export async function getAllMealDeliveries() {
     .leftJoin(users, eq(volunteers.userId, users.id))
     .orderBy(desc(mealDeliveries.createdAt));
 
+  console.log(`[getAllMealDeliveries] 查詢完成，找到 ${deliveries.length} 筆送餐任務`);
+  if (deliveries.length > 0) {
+    console.log('[getAllMealDeliveries] 第一筆資料:', deliveries[0]);
+  }
   return deliveries;
 }
 
