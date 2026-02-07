@@ -39,8 +39,8 @@ RUN corepack enable && corepack prepare pnpm@latest --activate
 # 複製套件定義檔案
 COPY package.json pnpm-lock.yaml ./
 
-# 只安裝生產依賴
-RUN pnpm install --prod --frozen-lockfile
+# 安裝所有依賴（包含 drizzle-kit 用於資料庫遷移）
+RUN pnpm install --frozen-lockfile
 
 # 從建置階段複製建置產物
 COPY --from=builder /app/dist ./dist
