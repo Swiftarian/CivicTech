@@ -44,7 +44,16 @@ export default function MealDeliveryAdmin() {
   const [selectedIds, setSelectedIds] = useState<Set<number>>(new Set());
   const [batchDeleteDialogOpen, setBatchDeleteDialogOpen] = useState(false);
 
-  const { data: deliveries, refetch } = trpc.mealDeliveries.getAll.useQuery();
+  const { data: deliveries, refetch, error, isLoading } = trpc.mealDeliveries.getAll.useQuery();
+
+  // Debug: 輸出查詢結果
+  React.useEffect(() => {
+    console.log('=== 送餐任務查詢狀態 ===');
+    console.log('isLoading:', isLoading);
+    console.log('error:', error);
+    console.log('deliveries:', deliveries);
+    console.log('deliveries count:', deliveries?.length);
+  }, [deliveries, error, isLoading]);
   const { data: volunteers } = trpc.volunteers.getAll.useQuery();
 
   const createMutation = trpc.mealDeliveries.create.useMutation({
