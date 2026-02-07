@@ -14,6 +14,7 @@ import { serveStatic, setupVite } from "./vite";
 import { initializeScheduledTasks } from "../scheduledTasks";
 import { handleLineWebhook } from "./lineWebhook";
 import { apiLimiter, webhookLimiter } from "./rateLimit";
+import { setupMigrationAPI } from "../migrate-api";
 
 function isPortAvailable(port: number): Promise<boolean> {
   return new Promise(resolve => {
@@ -91,6 +92,11 @@ async function startServer() {
 
   // LINE webhook under /api/line/webhook with stricter rate limiting
   app.post("/api/line/webhook", webhookLimiter, handleLineWebhook);
+
+  // 臨時資料庫遷移 API（生產環境限定）
+  if (process.env.NODE_ENV === "production") {
+    setupMigrationAPI(app);
+  }
   // tRPC API
   app.use(
     "/api/trpc",
