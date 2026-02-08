@@ -1920,42 +1920,73 @@ export const appRouter = router({
         // 手動查詢關聯資料
         const enrichedDeliveries = await Promise.all(
           deliveries.map(async (delivery) => {
-            // 查詢志工資訊
-            let volunteerName = "未指派";
-            if (delivery.volunteerId) {
-              const volunteer = await database
-                .select({ userId: volunteers.userId })
-                .from(volunteers)
-                .where(eq(volunteers.id, delivery.volunteerId))
-                .limit(1);
-              
-              if (volunteer.length > 0 && volunteer[0].userId) {
-                const user = await database
-                  .select({ name: users.name })
-                  .from(users)
-                  .where(eq(users.id, volunteer[0].userId))
-                  .limit(1);
-                
-                if (user.length > 0) {
-                  volunteerName = user[0].name || "未指派";
+            try {
+              // 查詢志工資訊
+              let volunteerName = "未指派";
+              if (delivery.volunteerId) {
+                try {
+                  const volunteer = await database
+                    .select({ userId: volunteers.userId })
+                    .from(volunteers)
+                    .where(eq(volunteers.id, delivery.volunteerId))
+                    .limit(1);
+                  
+                  if (volunteer.length > 0 && volunteer[0].userId) {
+                    const user = await database
+                      .select({ name: users.name })
+                      .from(users)
+                      .where(eq(users.id, volunteer[0].userId))
+                      .limit(1);
+                    
+                    if (user.length > 0) {
+                      volunteerName = user[0].name || "未指派";
+                    }
+                  }
+                } catch (error) {
+                  console.error('[exportReport] 查詢志工資訊失敗:', error);
                 }
               }
+
+              // 查詢服務日誌
+              let recipientStatus = null;
+              let mealStatus = null;
+              let serviceNotes = null;
+              
+              try {
+                const serviceLog = await database
+                  .select()
+                  .from(deliveryServiceLogs)
+                  .where(eq(deliveryServiceLogs.deliveryId, delivery.id))
+                  .limit(1);
+
+                if (serviceLog.length > 0) {
+                  recipientStatus = serviceLog[0].recipientStatus;
+                  mealStatus = serviceLog[0].mealStatus;
+                  serviceNotes = serviceLog[0].notes;
+                }
+              } catch (error) {
+                console.error('[exportReport] 查詢服務日誌失敗:', error);
+                // 繼續執行，使用 null 值
+              }
+
+              return {
+                ...delivery,
+                volunteerName,
+                recipientStatus,
+                mealStatus,
+                serviceNotes,
+              };
+            } catch (error) {
+              console.error('[exportReport] 處理送餐記錄失敗:', delivery.id, error);
+              // 返回基本資料
+              return {
+                ...delivery,
+                volunteerName: "未指派",
+                recipientStatus: null,
+                mealStatus: null,
+                serviceNotes: null,
+              };
             }
-
-            // 查詢服務日誌
-            const serviceLog = await database
-              .select()
-              .from(deliveryServiceLogs)
-              .where(eq(deliveryServiceLogs.deliveryId, delivery.id))
-              .limit(1);
-
-            return {
-              ...delivery,
-              volunteerName,
-              recipientStatus: serviceLog.length > 0 ? serviceLog[0].recipientStatus : null,
-              mealStatus: serviceLog.length > 0 ? serviceLog[0].mealStatus : null,
-              serviceNotes: serviceLog.length > 0 ? serviceLog[0].notes : null,
-            };
           })
         );
 
