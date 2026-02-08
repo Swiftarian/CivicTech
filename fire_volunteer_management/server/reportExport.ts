@@ -93,7 +93,7 @@ export function generateCSV(data: any[]): string {
   console.log('[generateCSV] 開始生成 CSV 報表');
   
   const headers = [
-    '事故編號',
+    '服務編號',
     '送餐日期',
     '送餐時段',
     '服務人員',
@@ -167,7 +167,7 @@ export async function generateExcel(data: any[]): Promise<Buffer> {
   
   // 設定欄位
   worksheet.columns = [
-    { header: '事故編號', key: 'deliveryNumber', width: 20 },
+    { header: '服務編號', key: 'deliveryNumber', width: 20 },
     { header: '送餐日期', key: 'deliveryDate', width: 15 },
     { header: '送餐時段', key: 'deliveryTime', width: 12 },
     { header: '服務人員', key: 'volunteerName', width: 15 },

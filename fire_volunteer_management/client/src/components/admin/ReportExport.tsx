@@ -158,7 +158,7 @@ export default function ReportExport() {
         <div className="text-xs text-muted-foreground space-y-1 pt-2 border-t">
           <p className="font-semibold">報表欄位說明：</p>
           <ul className="list-disc list-inside space-y-0.5 ml-2">
-            <li>事故編號、送餐日期、送餐時段</li>
+            <li>服務編號、送餐日期、送餐時段</li>
             <li>服務人員（志工）、服務對象、聯絡電話</li>
             <li>送餐地址、餐點類型、特殊說明</li>
             <li>任務狀態、開始送餐時間、送達時間</li>
