@@ -1923,8 +1923,7 @@ export const appRouter = router({
           .where(
             and(
               gte(mealDeliveries.deliveryDate, input.startDate),
-              lte(mealDeliveries.deliveryDate, input.endDate),
-              eq(mealDeliveries.status, "delivered")
+              lte(mealDeliveries.deliveryDate, input.endDate)
             )
           )
           .orderBy(mealDeliveries.deliveryDate);
@@ -1949,7 +1948,7 @@ export const appRouter = router({
           recipientStatus: item.serviceLog?.recipientStatus || "",
           mealStatus: item.serviceLog?.mealStatus || "",
           serviceNotes: item.serviceLog?.notes || "",
-          deliveryNotes: item.delivery.deliveryNotes || "",
+          deliveryNotes: item.delivery.notes || "",
         }));
 
         // 根據格式生成檔案

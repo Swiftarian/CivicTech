@@ -51,7 +51,7 @@ export default function ReportExport() {
         const { content, filename, format: fileFormat, count } = result.data;
 
         if (count === 0) {
-          toast.warning("查詢時間範圍內沒有已送達的送餐記錄");
+          toast.warning("查詢時間範圍內沒有送餐記錄");
           setIsExporting(false);
           return;
         }
@@ -103,7 +103,7 @@ export default function ReportExport() {
       </CardHeader>
       <CardContent className="space-y-4">
         <div className="text-sm text-muted-foreground mb-4">
-          匯出指定時間範圍內「已送達」的送餐服務記錄，供衛福部查核使用。
+          匯出指定時間範圍內的送餐服務記錄（包含所有狀態），供衛福部查核使用。
         </div>
 
         <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
