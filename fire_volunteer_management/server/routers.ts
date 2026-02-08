@@ -1903,41 +1903,12 @@ export const appRouter = router({
 
         const { mealDeliveries, deliveryServiceLogs, volunteers, users } =
           await import("../drizzle/schema");
-        const { eq, and, gte, lte, asc, sql } = await import("drizzle-orm");
+        const { eq, and, gte, lte, asc } = await import("drizzle-orm");
 
         // 查詢指定時間範圍內的送餐記錄
         const deliveries = await database
-          .select({
-            // mealDeliveries 欄位
-            deliveryNumber: mealDeliveries.deliveryNumber,
-            deliveryDate: mealDeliveries.deliveryDate,
-            deliveryTime: mealDeliveries.deliveryTime,
-            recipientName: mealDeliveries.recipientName,
-            recipientPhone: mealDeliveries.recipientPhone,
-            deliveryAddress: mealDeliveries.deliveryAddress,
-            mealType: mealDeliveries.mealType,
-            specialInstructions: mealDeliveries.specialInstructions,
-            status: mealDeliveries.status,
-            startTime: mealDeliveries.startTime,
-            deliveredAt: mealDeliveries.deliveredAt,
-            deliveredLatitude: mealDeliveries.deliveredLatitude,
-            deliveredLongitude: mealDeliveries.deliveredLongitude,
-            deliveryPhotoUrl: mealDeliveries.deliveryPhotoUrl,
-            deliveryNotes: sql`${mealDeliveries.notes}`.as('deliveryNotes'),
-            // deliveryServiceLogs 欄位
-            recipientStatus: deliveryServiceLogs.recipientStatus,
-            mealStatus: deliveryServiceLogs.mealStatus,
-            serviceNotes: sql`${deliveryServiceLogs.notes}`.as('serviceNotes'),
-            // users 欄位
-            volunteerName: users.name,
-          })
+          .select()
           .from(mealDeliveries)
-          .leftJoin(
-            deliveryServiceLogs,
-            eq(mealDeliveries.id, deliveryServiceLogs.deliveryId)
-          )
-          .leftJoin(volunteers, eq(mealDeliveries.volunteerId, volunteers.id))
-          .leftJoin(users, eq(volunteers.userId, users.id))
           .where(
             and(
               gte(mealDeliveries.deliveryDate, input.startDate),
@@ -1946,8 +1917,50 @@ export const appRouter = router({
           )
           .orderBy(asc(mealDeliveries.deliveryDate));
 
+        // 手動查詢關聯資料
+        const enrichedDeliveries = await Promise.all(
+          deliveries.map(async (delivery) => {
+            // 查詢志工資訊
+            let volunteerName = "未指派";
+            if (delivery.volunteerId) {
+              const volunteer = await database
+                .select({ userId: volunteers.userId })
+                .from(volunteers)
+                .where(eq(volunteers.id, delivery.volunteerId))
+                .limit(1);
+              
+              if (volunteer.length > 0 && volunteer[0].userId) {
+                const user = await database
+                  .select({ name: users.name })
+                  .from(users)
+                  .where(eq(users.id, volunteer[0].userId))
+                  .limit(1);
+                
+                if (user.length > 0) {
+                  volunteerName = user[0].name || "未指派";
+                }
+              }
+            }
+
+            // 查詢服務日誌
+            const serviceLog = await database
+              .select()
+              .from(deliveryServiceLogs)
+              .where(eq(deliveryServiceLogs.deliveryId, delivery.id))
+              .limit(1);
+
+            return {
+              ...delivery,
+              volunteerName,
+              recipientStatus: serviceLog.length > 0 ? serviceLog[0].recipientStatus : null,
+              mealStatus: serviceLog.length > 0 ? serviceLog[0].mealStatus : null,
+              serviceNotes: serviceLog.length > 0 ? serviceLog[0].notes : null,
+            };
+          })
+        );
+
         // 格式化為報表資料
-        const reportData = deliveries.map(item => ({
+        const reportData = enrichedDeliveries.map(item => ({
           deliveryNumber: item.deliveryNumber,
           deliveryDate: item.deliveryDate,
           deliveryTime: item.deliveryTime,
@@ -1966,7 +1979,7 @@ export const appRouter = router({
           recipientStatus: item.recipientStatus || "",
           mealStatus: item.mealStatus || "",
           serviceNotes: item.serviceNotes || "",
-          deliveryNotes: item.deliveryNotes || "",
+          deliveryNotes: item.notes || "",
         }));
 
         // 根據格式生成檔案
