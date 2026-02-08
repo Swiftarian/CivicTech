@@ -1,8 +1,9 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { trpc } from "@/lib/trpc";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Label } from "@/components/ui/label";
+import { Input } from "@/components/ui/input";
 import {
   Select,
   SelectContent,
@@ -21,7 +22,26 @@ export default function ReportExport() {
 
   const utils = trpc.useUtils();
 
+  // 調試：監控狀態變化
+  useEffect(() => {
+    console.log('[ReportExport] State updated:', { startDate, endDate, isExporting });
+  }, [startDate, endDate, isExporting]);
+
+  const handleStartDateChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const value = e.target.value;
+    console.log('[ReportExport] Start date changing to:', value);
+    setStartDate(value);
+  };
+
+  const handleEndDateChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const value = e.target.value;
+    console.log('[ReportExport] End date changing to:', value);
+    setEndDate(value);
+  };
+
   const handleExport = async () => {
+    console.log('[ReportExport] handleExport called with:', { startDate, endDate, exportFormat });
+    
     if (!startDate || !endDate) {
       toast.error("請選擇開始日期和結束日期");
       return;
@@ -91,6 +111,9 @@ export default function ReportExport() {
     }
   };
 
+  // 計算按鈕是否應該禁用
+  const isButtonDisabled = isExporting || !startDate || !endDate;
+
   return (
     <Card>
       <CardHeader>
@@ -107,23 +130,23 @@ export default function ReportExport() {
         <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
           <div className="space-y-2">
             <Label htmlFor="startDate">開始日期</Label>
-            <input
+            <Input
               id="startDate"
               type="date"
               value={startDate}
-              onChange={(e) => setStartDate(e.target.value)}
-              className="flex h-10 w-full rounded-md border border-input bg-background px-3 py-2 text-sm ring-offset-background file:border-0 file:bg-transparent file:text-sm file:font-medium placeholder:text-muted-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 disabled:cursor-not-allowed disabled:opacity-50"
+              onChange={handleStartDateChange}
+              placeholder="選擇開始日期"
             />
           </div>
 
           <div className="space-y-2">
             <Label htmlFor="endDate">結束日期</Label>
-            <input
+            <Input
               id="endDate"
               type="date"
               value={endDate}
-              onChange={(e) => setEndDate(e.target.value)}
-              className="flex h-10 w-full rounded-md border border-input bg-background px-3 py-2 text-sm ring-offset-background file:border-0 file:bg-transparent file:text-sm file:font-medium placeholder:text-muted-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 disabled:cursor-not-allowed disabled:opacity-50"
+              onChange={handleEndDateChange}
+              placeholder="選擇結束日期"
             />
           </div>
         </div>
@@ -147,12 +170,20 @@ export default function ReportExport() {
         <div className="flex gap-2 pt-4">
           <Button
             onClick={handleExport}
-            disabled={isExporting || !startDate || !endDate}
+            disabled={isButtonDisabled}
             className="flex-1"
           >
             <Download className="h-4 w-4 mr-2" />
             {isExporting ? "匯出中..." : "匯出報表"}
           </Button>
+        </div>
+
+        {/* 調試資訊 */}
+        <div className="text-xs text-muted-foreground bg-muted p-2 rounded">
+          <p>調試資訊：</p>
+          <p>開始日期: {startDate || '未選擇'}</p>
+          <p>結束日期: {endDate || '未選擇'}</p>
+          <p>按鈕狀態: {isButtonDisabled ? '禁用' : '啟用'}</p>
         </div>
 
         <div className="text-xs text-muted-foreground space-y-1 pt-2 border-t">
