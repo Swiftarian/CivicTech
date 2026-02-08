@@ -1948,26 +1948,28 @@ export const appRouter = router({
               }
 
               // 查詢服務日誌
+              // 暫時跳過，因為 deliveryServiceLogs 表格可能不存在
               let recipientStatus = null;
               let mealStatus = null;
               let serviceNotes = null;
               
-              try {
-                const serviceLog = await database
-                  .select()
-                  .from(deliveryServiceLogs)
-                  .where(eq(deliveryServiceLogs.deliveryId, delivery.id))
-                  .limit(1);
-
-                if (serviceLog.length > 0) {
-                  recipientStatus = serviceLog[0].recipientStatus;
-                  mealStatus = serviceLog[0].mealStatus;
-                  serviceNotes = serviceLog[0].notes;
-                }
-              } catch (error) {
-                console.error('[exportReport] 查詢服務日誌失敗:', error);
-                // 繼續執行，使用 null 值
-              }
+              // TODO: 等待 deliveryServiceLogs 表格建立後再啟用
+              // try {
+              //   const serviceLog = await database
+              //     .select()
+              //     .from(deliveryServiceLogs)
+              //     .where(eq(deliveryServiceLogs.deliveryId, delivery.id))
+              //     .limit(1);
+              //
+              //   if (serviceLog.length > 0) {
+              //     recipientStatus = serviceLog[0].recipientStatus;
+              //     mealStatus = serviceLog[0].mealStatus;
+              //     serviceNotes = serviceLog[0].notes;
+              //   }
+              // } catch (error) {
+              //   console.error('[exportReport] 查詢服務日誌失敗:', error);
+              //   // 繼續執行，使用 null 值
+              // }
 
               return {
                 ...delivery,
