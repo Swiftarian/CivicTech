@@ -1903,7 +1903,7 @@ export const appRouter = router({
 
         const { mealDeliveries, deliveryServiceLogs, volunteers, users } =
           await import("../drizzle/schema");
-        const { eq, and, gte, lte, asc } = await import("drizzle-orm");
+        const { eq, and, gte, lte, asc, sql } = await import("drizzle-orm");
 
         // 查詢指定時間範圍內的送餐記錄
         const deliveries = await database
@@ -1923,11 +1923,11 @@ export const appRouter = router({
             deliveredLatitude: mealDeliveries.deliveredLatitude,
             deliveredLongitude: mealDeliveries.deliveredLongitude,
             deliveryPhotoUrl: mealDeliveries.deliveryPhotoUrl,
-            deliveryNotes: mealDeliveries.notes,
+            deliveryNotes: sql`${mealDeliveries.notes}`.as('deliveryNotes'),
             // deliveryServiceLogs 欄位
             recipientStatus: deliveryServiceLogs.recipientStatus,
             mealStatus: deliveryServiceLogs.mealStatus,
-            serviceNotes: deliveryServiceLogs.notes,
+            serviceNotes: sql`${deliveryServiceLogs.notes}`.as('serviceNotes'),
             // users 欄位
             volunteerName: users.name,
           })
