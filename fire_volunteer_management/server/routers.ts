@@ -1970,26 +1970,34 @@ export const appRouter = router({
         }));
 
         // 根據格式生成檔案
-        const { generateCSV, generateExcel } = await import("./reportExport");
-        
-        if (input.format === "csv") {
-          const csvContent = generateCSV(reportData);
-          return {
-            success: true,
-            format: "csv",
-            content: csvContent,
-            count: reportData.length,
-            filename: `送餐服務報表_${input.startDate.toISOString().split('T')[0]}_${input.endDate.toISOString().split('T')[0]}.csv`,
-          };
-        } else {
-          const excelBuffer = await generateExcel(reportData);
-          return {
-            success: true,
-            format: "excel",
-            content: excelBuffer.toString("base64"),
-            count: reportData.length,
-            filename: `送餐服務報表_${input.startDate.toISOString().split('T')[0]}_${input.endDate.toISOString().split('T')[0]}.xlsx`,
-          };
+        try {
+          const { generateCSV, generateExcel } = await import("./reportExport");
+          
+          if (input.format === "csv") {
+            const csvContent = generateCSV(reportData);
+            return {
+              success: true,
+              format: "csv",
+              content: csvContent,
+              count: reportData.length,
+              filename: `送餐服務報表_${input.startDate.toISOString().split('T')[0]}_${input.endDate.toISOString().split('T')[0]}.csv`,
+            };
+          } else {
+            const excelBuffer = await generateExcel(reportData);
+            return {
+              success: true,
+              format: "excel",
+              content: excelBuffer.toString("base64"),
+              count: reportData.length,
+              filename: `送餐服務報表_${input.startDate.toISOString().split('T')[0]}_${input.endDate.toISOString().split('T')[0]}.xlsx`,
+            };
+          }
+        } catch (error) {
+          console.error('[exportReport] 報表生成錯誤:', error);
+          throw new TRPCError({
+            code: "INTERNAL_SERVER_ERROR",
+            message: `報表生成失敗: ${error instanceof Error ? error.message : '未知錯誤'}`,
+          });
         }
       }),
   }),

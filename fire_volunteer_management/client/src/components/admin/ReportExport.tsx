@@ -12,7 +12,6 @@ import {
 } from "@/components/ui/select";
 import { toast } from "sonner";
 import { FileDown, Download } from "lucide-react";
-import { format } from "date-fns";
 
 export default function ReportExport() {
   const [startDate, setStartDate] = useState<string>("");
@@ -20,16 +19,7 @@ export default function ReportExport() {
   const [exportFormat, setExportFormat] = useState<"csv" | "excel">("excel");
   const [isExporting, setIsExporting] = useState(false);
 
-  const exportMutation = trpc.mealDeliveries.exportReport.useQuery(
-    {
-      startDate: startDate ? new Date(startDate) : new Date(),
-      endDate: endDate ? new Date(endDate) : new Date(),
-      format: exportFormat,
-    },
-    {
-      enabled: false, // 手動觸發
-    }
-  );
+  const utils = trpc.useUtils();
 
   const handleExport = async () => {
     if (!startDate || !endDate) {
@@ -45,10 +35,18 @@ export default function ReportExport() {
     setIsExporting(true);
 
     try {
-      const result = await exportMutation.refetch();
+      console.log('[ReportExport] 開始匯出報表', { startDate, endDate, exportFormat });
+      
+      const result = await utils.client.mealDeliveries.exportReport.query({
+        startDate: new Date(startDate),
+        endDate: new Date(endDate),
+        format: exportFormat,
+      });
 
-      if (result.data?.success) {
-        const { content, filename, format: fileFormat, count } = result.data;
+      console.log('[ReportExport] 收到結果', result);
+
+      if (result?.success) {
+        const { content, filename, format: fileFormat, count } = result;
 
         if (count === 0) {
           toast.warning("查詢時間範圍內沒有送餐記錄");
@@ -86,7 +84,7 @@ export default function ReportExport() {
         toast.error("報表匯出失敗");
       }
     } catch (error: any) {
-      console.error("Export error:", error);
+      console.error("[ReportExport] Export error:", error);
       toast.error(`匯出失敗：${error.message || "未知錯誤"}`);
     } finally {
       setIsExporting(false);
