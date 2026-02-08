@@ -1908,10 +1908,28 @@ export const appRouter = router({
         // 查詢指定時間範圍內的送餐記錄
         const deliveries = await database
           .select({
-            delivery: mealDeliveries,
-            serviceLog: deliveryServiceLogs,
-            volunteer: volunteers,
-            user: users,
+            // mealDeliveries 欄位
+            deliveryNumber: mealDeliveries.deliveryNumber,
+            deliveryDate: mealDeliveries.deliveryDate,
+            deliveryTime: mealDeliveries.deliveryTime,
+            recipientName: mealDeliveries.recipientName,
+            recipientPhone: mealDeliveries.recipientPhone,
+            deliveryAddress: mealDeliveries.deliveryAddress,
+            mealType: mealDeliveries.mealType,
+            specialInstructions: mealDeliveries.specialInstructions,
+            status: mealDeliveries.status,
+            startTime: mealDeliveries.startTime,
+            deliveredAt: mealDeliveries.deliveredAt,
+            deliveredLatitude: mealDeliveries.deliveredLatitude,
+            deliveredLongitude: mealDeliveries.deliveredLongitude,
+            deliveryPhotoUrl: mealDeliveries.deliveryPhotoUrl,
+            deliveryNotes: mealDeliveries.notes,
+            // deliveryServiceLogs 欄位
+            recipientStatus: deliveryServiceLogs.recipientStatus,
+            mealStatus: deliveryServiceLogs.mealStatus,
+            serviceNotes: deliveryServiceLogs.notes,
+            // users 欄位
+            volunteerName: users.name,
           })
           .from(mealDeliveries)
           .leftJoin(
@@ -1930,25 +1948,25 @@ export const appRouter = router({
 
         // 格式化為報表資料
         const reportData = deliveries.map(item => ({
-          deliveryNumber: item.delivery.deliveryNumber,
-          deliveryDate: item.delivery.deliveryDate,
-          deliveryTime: item.delivery.deliveryTime,
-          volunteerName: item.user?.name || "未指派",
-          recipientName: item.delivery.recipientName,
-          recipientPhone: item.delivery.recipientPhone,
-          deliveryAddress: item.delivery.deliveryAddress,
-          mealType: item.delivery.mealType || "",
-          specialInstructions: item.delivery.specialInstructions || "",
-          status: item.delivery.status,
-          startTime: item.delivery.startTime,
-          deliveredAt: item.delivery.deliveredAt,
-          deliveredLatitude: item.delivery.deliveredLatitude,
-          deliveredLongitude: item.delivery.deliveredLongitude,
-          deliveryPhotoUrl: item.delivery.deliveryPhotoUrl || "",
-          recipientStatus: item.serviceLog?.recipientStatus || "",
-          mealStatus: item.serviceLog?.mealStatus || "",
-          serviceNotes: item.serviceLog?.notes || "",
-          deliveryNotes: item.delivery.notes || "",
+          deliveryNumber: item.deliveryNumber,
+          deliveryDate: item.deliveryDate,
+          deliveryTime: item.deliveryTime,
+          volunteerName: item.volunteerName || "未指派",
+          recipientName: item.recipientName,
+          recipientPhone: item.recipientPhone,
+          deliveryAddress: item.deliveryAddress,
+          mealType: item.mealType || "",
+          specialInstructions: item.specialInstructions || "",
+          status: item.status,
+          startTime: item.startTime,
+          deliveredAt: item.deliveredAt,
+          deliveredLatitude: item.deliveredLatitude,
+          deliveredLongitude: item.deliveredLongitude,
+          deliveryPhotoUrl: item.deliveryPhotoUrl || "",
+          recipientStatus: item.recipientStatus || "",
+          mealStatus: item.mealStatus || "",
+          serviceNotes: item.serviceNotes || "",
+          deliveryNotes: item.deliveryNotes || "",
         }));
 
         // 根據格式生成檔案
