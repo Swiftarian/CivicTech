@@ -1884,12 +1884,13 @@ export const appRouter = router({
         return { success: true, count: input.ids.length };
       }),
 
-    // 匯出衛福部查核報表（僅管理員可用）
+    // 匯出衛福部查核報表(僅管理員可用)
     exportReport: adminProcedure
       .input(
         z.object({
           startDate: z.date(),
           endDate: z.date(),
+          format: z.enum(["csv", "excel"]).default("excel"),
         })
       )
       .query(async ({ input }) => {
@@ -1928,43 +1929,51 @@ export const appRouter = router({
           )
           .orderBy(mealDeliveries.deliveryDate);
 
-        // 格式化為 CSV 格式的資料
+        // 格式化為報表資料
         const reportData = deliveries.map(item => ({
-          送餐編號: item.delivery.deliveryNumber,
-          送餐日期: item.delivery.deliveryDate.toLocaleDateString("zh-TW"),
-          送餐時段: item.delivery.deliveryTime,
-          收餐人姓名: item.delivery.recipientName,
-          收餐人電話: item.delivery.recipientPhone,
-          送餐地址: item.delivery.deliveryAddress,
-          志工姓名: item.user?.name || "未指派",
-          送達時間: item.delivery.deliveredAt
-            ? item.delivery.deliveredAt.toLocaleString("zh-TW")
-            : "",
-          GPS緯度: item.delivery.deliveredLatitude || "",
-          GPS經度: item.delivery.deliveredLongitude || "",
-          收餐者狀況: item.serviceLog?.recipientStatus
-            ? {
-                normal: "狀況正常",
-                needs_follow_up: "需後續關懷",
-                emergency: "緊急狀況",
-              }[item.serviceLog.recipientStatus]
-            : "",
-          餐點狀態: item.serviceLog?.mealStatus
-            ? {
-                delivered: "親手交遞",
-                left_at_door: "置於門口",
-                not_home: "無人在家",
-                refused: "拒收",
-              }[item.serviceLog.mealStatus]
-            : "",
-          備註: item.serviceLog?.notes || "",
+          deliveryNumber: item.delivery.deliveryNumber,
+          deliveryDate: item.delivery.deliveryDate,
+          deliveryTime: item.delivery.deliveryTime,
+          volunteerName: item.user?.name || "未指派",
+          recipientName: item.delivery.recipientName,
+          recipientPhone: item.delivery.recipientPhone,
+          deliveryAddress: item.delivery.deliveryAddress,
+          mealType: item.delivery.mealType || "",
+          specialInstructions: item.delivery.specialInstructions || "",
+          status: item.delivery.status,
+          startTime: item.delivery.startTime,
+          deliveredAt: item.delivery.deliveredAt,
+          deliveredLatitude: item.delivery.deliveredLatitude,
+          deliveredLongitude: item.delivery.deliveredLongitude,
+          deliveryPhotoUrl: item.delivery.deliveryPhotoUrl || "",
+          recipientStatus: item.serviceLog?.recipientStatus || "",
+          mealStatus: item.serviceLog?.mealStatus || "",
+          serviceNotes: item.serviceLog?.notes || "",
+          deliveryNotes: item.delivery.deliveryNotes || "",
         }));
 
-        return {
-          success: true,
-          data: reportData,
-          count: reportData.length,
-        };
+        // 根據格式生成檔案
+        const { generateCSV, generateExcel } = await import("./reportExport");
+        
+        if (input.format === "csv") {
+          const csvContent = generateCSV(reportData);
+          return {
+            success: true,
+            format: "csv",
+            content: csvContent,
+            count: reportData.length,
+            filename: `送餐服務報表_${input.startDate.toISOString().split('T')[0]}_${input.endDate.toISOString().split('T')[0]}.csv`,
+          };
+        } else {
+          const excelBuffer = await generateExcel(reportData);
+          return {
+            success: true,
+            format: "excel",
+            content: excelBuffer.toString("base64"),
+            count: reportData.length,
+            filename: `送餐服務報表_${input.startDate.toISOString().split('T')[0]}_${input.endDate.toISOString().split('T')[0]}.xlsx`,
+          };
+        }
       }),
   }),
 

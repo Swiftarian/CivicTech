@@ -34,6 +34,7 @@ import {
   DialogHeader,
   DialogTitle,
 } from "@/components/ui/dialog";
+import ReportExport from "@/components/admin/ReportExport";
 
 export default function MealDeliveryAdmin() {
   const [showCreateForm, setShowCreateForm] = useState(false);
@@ -334,10 +335,15 @@ export default function MealDeliveryAdmin() {
           </Card>
         )}
 
+         {/* 報表匯出 */}
+        <div className="mb-8">
+          <ReportExport />
+        </div>
+
         {/* 送餐任務列表 */}
-        <div className="space-y-4">
-          <div className="flex justify-between items-center">
-            <h2 className="text-2xl font-bold">送餐任務列表</h2>
+        <div>
+          <div className="flex justify-between items-center mb-4">
+            <h2 className="text-2xl font-semibold">送餐任務列表</h2>
             {deliveries && deliveries.length > 0 && (
               <div className="flex items-center gap-2">
                 <Button variant="outline" size="sm" onClick={handleSelectAll}>

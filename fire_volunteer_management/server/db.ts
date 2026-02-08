@@ -2140,3 +2140,72 @@ export async function batchDeleteGalleryItems(ids: number[]): Promise<number> {
     throw error;
   }
 }
+
+// ============ 報表匯出相關 ============
+
+/**
+ * 查詢指定時間範圍內的送餐資料，用於衛福部報表匯出
+ */
+export async function getMealDeliveriesForReport(
+  startDate: Date,
+  endDate: Date
+) {
+  console.log('[getMealDeliveriesForReport] 開始查詢報表資料');
+  console.log('[getMealDeliveriesForReport] 時間範圍:', startDate, '至', endDate);
+  
+  try {
+    const db = await getDb();
+    if (!db) {
+      console.log('[getMealDeliveriesForReport] 資料庫連線失敗');
+      return [];
+    }
+
+    const deliveries = await db
+      .select({
+        // mealDeliveries 欄位
+        id: mealDeliveries.id,
+        deliveryNumber: mealDeliveries.deliveryNumber,
+        recipientName: mealDeliveries.recipientName,
+        recipientPhone: mealDeliveries.recipientPhone,
+        deliveryAddress: mealDeliveries.deliveryAddress,
+        deliveryDate: mealDeliveries.deliveryDate,
+        deliveryTime: mealDeliveries.deliveryTime,
+        mealType: mealDeliveries.mealType,
+        status: mealDeliveries.status,
+        startTime: mealDeliveries.startTime,
+        deliveredAt: mealDeliveries.deliveredAt,
+        deliveredLatitude: mealDeliveries.deliveredLatitude,
+        deliveredLongitude: mealDeliveries.deliveredLongitude,
+        deliveryPhotoUrl: mealDeliveries.deliveryPhotoUrl,
+        deliveryNotes: mealDeliveries.notes,
+        specialInstructions: mealDeliveries.specialInstructions,
+        
+        // 志工資訊
+        volunteerName: users.name,
+        
+        // deliveryServiceLogs 欄位
+        recipientStatus: deliveryServiceLogs.recipientStatus,
+        mealStatus: deliveryServiceLogs.mealStatus,
+        serviceNotes: deliveryServiceLogs.notes,
+        serviceLogCreatedAt: deliveryServiceLogs.createdAt,
+      })
+      .from(mealDeliveries)
+      .leftJoin(volunteers, eq(mealDeliveries.volunteerId, volunteers.id))
+      .leftJoin(users, eq(volunteers.userId, users.id))
+      .leftJoin(deliveryServiceLogs, eq(deliveryServiceLogs.deliveryId, mealDeliveries.id))
+      .where(
+        and(
+          gte(mealDeliveries.deliveryDate, startDate),
+          lte(mealDeliveries.deliveryDate, endDate)
+        )
+      )
+      .orderBy(desc(mealDeliveries.deliveryDate), desc(mealDeliveries.createdAt));
+
+    console.log(`[getMealDeliveriesForReport] 查詢完成，找到 ${deliveries.length} 筆資料`);
+    return deliveries;
+  } catch (error) {
+    console.error('[getMealDeliveriesForReport] 發生錯誤:', error);
+    console.error('[getMealDeliveriesForReport] 錯誤堆疊:', error.stack);
+    return [];
+  }
+}
