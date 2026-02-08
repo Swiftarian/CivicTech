@@ -3,7 +3,7 @@ import { trpc } from "@/lib/trpc";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Label } from "@/components/ui/label";
-import { Input } from "@/components/ui/input";
+// import { Input } from "@/components/ui/input"; // 暫時不使用，type="date" 支援有問題
 import {
   Select,
   SelectContent,
@@ -130,23 +130,27 @@ export default function ReportExport() {
         <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
           <div className="space-y-2">
             <Label htmlFor="startDate">開始日期</Label>
-            <Input
+            <input
               id="startDate"
               type="date"
               value={startDate}
               onChange={handleStartDateChange}
-              placeholder="選擇開始日期"
+              onBlur={handleStartDateChange}
+              onInput={handleStartDateChange}
+              className="flex h-10 w-full rounded-md border border-input bg-background px-3 py-2 text-sm ring-offset-background file:border-0 file:bg-transparent file:text-sm file:font-medium placeholder:text-muted-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 disabled:cursor-not-allowed disabled:opacity-50"
             />
           </div>
 
           <div className="space-y-2">
             <Label htmlFor="endDate">結束日期</Label>
-            <Input
+            <input
               id="endDate"
               type="date"
               value={endDate}
               onChange={handleEndDateChange}
-              placeholder="選擇結束日期"
+              onBlur={handleEndDateChange}
+              onInput={handleEndDateChange}
+              className="flex h-10 w-full rounded-md border border-input bg-background px-3 py-2 text-sm ring-offset-background file:border-0 file:bg-transparent file:text-sm file:font-medium placeholder:text-muted-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 disabled:cursor-not-allowed disabled:opacity-50"
             />
           </div>
         </div>
