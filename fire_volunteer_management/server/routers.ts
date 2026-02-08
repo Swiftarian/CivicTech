@@ -1903,7 +1903,7 @@ export const appRouter = router({
 
         const { mealDeliveries, deliveryServiceLogs, volunteers, users } =
           await import("../drizzle/schema");
-        const { eq, and, gte, lte } = await import("drizzle-orm");
+        const { eq, and, gte, lte, asc } = await import("drizzle-orm");
 
         // 查詢指定時間範圍內的送餐記錄
         const deliveries = await database
@@ -1944,7 +1944,7 @@ export const appRouter = router({
               lte(mealDeliveries.deliveryDate, input.endDate)
             )
           )
-          .orderBy(mealDeliveries.deliveryDate);
+          .orderBy(asc(mealDeliveries.deliveryDate));
 
         // 格式化為報表資料
         const reportData = deliveries.map(item => ({
