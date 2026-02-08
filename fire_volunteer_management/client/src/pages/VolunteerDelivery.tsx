@@ -1,5 +1,5 @@
 import { useState, useEffect, useRef } from "react";
-import { Link } from "wouter";
+import { Link, useLocation } from "wouter";
 import { useAuth } from "@/_core/hooks/useAuth";
 import { trpc } from "@/lib/trpc";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
@@ -29,6 +29,7 @@ import {
 
 export default function VolunteerDelivery() {
   const { user } = useAuth();
+  const [, setLocation] = useLocation();
   const [selectedDeliveryId, setSelectedDeliveryId] = useState<number | null>(
     null
   );
@@ -184,11 +185,9 @@ export default function VolunteerDelivery() {
     if (!selectedDeliveryId) return;
 
     stopTracking();
-    completeMutation.mutate({
-      deliveryId: selectedDeliveryId,
-    });
+    // 跳轉到送餐驗證頁面，記錄 GPS 和服務回報
+    setLocation(`/delivery-verification/${selectedDeliveryId}`);
     setShowCompleteDialog(false);
-    setSelectedDeliveryId(null);
   };
 
   // 清理定時器
