@@ -110,7 +110,7 @@
     "add": "^2.0.6",
     "autoprefixer": "^10.4.20",
     "drizzle-kit": "^0.31.8",
-    "esbuild": "^0.27.2",
+    "esbuild": "^0.27.3",
     "pnpm": "^10.28.2",
     "postcss": "^8.4.47",
     "prettier": "^3.6.2",
@@ -135,7 +135,7 @@
       "vite": ">=7.1.11",
       "mdast-util-to-hast": ">=13.2.1",
       "@smithy/config-resolver": ">=4.4.0",
-      "esbuild@<=0.24.2": ">=0.25.0",
+      "esbuild": ">=0.27.3",
       "lodash-es": ">=4.17.23"
     }
   }
