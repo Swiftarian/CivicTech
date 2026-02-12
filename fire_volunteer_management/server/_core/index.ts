@@ -67,6 +67,20 @@ async function startServer() {
   // Enable gzip compression for all responses
   app.use(compression());
 
+  // Security: Add HSTS (HTTP Strict Transport Security) header
+  // This tells browsers to only access this site via HTTPS for the next year
+  // Prevents downgrade attacks and cookie hijacking
+  app.use((req, res, next) => {
+    // Only set HSTS in production when behind HTTPS proxy
+    if (process.env.NODE_ENV === "production") {
+      res.setHeader(
+        "Strict-Transport-Security",
+        "max-age=31536000; includeSubDomains; preload"
+      );
+    }
+    next();
+  });
+
   // Configure cookie parser to read cookies from requests
   app.use(cookieParser());
 
